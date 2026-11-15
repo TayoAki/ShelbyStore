@@ -25,7 +25,10 @@ if (
   throw new Error("JWT_SECRET and COOKIE_SECRET must be set in production")
 }
 
-const modules: Record<string, any>[] = [{ resolve: "./src/modules/release" }]
+const modules: Record<string, any>[] = [
+  { resolve: "./src/modules/release" },
+  { resolve: "./src/modules/content" },
+]
 
 if (REDIS_URL) {
   modules.push(

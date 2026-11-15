@@ -119,7 +119,7 @@ export const ScorecardSection = ({ release }: { release: AdminRelease }) => {
                   <Table.HeaderCell>Landings</Table.HeaderCell>
                   <Table.HeaderCell>PDP sessions</Table.HeaderCell>
                   <Table.HeaderCell>Orders</Table.HeaderCell>
-                  <Table.HeaderCell>Conv.</Table.HeaderCell>
+                  <Table.HeaderCell>Orders / PDP</Table.HeaderCell>
                   <Table.HeaderCell className="text-right">Net sales</Table.HeaderCell>
                 </Table.Row>
               </Table.Header>
@@ -133,7 +133,7 @@ export const ScorecardSection = ({ release }: { release: AdminRelease }) => {
                     <Table.Cell>{row.product_view_sessions ?? "—"}</Table.Cell>
                     <Table.Cell>{row.orders}</Table.Cell>
                     <Table.Cell>
-                      {row.conversion_rate === null ? "—" : `${Math.round(row.conversion_rate * 100)}%`}
+                      {row.conversion_rate === null ? "—" : row.conversion_rate.toFixed(2)}
                     </Table.Cell>
                     <Table.Cell className="text-right">{formatMoney(row.net_sales)}</Table.Cell>
                   </Table.Row>

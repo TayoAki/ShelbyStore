@@ -1,3 +1,4 @@
+import { useTrackOnce } from "@/lib/analytics"
 import type { HttpTypes } from "@medusajs/types"
 import { useQueryClient } from "@tanstack/react-query"
 import { router } from "expo-router"
@@ -72,6 +73,11 @@ export default function CheckoutScreen() {
   const [options, setOptions] = useState<ShippingOption[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  useTrackOnce("checkout_started", cart?.items?.length ? cart.id : null, () => ({
+    cart_id: cart?.id,
+    value: cart?.total,
+    currency: cart?.currency_code?.toUpperCase(),
+  }))
 
   if (!cart || !cart.items?.length) {
     return (

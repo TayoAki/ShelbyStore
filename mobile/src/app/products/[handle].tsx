@@ -14,6 +14,7 @@ import { Text } from "@/components/text"
 import { colors, spacing } from "@/constants/theme"
 import { useProduct } from "@/hooks/use-products"
 import { useLiveReleaseIndex, useReleases } from "@/hooks/use-releases"
+import { track, useTrackOnce } from "@/lib/analytics"
 import { formatMoney } from "@/lib/format"
 import { errorMessage } from "@/lib/medusa"
 import {
@@ -35,6 +36,11 @@ export default function ProductScreen() {
   const liveIndex = useLiveReleaseIndex()
   const { data: releases } = useReleases()
   const { addItem } = useCart()
+  useTrackOnce("product_viewed", product?.id, () => ({
+    product_id: product?.id,
+    handle: product?.handle,
+    release_id: product ? liveIndex.get(product.id) : undefined,
+  }))
   const queryClient = useQueryClient()
 
   const [picked, setPicked] = useState<Record<string, string> | null>(null)
@@ -89,6 +95,14 @@ export default function ProductScreen() {
     setAddError(null)
     try {
       await addItem(variant.id, quantity, { releaseId })
+      track("add_to_cart", {
+        product_id: product.id,
+        variant_id: variant.id,
+        quantity,
+        price: price?.amount,
+        currency: price?.currency?.toUpperCase(),
+        release_id: releaseId,
+      })
       setAdded(true)
       queryClient.invalidateQueries({ queryKey: ["product", params.handle] })
     } catch (e) {

@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage"
 
+import { setAnalyticsContext, clearAnalyticsContext } from "./analytics"
 import { ATTRIBUTION_TTL_MS } from "./config"
 import type { Attribution } from "./types"
 
@@ -40,6 +41,7 @@ export async function captureAttribution(input: { release_id?: string; asset?: s
     asset: asset ?? existing?.asset,
     captured_at: Date.now(),
   }
+  setAnalyticsContext(next)
   try {
     await AsyncStorage.setItem(KEY, JSON.stringify(next))
   } catch {
@@ -48,6 +50,7 @@ export async function captureAttribution(input: { release_id?: string; asset?: s
 }
 
 export async function clearAttribution(): Promise<void> {
+  clearAnalyticsContext()
   try {
     await AsyncStorage.removeItem(KEY)
   } catch {

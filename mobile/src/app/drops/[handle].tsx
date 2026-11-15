@@ -1,6 +1,8 @@
 import { Image } from "expo-image"
 import { router, Stack, useLocalSearchParams } from "expo-router"
 import { useEffect } from "react"
+
+import { useTrackOnce } from "@/lib/analytics"
 import { StyleSheet, View } from "react-native"
 
 import { PhaseBadge } from "@/components/badge"
@@ -27,6 +29,11 @@ export default function DropScreen() {
   const { syncAttribution } = useCart()
   const asset = typeof params.asset === "string" ? params.asset : undefined
   const releaseId = release?.id
+  useTrackOnce("drop_viewed", releaseId, () => ({
+    release_id: release?.id,
+    handle: release?.handle,
+    phase: release?.phase,
+  }))
 
   // Deep link from a campaign asset: remember which release + asset brought the shopper in.
   useEffect(() => {

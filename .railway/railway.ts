@@ -3,6 +3,7 @@ import {
   defineRailway,
   github,
   group,
+  image,
   postgres,
   preserve,
   project,
@@ -19,6 +20,10 @@ import {
  *   media     private bucket for product images (served via /media redirects)
  *   medusa    HTTP API + admin dashboard (MEDUSA_WORKER_MODE=server)
  *   worker    scheduled jobs + subscribers: release go-live checks, reminders
+ *   umami     self-hosted web analytics (own Postgres): tagged sessions per asset
+ *
+ * PostHog is not provisioned here; see README.md for the self-host vs Cloud
+ * tradeoff. Either way the services read POSTHOG_API_KEY / POSTHOG_HOST.
  *
  * Plan and apply with the Railway CLI (5.42.1+) from the repo root:
  *   railway config plan
@@ -49,7 +54,33 @@ export default defineRailway((ctx) => {
     watchPatterns: ["/backend/**"],
   }
 
+  // Self-hosted Umami (https://github.com/umami-software/umami), pinned.
+  // First login is admin / umami: change it, create the website, then set
+  // UMAMI_WEBSITE_ID (and the API user) on medusa + worker.
+  const umamiDb = postgres("umami-db")
+  const umami = service("umami", {
+    source: image("ghcr.io/umami-software/umami:3.5.0"),
+    healthcheck: "/api/heartbeat",
+    env: {
+      DATABASE_URL: umamiDb.env.DATABASE_URL,
+      APP_SECRET: preserve(),
+    },
+  })
+
+  // Analytics settings shared by medusa + worker. Values live in Railway
+  // (preserve), so the keys never land in git. Unset = analytics is a no-op.
+  const analytics = {
+    UMAMI_URL: "https://${{umami.RAILWAY_PUBLIC_DOMAIN}}",
+    UMAMI_WEBSITE_ID: preserve(),
+    UMAMI_USERNAME: preserve(),
+    UMAMI_PASSWORD: preserve(),
+    POSTHOG_API_KEY: preserve(),
+    POSTHOG_HOST: preserve(),
+    STOREFRONT_URL: preserve(),
+  }
+
   const shared = {
+    ...analytics,
     NODE_ENV: "production",
     DATABASE_URL: db.env.DATABASE_URL,
     REDIS_URL: cache.env.REDIS_URL,
@@ -99,6 +130,9 @@ export default defineRailway((ctx) => {
   })
 
   return project("shelby", {
-    resources: [...group("Backend", [db, cache, media, medusa, worker])],
+    resources: [
+      ...group("Backend", [db, cache, media, medusa, worker]),
+      ...group("Analytics", [umamiDb, umami]),
+    ],
   })
 })

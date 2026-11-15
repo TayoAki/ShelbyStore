@@ -3,6 +3,7 @@ import type { HttpTypes } from "@medusajs/types"
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
 
 import { useRegion } from "@/hooks/use-region"
+import { analyticsId } from "@/lib/analytics"
 import { attributionPatch, clearAttribution, readAttribution } from "@/lib/attribution"
 import { isNotFound, sdk } from "@/lib/medusa"
 
@@ -94,7 +95,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
     if (!region) throw new Error("The store isn't ready yet. Please try again in a moment.")
     const attribution = await readAttribution()
-    const metadata = attributionPatch({}, attribution) ?? undefined
+    // analytics_id lets the backend's order_completed event join this visitor in PostHog.
+    const id = analyticsId()
+    const patch = attributionPatch({}, attribution) ?? {}
+    const metadata = Object.keys(patch).length || id ? { ...patch, ...(id ? { analytics_id: id } : {}) } : undefined
     const { cart: created } = await sdk.store.cart.create({ region_id: region.id, metadata })
     await AsyncStorage.setItem(CART_KEY, created.id).catch(() => undefined)
     setCart(created)

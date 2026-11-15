@@ -1,3 +1,4 @@
+import { track } from "@/lib/analytics"
 import { useState } from "react"
 import { StyleSheet, View } from "react-native"
 
@@ -66,6 +67,7 @@ export function NotifyMe({ releaseId, compact = false }: { releaseId: string; co
       const pushToken = await getPushTokenSilently()
       await createReminder(releaseId, { email: trimmed, push_token: pushToken ?? undefined })
       await reminders.add(releaseId)
+      track("notify_me_submitted", { release_id: releaseId })
       setOpen(false)
     } catch (e) {
       setError(errorMessage(e))

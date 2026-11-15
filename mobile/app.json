@@ -40,7 +40,8 @@
         {
           "color": "#B4532A"
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "experiments": {
       "reactCompiler": true
