@@ -1,15 +1,30 @@
 # Shelby
 
-A DTC apparel store built around the product-drop playbook in
-[`docs/playbook.md`](docs/playbook.md): keep a signature basic always in stock,
-and use small releases to give customers a reason to come back.
+A DTC apparel store built around two playbooks:
+
+- **Product drops** ([`docs/playbook.md`](docs/playbook.md)): keep a signature basic
+  always in stock, and use small releases to give customers a reason to come back.
+- **Social content** (Tuan Le): pick a stance you can prove, film the proof in a
+  repeatable format, and measure each episode through tracked links (`?asset=`).
+  It runs in Admin → Content; see [`docs/analytics.md`](docs/analytics.md).
+
+## How the UI was designed
+
+[`docs/research/successful-stores.md`](docs/research/successful-stores.md) ranks 15
+demonstrably successful DTC apparel brands, with sourced revenue and growth evidence.
+[`docs/research/teardowns/`](docs/research/teardowns) holds live browser teardowns of 11
+of them: tokens, layouts and pattern counts. [`docs/research/ux-evidence.md`](docs/research/ux-evidence.md)
+grades the published UX research (Baymard, NN/g, field experiments). The storefront spec
+[`web/SITE_SPEC.md`](web/SITE_SPEC.md) cites that evidence for each decision. Shelby has its
+own design; it isn't a copy of any brand.
 
 | Folder | What it is |
 |---|---|
 | [`backend/`](backend) | [Medusa v2](https://github.com/medusajs/medusa) commerce backend with a **release** module that runs the playbook's SOPs, plus a Releases section in the Medusa admin |
-| [`mobile/`](mobile) | Expo (React Native) storefront for iOS, Android and web |
-| [`.railway/`](.railway) | Railway infrastructure: Postgres, Redis, a bucket for product images, and the Medusa server and worker |
-| [`docs/`](docs) | The playbook this is built around |
+| [`web/`](web) | Next.js web storefront, built from the research-driven spec in [`web/SITE_SPEC.md`](web/SITE_SPEC.md) |
+| [`mobile/`](mobile) | Expo (React Native) app for iOS and Android |
+| [`.railway/`](.railway) | Railway infrastructure: Postgres, Redis, a bucket for product images, the Medusa server and worker, the storefront, and self-hosted Umami |
+| [`docs/`](docs) | The two playbooks, the [analytics spec](docs/analytics.md), and the [research](docs/research) behind the UI |
 
 ## How the playbook maps to the software
 
@@ -38,24 +53,33 @@ npm run dev                      # API on :9000, admin at http://localhost:9000/
 ```
 
 ```bash
+cd web
+cp .env.example .env.local       # paste the publishable key
+npm install
+npm run dev -- --port 3001       # http://localhost:3001
+```
+
+```bash
 cd mobile
 cp .env.example .env             # paste the publishable key
 npm install
-npx expo start                   # i = iOS simulator, a = Android, w = web
+npx expo start                   # i = iOS simulator, a = Android
 ```
 
-Checks: `npm run test:unit` and `npx tsc --noEmit` in `backend/`; `npm run typecheck` in `mobile/`; `npm run railway:check` at the root.
+Checks: `npm run test:unit` and `npx tsc --noEmit` in `backend/`; `npx tsc --noEmit`, `npx eslint src` and `npm run build` in `web/`; `npm run typecheck` in `mobile/`; `npm run railway:check` at the root. CI runs all of them.
 
 ## Deploy
 
-The backend, database, Redis and image storage run on Railway, defined in
-[`.railway/railway.ts`](.railway/railway.ts). See [`.railway/README.md`](.railway/README.md)
-for the first-deploy checklist. The app ships through the app stores (EAS Build) and
-points at the Railway URL.
+Everything except the app runs on Railway, defined in [`.railway/railway.ts`](.railway/railway.ts):
+the Medusa server and worker, Postgres, Redis, the image bucket, the web storefront, and
+Umami. See [`.railway/README.md`](.railway/README.md) for the first-deploy checklist and the
+PostHog hosting choice. The app ships through the app stores (EAS Build) and points at the
+Railway URL.
 
 ## Not done yet
 
 - **Card payments.** Checkout uses Medusa's test provider (`pp_system_default`), which records orders without charging anyone. The backend enables Stripe when `STRIPE_API_KEY` is set, but the app still needs Stripe's PaymentSheet.
 - **Push reminders** need an EAS project ID and a real device. Email reminders are logged until `SENDGRID_API_KEY` is set.
-- **Tagged sessions** (the other half of channel response) need an analytics tool. Orders by asset are tracked already.
+- **Store policy copy** (`web/src/lib/policy.ts`): shipping prices, the 30-day returns line and dispatch time must match the real policy before launch.
+- **Content-series stance:** the seeded "30-Wash Test" is a hypothetical example. Per the playbook, only publish a stance the business can actually prove on camera.
 - **Unit costs** come from variant metadata (`unit_cost`). The scorecard lists any variant that's missing one.

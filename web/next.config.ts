@@ -19,6 +19,8 @@ const nextConfig: NextConfig = {
     ],
   },
   turbopack: {
+    // web/ has its own lockfile; the repo root has another (Railway SDK).
+    root: process.cwd(),
     rules: {
       "*.css": {
         loaders: ["@tailwindcss/turbopack"],

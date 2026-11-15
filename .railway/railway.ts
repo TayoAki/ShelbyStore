@@ -20,7 +20,8 @@ import {
  *   media     private bucket for product images (served via /media redirects)
  *   medusa    HTTP API + admin dashboard (MEDUSA_WORKER_MODE=server)
  *   worker    scheduled jobs + subscribers: release go-live checks, reminders
- *   umami     self-hosted web analytics (own Postgres): tagged sessions per asset
+ *   umami       self-hosted web analytics (own Postgres): tagged sessions per asset
+ *   storefront  Next.js web store (web/), built from web/SITE_SPEC.md
  *
  * PostHog is not provisioned here; see README.md for the self-host vs Cloud
  * tradeoff. Either way the services read POSTHOG_API_KEY / POSTHOG_HOST.
@@ -76,7 +77,8 @@ export default defineRailway((ctx) => {
     UMAMI_PASSWORD: preserve(),
     POSTHOG_API_KEY: preserve(),
     POSTHOG_HOST: preserve(),
-    STOREFRONT_URL: preserve(),
+    // Tracked links in the admin (content episodes, release assets) point here.
+    STOREFRONT_URL: "https://${{storefront.RAILWAY_PUBLIC_DOMAIN}}",
   }
 
   const shared = {
@@ -129,10 +131,38 @@ export default defineRailway((ctx) => {
     },
   })
 
+  // Next.js storefront. All Medusa calls happen server-side, so it only needs
+  // the API URL and the publishable key. NEXT_PUBLIC_* values are inlined at
+  // build time, which Railway supports because service variables are build vars.
+  const storefront = service("storefront", {
+    source: github(REPO, {
+      branch: ctx.isEnvironment("production") ? "main" : undefined,
+      rootDirectory: "web",
+    }),
+    build: {
+      builder: "RAILPACK" as const,
+      buildCommand: "npm run build",
+      watchPatterns: ["/web/**"],
+    },
+    start: "npm run start -- --port $PORT",
+    healthcheck: "/",
+    env: {
+      NODE_ENV: "production",
+      MEDUSA_BACKEND_URL: "https://${{medusa.RAILWAY_PUBLIC_DOMAIN}}",
+      MEDUSA_PUBLISHABLE_KEY: preserve(),
+      NEXT_PUBLIC_SITE_URL: "https://${{RAILWAY_PUBLIC_DOMAIN}}",
+      NEXT_PUBLIC_UMAMI_URL: "https://${{umami.RAILWAY_PUBLIC_DOMAIN}}",
+      NEXT_PUBLIC_UMAMI_WEBSITE_ID: preserve(),
+      NEXT_PUBLIC_POSTHOG_KEY: preserve(),
+      NEXT_PUBLIC_POSTHOG_HOST: preserve(),
+    },
+  })
+
   return project("shelby", {
     resources: [
       ...group("Backend", [db, cache, media, medusa, worker]),
       ...group("Analytics", [umamiDb, umami]),
+      ...group("Storefront", [storefront]),
     ],
   })
 })

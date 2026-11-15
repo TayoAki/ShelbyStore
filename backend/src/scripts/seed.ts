@@ -275,6 +275,18 @@ export default async function seedShelby({ container }: ExecArgs) {
           metadata: {
             promise: "The tee you reach for first: heavyweight, relaxed, and always in stock.",
             fit_notes: "Relaxed through the body. The sleeve falls just above the elbow. Size down for a closer fit.",
+            // Demo measurements for the seed store; replace with the real spec sheet.
+            size_chart: {
+              unit: "in, laid flat",
+              columns: ["Size", "Chest", "Length", "Sleeve"],
+              rows: [
+                { Size: "S", Chest: "20", Length: "27.5", Sleeve: "8.5" },
+                { Size: "M", Chest: "21.5", Length: "28.5", Sleeve: "9" },
+                { Size: "L", Chest: "23", Length: "29.5", Sleeve: "9.5" },
+                { Size: "XL", Chest: "24.5", Length: "30.5", Sleeve: "10" },
+                { Size: "XXL", Chest: "26", Length: "31.5", Sleeve: "10.5" },
+              ],
+            },
           },
           options: [
             { title: "Size", values: [...sizes, "XXL"] },

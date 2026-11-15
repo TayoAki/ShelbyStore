@@ -21,8 +21,14 @@ First deploy checklist:
    `cd .medusa/server && npx medusa user -e you@example.com -p <password>`.
 4. Optional: seed demo data with `npx medusa exec ./src/scripts/seed.js`, or create
    the region, stock location, publishable key and products in the admin.
-5. Point the app at it: `EXPO_PUBLIC_MEDUSA_BACKEND_URL=https://<medusa domain>` and
-   the publishable key from Admin → Settings → Publishable API Keys.
+5. Storefront: set `MEDUSA_PUBLISHABLE_KEY` on **storefront** (Admin → Settings →
+   Publishable API Keys) and generate a public domain for it. `MEDUSA_BACKEND_URL`,
+   `NEXT_PUBLIC_SITE_URL` and `NEXT_PUBLIC_UMAMI_URL` resolve automatically, and the
+   backend's `STOREFRONT_URL` (used for tracked links in the admin) points at it.
+   Redeploy the storefront after changing any `NEXT_PUBLIC_*` value, because they're
+   inlined at build time.
+6. Point the app at it: `EXPO_PUBLIC_MEDUSA_BACKEND_URL=https://<medusa domain>` and
+   the same publishable key.
 
 ## Analytics
 
