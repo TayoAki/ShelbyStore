@@ -1,17 +1,22 @@
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import Constants from "expo-constants"
-import PostHog from "posthog-react-native"
 import { useEffect, useRef } from "react"
-import { Dimensions, Platform } from "react-native"
+import { AppState, Dimensions, Platform } from "react-native"
+
+import { MEDUSA_BACKEND_URL, MEDUSA_PUBLISHABLE_KEY } from "./config"
 
 /**
- * Client analytics for the app. Event names and properties follow
- * docs/analytics.md (shared with the web storefront and the backend).
+ * Client analytics for the app, sent to Shelby's own first-party analytics
+ * (Medusa `/store/analytics/events`). Event names and properties follow
+ * docs/analytics.md, shared with the web storefront and the backend.
  *
- * - PostHog (self-hosted or Cloud): EXPO_PUBLIC_POSTHOG_KEY + EXPO_PUBLIC_POSTHOG_HOST
- * - Umami (self-hosted): EXPO_PUBLIC_UMAMI_URL + EXPO_PUBLIC_UMAMI_WEBSITE_ID
+ * - Person: a persistent device id in AsyncStorage (also written to cart
+ *   metadata as `analytics_id`, so the server-side order event joins it).
+ * - Session: in memory; a new one starts after 30 minutes of inactivity.
+ * - Optional mirror to self-hosted Umami (EXPO_PUBLIC_UMAMI_URL +
+ *   EXPO_PUBLIC_UMAMI_WEBSITE_ID) for its traffic dashboard.
  *
- * Each is a no-op when its variables are missing.
+ * Disable with EXPO_PUBLIC_ANALYTICS_DISABLED=true.
  */
 
 export type AnalyticsEvent =
@@ -23,65 +28,66 @@ export type AnalyticsEvent =
 
 type Props = Record<string, string | number | boolean | null | undefined>
 
-const POSTHOG_KEY = process.env.EXPO_PUBLIC_POSTHOG_KEY
-const POSTHOG_HOST = process.env.EXPO_PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com"
+const DISABLED = process.env.EXPO_PUBLIC_ANALYTICS_DISABLED === "true"
 const UMAMI_URL = (process.env.EXPO_PUBLIC_UMAMI_URL || "").replace(/\/$/, "")
 const UMAMI_WEBSITE_ID = process.env.EXPO_PUBLIC_UMAMI_WEBSITE_ID
 const UMAMI_HOSTNAME = "app.shelby"
+const SESSION_IDLE_MS = 30 * 60 * 1000
+const FLUSH_MS = 3000
+const MAX_QUEUE = 10
 
-export const posthog: PostHog | null = POSTHOG_KEY
-  ? new PostHog(POSTHOG_KEY, { host: POSTHOG_HOST, captureAppLifecycleEvents: true })
-  : null
+// --- Identity -------------------------------------------------------------------
 
-// --- Attribution context: merged into every event -----------------------------
+const DEVICE_KEY = "shelby.analytics_device_id"
+let distinctId: string | null = null
+
+const freshId = () => `dev_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`
+
+/** Resolves once the persistent id is loaded (or created). */
+const ready: Promise<string> = AsyncStorage.getItem(DEVICE_KEY)
+  .then((stored) => stored || freshId())
+  .catch(() => freshId())
+  .then((id) => {
+    distinctId = id
+    AsyncStorage.setItem(DEVICE_KEY, id).catch(() => undefined)
+    return id
+  })
+
+/**
+ * The id written to cart metadata (`analytics_id`), so the backend's
+ * authoritative `order_completed` event joins this person's journey.
+ */
+export function analyticsId(): string | null {
+  return distinctId
+}
+
+let session = { id: freshId(), last: Date.now() }
+function sessionId() {
+  const now = Date.now()
+  if (now - session.last > SESSION_IDLE_MS) session = { id: freshId(), last: now }
+  session.last = now
+  return session.id
+}
+
+// --- Attribution context: merged into every event -------------------------------
 
 let context: Props = {}
 
 /** Called when ?asset= / release attribution is captured or restored. */
 export function setAnalyticsContext(next: { asset?: string; release_id?: string }) {
   context = clean({ ...context, asset: next.asset, release_id: next.release_id })
-  posthog?.register(context as Record<string, string>)
 }
 
 export function clearAnalyticsContext() {
-  for (const key of Object.keys(context)) posthog?.unregister(key)
   context = {}
 }
 
-// --- Device id (Umami session key) --------------------------------------------
-
-const DEVICE_KEY = "shelby.analytics_device_id"
-let deviceId: string | null = null
-
-async function getDeviceId(): Promise<string> {
-  if (deviceId) return deviceId
-  const fromPostHog = posthog?.getDistinctId()
-  if (fromPostHog) return (deviceId = fromPostHog)
-  try {
-    const stored = await AsyncStorage.getItem(DEVICE_KEY)
-    if (stored) return (deviceId = stored)
-  } catch {
-    // fall through
-  }
-  const fresh = `dev_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`
-  AsyncStorage.setItem(DEVICE_KEY, fresh).catch(() => undefined)
-  return (deviceId = fresh)
-}
+// --- Transport ------------------------------------------------------------------
 
 /**
- * The id written to cart metadata (`analytics_id`), so the backend's
- * authoritative `order_completed` event joins this visitor in PostHog.
- */
-export function analyticsId(): string | null {
-  return posthog?.getDistinctId() ?? null
-}
-
-// --- Umami ------------------------------------------------------------------
-
-/**
- * Umami drops requests whose User-Agent looks like a bot. React Native's
- * default on Android ("okhttp/x") is on that list, so send a browser-style
- * UA that still identifies the platform and the app.
+ * Some analytics backends drop requests whose User-Agent looks like a bot, and
+ * React Native's Android default ("okhttp/x") is on those lists. Send a
+ * browser-style UA that still names the platform and the app.
  */
 function userAgent() {
   const version = String(Platform.Version ?? "")
@@ -92,11 +98,74 @@ function userAgent() {
   if (Platform.OS === "android") {
     return `Mozilla/5.0 (Linux; Android ${version}) AppleWebKit/537.36 (KHTML, like Gecko) Mobile Safari/537.36 ${app}`
   }
-  return undefined // web: the browser sends its own
+  return undefined // web export: the browser sends its own
+}
+
+type Queued = {
+  event: string
+  distinct_id: string
+  session_id: string
+  timestamp: string
+  path: string
+  url: string
+  asset?: string
+  platform: "app"
+  device_type: "app"
+  properties: Props
+}
+
+const queue: Queued[] = []
+let timer: ReturnType<typeof setTimeout> | null = null
+
+async function flush() {
+  if (timer) {
+    clearTimeout(timer)
+    timer = null
+  }
+  if (!queue.length || !MEDUSA_PUBLISHABLE_KEY) return
+  const events = queue.splice(0, 50)
+  const ua = userAgent()
+  try {
+    await fetch(`${MEDUSA_BACKEND_URL}/store/analytics/events`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-publishable-api-key": MEDUSA_PUBLISHABLE_KEY,
+        ...(ua ? { "user-agent": ua } : {}),
+      },
+      body: JSON.stringify({ sent_at: new Date().toISOString(), events }),
+    })
+  } catch {
+    // Analytics never blocks shopping; a failed batch is dropped.
+  }
+  if (queue.length) void flush()
+}
+
+AppState.addEventListener("change", (state) => {
+  if (state !== "active") void flush()
+})
+
+async function enqueue(event: string, properties: Props, path: string, url: string) {
+  if (DISABLED) return
+  const id = distinctId ?? (await ready)
+  queue.push({
+    event,
+    distinct_id: id,
+    session_id: sessionId(),
+    timestamp: new Date().toISOString(),
+    path,
+    url,
+    ...(typeof context.asset === "string" ? { asset: context.asset } : {}),
+    platform: "app",
+    device_type: "app",
+    properties: clean(properties),
+  })
+  if (queue.length >= MAX_QUEUE) void flush()
+  else if (!timer) timer = setTimeout(() => void flush(), FLUSH_MS)
 }
 
 async function sendUmami(payload: { url: string; name?: string; data?: Props }) {
-  if (!UMAMI_URL || !UMAMI_WEBSITE_ID) return
+  if (DISABLED || !UMAMI_URL || !UMAMI_WEBSITE_ID) return
   const { width, height } = Dimensions.get("window")
   const ua = userAgent()
   try {
@@ -113,31 +182,33 @@ async function sendUmami(payload: { url: string; name?: string; data?: Props }) 
           language: Intl.DateTimeFormat().resolvedOptions().locale,
           screen: `${Math.round(width)}x${Math.round(height)}`,
           // A per-device id keeps sessions apart on shared IPs (carrier NAT).
-          id: await getDeviceId(),
+          id: distinctId ?? (await ready),
           ...(payload.name ? { name: payload.name, data: payload.data } : {}),
         },
       }),
     })
   } catch {
-    // Analytics never blocks shopping.
+    // ignore
   }
 }
 
-// --- Public API -------------------------------------------------------------
+// --- Public API -------------------------------------------------------------------
 
 let currentPath = "/"
+let currentUrl = "app://shelby/"
 
 /** Screen view. `path` is the expo-router pathname; `asset` keeps tagged landings countable. */
 export function trackScreen(path: string, query?: { asset?: string }) {
   currentPath = path
-  posthog?.screen(path, context as Record<string, string>)
   const search = query?.asset ? `?asset=${encodeURIComponent(query.asset)}` : ""
+  currentUrl = `app://shelby${path}${search}`
+  void enqueue("$screen", { ...context, screen: path }, path, currentUrl)
   void sendUmami({ url: `${path}${search}` })
 }
 
 export function track(event: AnalyticsEvent, props: Props = {}) {
   const merged = clean({ ...context, ...props })
-  posthog?.capture(event, merged as Record<string, string | number | boolean>)
+  void enqueue(event, merged, currentPath, currentUrl)
   void sendUmami({ url: currentPath, name: event, data: merged })
 }
 

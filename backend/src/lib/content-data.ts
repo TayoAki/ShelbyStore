@@ -1,5 +1,6 @@
-import { RemoteQueryFunction } from "@medusajs/framework/types"
-import { getSessionsByAsset, isUmamiConfigured } from "./analytics"
+import { MedusaContainer, RemoteQueryFunction } from "@medusajs/framework/types"
+import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
+import { getSessionsByAsset } from "./analytics"
 import { EpisodeLike, buildSeriesScorecard, evaluateSeriesReadiness } from "./content-playbook"
 import { lineNetAmount } from "./release-data"
 
@@ -53,7 +54,8 @@ export const trackedLink = (landingPath: string | null | undefined, asset: strin
 }
 
 /** Series + episodes + readiness + tracked links + live scorecard. */
-export async function loadSeriesDetail(query: Query, id: string, now = new Date()) {
+export async function loadSeriesDetail(container: MedusaContainer, id: string, now = new Date()) {
+  const query = container.resolve(ContainerRegistrationKeys.QUERY) as Query
   const { data } = await query.graph({
     entity: "content_series",
     fields: ["*", "episodes.*"],
@@ -78,12 +80,12 @@ export async function loadSeriesDetail(query: Query, id: string, now = new Date(
 
   let analytics: "connected" | "not_configured" | "unavailable" = "not_configured"
   let sessions: Record<string, { landing_sessions: number; product_view_sessions: number } | null> = {}
-  if (isUmamiConfigured() && assets.length) {
+  if (assets.length) {
     // Each episode is counted from its own publish date (same-age comparison is
     // handled by the manual metrics; sessions accumulate from publish onwards).
     const results = await Promise.all(
       published.map((e) =>
-        getSessionsByAsset([e.asset_key], { startAt: new Date(e.published_at), endAt: now })
+        getSessionsByAsset(container, [e.asset_key], { startAt: new Date(e.published_at), endAt: now })
           .then((r) => r[e.asset_key])
           .catch(() => null)
       )

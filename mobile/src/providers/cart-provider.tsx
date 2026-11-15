@@ -95,7 +95,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
     if (!region) throw new Error("The store isn't ready yet. Please try again in a moment.")
     const attribution = await readAttribution()
-    // analytics_id lets the backend's order_completed event join this visitor in PostHog.
+    // analytics_id lets the backend's order_completed event join this visitor's journey.
     const id = analyticsId()
     const patch = attributionPatch({}, attribution) ?? {}
     const metadata = Object.keys(patch).length || id ? { ...patch, ...(id ? { analytics_id: id } : {}) } : undefined

@@ -78,7 +78,7 @@ function AttributionListener() {
   return null
 }
 
-/** Screen views for PostHog + Umami (docs/analytics.md). Restores stored attribution on launch. */
+/** Screen views for first-party analytics (docs/analytics.md). Restores stored attribution on launch. */
 function ScreenTracker() {
   const pathname = usePathname()
   const params = useGlobalSearchParams<{ asset?: string | string[] }>()

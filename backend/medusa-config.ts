@@ -28,6 +28,7 @@ if (
 const modules: Record<string, any>[] = [
   { resolve: "./src/modules/release" },
   { resolve: "./src/modules/content" },
+  { resolve: "./src/modules/analytics" },
 ]
 
 if (REDIS_URL) {

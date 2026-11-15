@@ -33,8 +33,7 @@
     "@medusajs/js-sdk": "2.22.7",
     "@medusajs/medusa": "2.22.7",
     "@medusajs/ui": "4.2.14",
-    "@tanstack/react-query": "5.64.2",
-    "posthog-node": "^5.74.0"
+    "@tanstack/react-query": "5.64.2"
   },
   "devDependencies": {
     "@medusajs/test-utils": "2.22.7",

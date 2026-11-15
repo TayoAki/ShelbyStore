@@ -2,7 +2,6 @@
 
 import { ArrowCounterClockwise, Truck } from "@phosphor-icons/react"
 import Link from "next/link"
-import posthog from "posthog-js"
 import { useEffect, useMemo, useRef, useState, useTransition } from "react"
 import { addToCart } from "@/lib/actions/cart"
 import { analyticsId, track } from "@/lib/analytics"
@@ -76,18 +75,10 @@ export function BuyBox({ product, stock, release, fitNotes, modelInfo, sizeChart
       : `Add to bag · ${formatMoney(p.amount, p.currency)}`
 
   // Pinned mobile buy bar once the main CTA scrolls away (7/11 studied sites).
-  // Evidence is mixed, so it's behind the PostHog flag `pdp-sticky-atc` (default on).
   const ctaRef = useRef<HTMLDivElement>(null)
   const [ctaVisible, setCtaVisible] = useState(true)
-  const [stickyEnabled, setStickyEnabled] = useState(true)
+  const stickyEnabled = true
   useEffect(() => {
-    try {
-      posthog.onFeatureFlags?.(() => {
-        if (posthog.isFeatureEnabled("pdp-sticky-atc") === false) setStickyEnabled(false)
-      })
-    } catch {
-      // PostHog not configured: keep the default.
-    }
     const el = ctaRef.current
     if (!el) return
     const io = new IntersectionObserver(([entry]) => setCtaVisible(entry.isIntersecting || entry.boundingClientRect.top > 0))

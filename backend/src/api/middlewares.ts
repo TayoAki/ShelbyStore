@@ -16,9 +16,46 @@ import {
   AdminUpdateEpisode,
   AdminUpdateSeries,
 } from "./admin/content-series/validators"
+import {
+  AdminCreateExperiment,
+  AdminExperimentDecision,
+  AdminExperimentStatus,
+  AdminFunnelQuery,
+  AdminTrendsQuery,
+  AdminUpdateExperiment,
+} from "./admin/analytics/validators"
+import { StoreAnalyticsBatch } from "./store/analytics/validators"
 
 export default defineMiddlewares({
   routes: [
+    // First-party analytics
+    { matcher: "/admin/analytics/funnel", methods: ["POST"], middlewares: [validateAndTransformBody(AdminFunnelQuery)] },
+    { matcher: "/admin/analytics/trends", methods: ["POST"], middlewares: [validateAndTransformBody(AdminTrendsQuery)] },
+    {
+      matcher: "/admin/analytics/experiments",
+      methods: ["POST"],
+      middlewares: [validateAndTransformBody(AdminCreateExperiment)],
+    },
+    {
+      matcher: "/admin/analytics/experiments/:id",
+      methods: ["POST"],
+      middlewares: [validateAndTransformBody(AdminUpdateExperiment)],
+    },
+    {
+      matcher: "/admin/analytics/experiments/:id/status",
+      methods: ["POST"],
+      middlewares: [validateAndTransformBody(AdminExperimentStatus)],
+    },
+    {
+      matcher: "/admin/analytics/experiments/:id/decision",
+      methods: ["POST"],
+      middlewares: [validateAndTransformBody(AdminExperimentDecision)],
+    },
+    {
+      matcher: "/store/analytics/events",
+      methods: ["POST"],
+      middlewares: [validateAndTransformBody(StoreAnalyticsBatch)],
+    },
     {
       matcher: "/admin/releases",
       methods: ["POST"],

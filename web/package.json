@@ -12,7 +12,6 @@
     "@medusajs/js-sdk": "^2.22.7",
     "@phosphor-icons/react": "^2.1.10",
     "next": "16.4.6",
-    "posthog-js": "^1.450.0",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },

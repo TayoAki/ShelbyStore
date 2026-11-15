@@ -1,6 +1,6 @@
 import { MedusaContainer } from "@medusajs/framework/types"
 import { ContainerRegistrationKeys, MedusaError } from "@medusajs/framework/utils"
-import { getSessionsByAsset, isUmamiConfigured } from "../../../lib/analytics"
+import { getSessionsByAsset } from "../../../lib/analytics"
 import { AnalyticsStatus, buildScorecard, evaluateGoLive } from "../../../lib/playbook"
 import {
   loadCoreStock,
@@ -80,17 +80,18 @@ export async function getReleaseScorecard(container: MedusaContainer, id: string
     loadCoreStock(query),
   ])
 
-  // Tagged product-page sessions per asset, from Umami (the half of "channel
-  // response" orders can't tell us). Assets = planned creative + any seen on orders.
+  // Tagged product-page sessions per asset, from first-party analytics (the half
+  // of "channel response" orders can't tell us). Assets = planned creative + any
+  // seen on orders.
   let analytics_status: AnalyticsStatus = "not_configured"
   let sessions_by_asset: Awaited<ReturnType<typeof getSessionsByAsset>> = {}
-  if (isUmamiConfigured() && publishedAt) {
+  if (publishedAt) {
     const assets = [
       ...((release.assets ?? []) as { key: string }[]).map((a) => a.key),
       ...lines.map((l) => l.asset).filter((a): a is string => !!a),
     ]
     try {
-      sessions_by_asset = await getSessionsByAsset(assets, { startAt: publishedAt, endAt: now })
+      sessions_by_asset = await getSessionsByAsset(container, assets, { startAt: publishedAt, endAt: now })
       const results = Object.values(sessions_by_asset)
       // Per-asset failures show as "—"; only call it unavailable if nothing came back.
       analytics_status =

@@ -1,5 +1,5 @@
 import { MedusaContainer } from "@medusajs/framework/types"
-import { ContainerRegistrationKeys, MedusaError } from "@medusajs/framework/utils"
+import { MedusaError } from "@medusajs/framework/utils"
 import { loadSeriesDetail } from "../../../lib/content-data"
 
 export const toSlug = (s: string) =>
@@ -22,8 +22,7 @@ export function withDates<T extends Record<string, any>>(body: T): T {
 }
 
 export async function getSeriesDetail(container: MedusaContainer, id: string) {
-  const query = container.resolve(ContainerRegistrationKeys.QUERY)
-  const detail = await loadSeriesDetail(query, id)
+  const detail = await loadSeriesDetail(container, id)
   if (!detail) {
     throw new MedusaError(MedusaError.Types.NOT_FOUND, `Content series ${id} not found`)
   }

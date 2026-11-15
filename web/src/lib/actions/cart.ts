@@ -50,7 +50,7 @@ export async function addToCart(input: {
   variantId: string
   quantity: number
   releaseId?: string
-  /** PostHog distinct id from the browser (see docs/analytics.md). */
+  /** The visitor's first-party analytics id (`_shelby_id`, see docs/analytics.md). */
   analyticsId?: string
 }): Promise<ActionResult> {
   try {

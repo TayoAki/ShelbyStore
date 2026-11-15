@@ -20,7 +20,7 @@ export type ScorecardLine = {
   asset: string | null
 }
 
-/** Tagged sessions for one asset, from web analytics (Umami). */
+/** Tagged sessions for one asset, from first-party analytics. */
 export type AssetSessionCounts = {
   landing_sessions: number
   product_view_sessions: number
@@ -225,7 +225,7 @@ export function buildScorecard(input: ScorecardInputs): Scorecard {
       sessions: analyticsStatus,
       note:
         analyticsStatus === "not_configured"
-          ? "Connect analytics (Umami) to see tagged product-page sessions per asset."
+          ? "Session counts start once the release is live."
           : analyticsStatus === "unavailable"
             ? "Analytics didn't respond. Session counts are missing; orders are still exact."
             : null,

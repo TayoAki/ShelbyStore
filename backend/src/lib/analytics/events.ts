@@ -3,6 +3,11 @@
  * storefront and the mobile app use the same names and properties.
  */
 export const ANALYTICS_EVENTS = {
+  pageview: "$pageview",
+  pageleave: "$pageleave",
+  screen: "$screen",
+  experimentExposure: "$experiment_exposure",
+  ctaClick: "cta_click",
   productViewed: "product_viewed",
   dropViewed: "drop_viewed",
   addToCart: "add_to_cart",
@@ -24,6 +29,6 @@ export const ATTRIBUTION_METADATA = {
   utmSource: "utm_source",
   utmMedium: "utm_medium",
   utmCampaign: "utm_campaign",
-  /** The client's PostHog distinct id, so the server-side order event joins the visitor's journey. */
+  /** The client's first-party analytics id (`_shelby_id`), so the server-side order event joins the visitor's journey. */
   analyticsId: "analytics_id",
 } as const

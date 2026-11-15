@@ -1,15 +1,12 @@
 import { SubscriberArgs, SubscriberConfig } from "@medusajs/framework"
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
-import { captureServerEvent, isPostHogConfigured, orderCompletedEvent } from "../lib/analytics"
+import { captureServerEvent, orderCompletedEvent } from "../lib/analytics"
 
-/** Sends the authoritative `order_completed` event to PostHog (no-op without POSTHOG_API_KEY). */
+/** Records the authoritative `order_completed` event in first-party analytics. */
 export default async function analyticsOrderPlaced({
   event: { data },
   container,
 }: SubscriberArgs<{ id: string }>) {
-  if (!isPostHogConfigured()) {
-    return
-  }
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
   const query = container.resolve(ContainerRegistrationKeys.QUERY)
   try {
@@ -33,7 +30,7 @@ export default async function analyticsOrderPlaced({
     if (!orders[0]) {
       return
     }
-    await captureServerEvent(orderCompletedEvent(orders[0] as any))
+    await captureServerEvent(container, orderCompletedEvent(orders[0] as any))
   } catch (e) {
     logger.warn(`[analytics] order_completed for ${data.id} failed: ${(e as Error).message}`)
   }

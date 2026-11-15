@@ -25,7 +25,7 @@ const str = (v: unknown) => (typeof v === "string" && v ? v : null)
 
 /**
  * Builds the authoritative `order_completed` event from a Medusa order.
- * distinct_id prefers the client's PostHog id (cart metadata `analytics_id`)
+ * distinct_id prefers the client's analytics id (cart metadata `analytics_id`)
  * so the order joins the visitor's journey; then the customer, then the order.
  */
 export function orderCompletedEvent(order: OrderRow) {

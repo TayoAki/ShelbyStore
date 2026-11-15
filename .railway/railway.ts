@@ -23,8 +23,8 @@ import {
  *   umami       self-hosted web analytics (own Postgres): tagged sessions per asset
  *   storefront  Next.js web store (web/), built from web/SITE_SPEC.md
  *
- * PostHog is not provisioned here; see README.md for the self-host vs Cloud
- * tradeoff. Either way the services read POSTHOG_API_KEY / POSTHOG_HOST.
+ * Product analytics (events, funnels, experiments) are first-party: they live in
+ * Medusa's own `analytics` module and Postgres, so there is no extra service.
  *
  * Plan and apply with the Railway CLI (5.42.1+) from the repo root:
  *   railway config plan
@@ -68,15 +68,11 @@ export default defineRailway((ctx) => {
     },
   })
 
-  // Analytics settings shared by medusa + worker. Values live in Railway
-  // (preserve), so the keys never land in git. Unset = analytics is a no-op.
+  // Analytics are first-party (events live in the Medusa database), so the
+  // backend needs no analytics keys. Umami is only the separate cookieless
+  // dashboard; the storefront loads its tracker.
   const analytics = {
-    UMAMI_URL: "https://${{umami.RAILWAY_PUBLIC_DOMAIN}}",
-    UMAMI_WEBSITE_ID: preserve(),
-    UMAMI_USERNAME: preserve(),
-    UMAMI_PASSWORD: preserve(),
-    POSTHOG_API_KEY: preserve(),
-    POSTHOG_HOST: preserve(),
+    STORE_TIMEZONE: "America/Los_Angeles",
     // Tracked links in the admin (content episodes, release assets) point here.
     STOREFRONT_URL: "https://${{storefront.RAILWAY_PUBLIC_DOMAIN}}",
   }
@@ -153,8 +149,7 @@ export default defineRailway((ctx) => {
       NEXT_PUBLIC_SITE_URL: "https://${{RAILWAY_PUBLIC_DOMAIN}}",
       NEXT_PUBLIC_UMAMI_URL: "https://${{umami.RAILWAY_PUBLIC_DOMAIN}}",
       NEXT_PUBLIC_UMAMI_WEBSITE_ID: preserve(),
-      NEXT_PUBLIC_POSTHOG_KEY: preserve(),
-      NEXT_PUBLIC_POSTHOG_HOST: preserve(),
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: preserve(),
     },
   })
 
