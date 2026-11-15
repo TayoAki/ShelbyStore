@@ -45,6 +45,20 @@ export function currentAttribution() {
   return parseAttribution(raw ? decodeURIComponent(raw) : undefined)
 }
 
+/** PostHog's distinct id, written to cart metadata as `analytics_id` so the
+ *  server-side `order_completed` joins this visitor's journey. */
+export function analyticsId(): string | undefined {
+  if (!POSTHOG_KEY || typeof window === "undefined") return undefined
+  try {
+    return posthog.get_distinct_id()
+  } catch {
+    return undefined
+  }
+}
+
+export const UMAMI_URL = process.env.NEXT_PUBLIC_UMAMI_URL
+export const UMAMI_WEBSITE_ID = process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID
+
 export function track(event: string, props: Record<string, unknown> = {}) {
   if (typeof window === "undefined") return
   const data = { ...currentAttribution(), ...props }

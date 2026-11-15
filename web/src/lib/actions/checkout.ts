@@ -3,6 +3,7 @@
 import { cookies } from "next/headers"
 import { refresh } from "next/cache"
 import { redirect } from "next/navigation"
+import { ATTRIBUTION_COOKIE } from "../attribution"
 import { CART_COOKIE, retrieveCart } from "../data/cart"
 import { sdk } from "../medusa"
 import type { ActionResult } from "./cart"
@@ -90,6 +91,9 @@ export async function placeOrder(): Promise<ActionResult> {
   } catch (e) {
     return { ok: false, error: (e as Error).message }
   }
-  ;(await cookies()).delete(CART_COOKIE)
+  // Attribution is cleared once it has been recorded on an order (docs/analytics.md).
+  const jar = await cookies()
+  jar.delete(CART_COOKIE)
+  jar.delete(ATTRIBUTION_COOKIE)
   redirect(`/order/${orderId}`)
 }

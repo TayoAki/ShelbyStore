@@ -16,10 +16,15 @@ const message = (e: unknown) =>
   (e as { message?: string })?.message || "Something went wrong. Please try again."
 
 /** Latest attribution touch, merged over what the cart already carries. */
-async function attributionPatch(current: Record<string, unknown> | null | undefined, releaseId?: string) {
+async function attributionPatch(
+  current: Record<string, unknown> | null | undefined,
+  releaseId?: string,
+  analyticsId?: string
+) {
   const touch = parseAttribution((await cookies()).get(ATTRIBUTION_COOKIE)?.value)
   const next: Record<string, unknown> = { ...(current ?? {}), ...(touch ?? {}) }
   if (releaseId) next.release_id = releaseId
+  if (analyticsId && /^[\w-]{1,100}$/.test(analyticsId)) next.analytics_id = analyticsId
   const changed = Object.keys(next).some((k) => next[k] !== current?.[k])
   return changed ? next : null
 }
@@ -45,6 +50,8 @@ export async function addToCart(input: {
   variantId: string
   quantity: number
   releaseId?: string
+  /** PostHog distinct id from the browser (see docs/analytics.md). */
+  analyticsId?: string
 }): Promise<ActionResult> {
   try {
     const cart = await ensureCart()
@@ -53,7 +60,7 @@ export async function addToCart(input: {
       quantity: Math.max(1, Math.min(10, Math.round(input.quantity))),
       metadata: input.releaseId ? { release_id: input.releaseId } : undefined,
     })
-    const patch = await attributionPatch(cart.metadata, input.releaseId)
+    const patch = await attributionPatch(cart.metadata, input.releaseId, input.analyticsId)
     if (patch) await sdk.store.cart.update(cart.id, { metadata: patch })
     refresh()
     return { ok: true }
