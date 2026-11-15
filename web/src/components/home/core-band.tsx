@@ -35,7 +35,7 @@ function CoreProduct({ product }: { product: Product }) {
   const p = price(product)
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-12">
-      <Link href={`/products/${product.handle}`} className="group flex flex-col gap-3">
+      <Link href={`/products/${product.handle}`} className="group flex flex-col gap-3" data-track="core_product">
         <div className="relative aspect-[4/5] overflow-hidden bg-surface">
           {product.thumbnail && (
             <Image src={product.thumbnail} alt={product.title} fill sizes="(min-width: 1024px) 40vw, 100vw" className="object-cover" />

@@ -106,7 +106,7 @@ export default async function seedContent({ container }: ExecArgs) {
       ...episodes[i],
       series_id: series.id,
       asset_key: `wash-test-${i + 1}`,
-      landing_path: "/products/everyday-tee",
+      landing_path: "/stories/wash-test",
       published_at: published,
       metrics_recorded_at: new Date(published.getTime() + 3 * DAY),
     })
@@ -116,7 +116,7 @@ export default async function seedContent({ container }: ExecArgs) {
     title: "Side-seam twist test",
     subject: "Next batch: the question viewers asked in episode 3",
     asset_key: "wash-test-5",
-    landing_path: "/products/everyday-tee",
+    landing_path: "/stories/wash-test",
   })
 
   logger.info(`Seeded content series "${series.title}" with 4 published episodes (sample metrics).`)

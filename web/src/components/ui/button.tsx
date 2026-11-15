@@ -56,6 +56,7 @@ export function ButtonLink({
   size,
   block,
   className,
+  track,
   children,
 }: {
   href: string
@@ -63,10 +64,12 @@ export function ButtonLink({
   size?: Size
   block?: boolean
   className?: string
+  /** Label for first-party `cta_click` autocapture (data-track). */
+  track?: string
   children: ReactNode
 }) {
   return (
-    <Link href={href} className={buttonClass({ variant, size, block, className })}>
+    <Link href={href} data-track={track} className={buttonClass({ variant, size, block, className })}>
       {children}
     </Link>
   )

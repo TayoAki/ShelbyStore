@@ -47,7 +47,7 @@ async function CartContent() {
         <p className="text-[13px] text-ink-muted">
           Shipping is chosen at checkout: {POLICY.shipping.toLowerCase()}. {POLICY.returns}.
         </p>
-        <ButtonLink href="/checkout" block>
+        <ButtonLink href="/checkout" block track="cart_checkout">
           Checkout
         </ButtonLink>
         <p className="text-center text-[12px] text-ink-muted">Guest checkout. No account needed.</p>

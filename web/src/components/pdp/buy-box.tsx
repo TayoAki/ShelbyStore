@@ -177,7 +177,7 @@ export function BuyBox({ product, stock, release, fitNotes, modelInfo, sizeChart
       </div>
 
       <div ref={ctaRef} className="flex flex-col gap-3">
-        <Button block onClick={add} disabled={needsSize || soldOut || stock === null} loading={pending}>
+        <Button block onClick={add} disabled={needsSize || soldOut || stock === null} loading={pending} data-track="add_to_cart">
           {ctaLabel}
         </Button>
         {added && (
@@ -214,6 +214,7 @@ export function BuyBox({ product, stock, release, fitNotes, modelInfo, sizeChart
               </p>
             </div>
             <Button
+              data-track="sticky_add_to_cart"
               size="sm"
               onClick={() => (needsSize ? ctaRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }) : add())}
               disabled={soldOut || stock === null}

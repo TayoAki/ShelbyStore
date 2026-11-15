@@ -17,11 +17,13 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
       "handle",
       "stance",
       "proof",
+      "audience",
       "audience_question",
       "participation_prompt",
       "channel",
       "status",
       "episodes.title",
+      "episodes.asset_key",
       "episodes.subject",
       "episodes.post_url",
       "episodes.published_at",
@@ -36,6 +38,7 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
     handle: s.handle,
     stance: s.stance ?? null,
     proof: s.proof ?? null,
+    audience: s.audience ?? null,
     audience_question: s.audience_question ?? null,
     participation_prompt: s.participation_prompt ?? null,
     channel: s.channel,
@@ -44,6 +47,8 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
       .sort((a: any, b: any) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime())
       .map((e: any) => ({
         title: e.title,
+        // Public anyway: it's the ?asset= value in the episode's tracked link.
+        asset_key: e.asset_key,
         subject: e.subject ?? null,
         post_url: e.post_url ?? null,
         published_at: e.published_at,

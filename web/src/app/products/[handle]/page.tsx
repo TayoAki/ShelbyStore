@@ -2,9 +2,9 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
 import { Container } from "@/components/container"
+import { ContinuityBanner } from "@/components/continuity-banner"
 import { BuyBox } from "@/components/pdp/buy-box"
 import { Gallery } from "@/components/pdp/gallery"
-import type { SizeChart } from "@/components/pdp/size-guide"
 import { ProductCard } from "@/components/product-card"
 import { Track } from "@/components/track"
 import { Badge } from "@/components/ui/badge"
@@ -12,7 +12,7 @@ import { getProduct, getRegion, liveReleaseIndex, listProducts } from "@/lib/dat
 import { getStock } from "@/lib/data/stock"
 import { formatMoney } from "@/lib/format"
 import { POLICY } from "@/lib/policy"
-import { meta, price } from "@/lib/product"
+import { meta, modelInfoOf, price, sizeChartOf } from "@/lib/product"
 import type { Product } from "@/lib/types"
 
 export async function generateMetadata({ params }: PageProps<"/products/[handle]">): Promise<Metadata> {
@@ -45,14 +45,17 @@ async function ProductContent({ params }: { params: PageProps<"/products/[handle
   const images = [...new Set([product.thumbnail, ...(product.images ?? []).map((i) => i.url)].filter(Boolean) as string[])]
   const p = price(product)
   const fitNotes = meta(product, "fit_notes")
-  const modelInfo = typeof md.model_info === "string" ? md.model_info : null
-  const sizeChart = isSizeChart(md.size_chart) ? md.size_chart : null
+  const modelInfo = modelInfoOf(product)
+  const sizeChart = sizeChartOf(product)
   const promise = meta(product, "promise")
   const pairs = all.filter((x) => x.id !== product.id).slice(0, 4)
 
   return (
     <>
       <Track event="product_viewed" props={{ product_id: product.id, handle: product.handle, release_id: release?.id }} />
+      <Suspense fallback={null}>
+        <ContinuityBanner />
+      </Suspense>
       <Container className="grid gap-6 pb-12 lg:grid-cols-12 lg:gap-12 lg:py-10">
         <div className="lg:col-span-7">
           <Gallery images={images} title={product.title} videoUrl={typeof md.video_url === "string" ? md.video_url : null} />
@@ -126,10 +129,6 @@ function Details({ product, fitNotes, modelInfo }: { product: Product; fitNotes:
         ))}
     </div>
   )
-}
-
-function isSizeChart(v: unknown): v is SizeChart {
-  return !!v && typeof v === "object" && Array.isArray((v as SizeChart).columns) && Array.isArray((v as SizeChart).rows)
 }
 
 function ProductSkeleton() {

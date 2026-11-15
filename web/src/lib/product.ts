@@ -79,3 +79,17 @@ export const meta = (product: Product, key: "promise" | "fit_notes") => {
   const value = (product.metadata as Record<string, unknown> | null)?.[key]
   return typeof value === "string" && value.trim() ? value : null
 }
+
+export type SizeChart = { unit?: string; columns: string[]; rows: Record<string, string | number>[] }
+
+export function sizeChartOf(product: Product): SizeChart | null {
+  const v = (product.metadata as Record<string, unknown> | null)?.size_chart
+  return !!v && typeof v === "object" && Array.isArray((v as SizeChart).columns) && Array.isArray((v as SizeChart).rows)
+    ? (v as SizeChart)
+    : null
+}
+
+export function modelInfoOf(product: Product): string | null {
+  const v = (product.metadata as Record<string, unknown> | null)?.model_info
+  return typeof v === "string" && v.trim() ? v : null
+}

@@ -346,3 +346,61 @@ Notes:
 - Cache Components rules apply. Await `params` / `searchParams` / `cookies()` only inside
   `<Suspense>`. Catalog reads use `"use cache"` with `cacheLife("minutes")`. Stock and the cart are
   read per request.
+
+## 10. Landing pages, continuity and testing (v2)
+
+Added from the DTC landing-page outline. [`docs/research/landing-page-learnings.md`](../docs/research/landing-page-learnings.md)
+maps each of its lessons to a decision. **[LP]** marks those decisions below.
+
+### 10.1 Match the page to the visitor's awareness [LP §2]
+
+Episode links bring **cold** traffic: viewers who just met the brand in a video. They land on a
+**story page**, `/stories/[handle]`, built from the content series. The product page is for
+visitors who already know what they want. Content episodes now set `landing_path` to the story page.
+
+### 10.2 Story page modules [LP §5]
+
+Each section answers the question a reader has at that point, in order:
+
+1. **Hook.** Continue the video's promise. The eyebrow names the series and, from the visitor's
+   `?asset=`, the episode they just watched. The headline is the viewer's question, with the
+   stance as the subhead (or the reverse, see 10.4). CTAs: "Shop the …" and "See the proof".
+2. **Problem:** the series `audience`, in the customer's words.
+3. **Stance:** "Our rule", shown large on ink.
+4. **Proof:** the `proof` line and every published episode, with the one they watched highlighted [LP §6].
+5. **Offer:** a working buy box for the core tee: live stock, size guide, add to bag. The
+   decision happens on this page [LP §8].
+6. **Participation:** the series prompt (the Tuan Le playbook).
+7. **Closing action:** the question again, then the CTA.
+
+No generated testimonials or unsupported claims: every line comes from the series record [LP §5 nuance].
+
+### 10.3 Ad-to-page continuity [LP §3]
+
+`<ContinuityBanner />` sits on the home and product pages. When the visitor's `?asset=` matches
+an episode, it shows "From The 30-Wash Test · <episode title> · See the full test".
+
+### 10.4 Measure, then test one hypothesis against a control [LP §9]
+
+- Every key CTA carries `data-track`, so clicks land as `cta_click` in first-party analytics:
+  - `hero_shop_drop`, `hero_shop_core`
+  - `core_product`
+  - `notify_me`
+  - `add_to_cart`, `sticky_add_to_cart`
+  - `cart_checkout`, `checkout_details`, `place_order`
+  - `story_shop`, `story_see_proof`, `story_close_cta`, `story_episode`
+  - `series_story`, `continuity_story`
+- The tracker also records time on page and scroll depth, through `$pageleave`.
+- **Experiment `story-headline`** (Admin → Analytics → Experiments):
+  - Control: the headline is the viewer's question.
+  - Variant `stance`: the headline is the stance.
+  - Judged on the purchase funnel `story_viewed → add_to_cart → checkout_started →
+    order_completed`, not on clicks.
+  - There's no verdict until each variant has 100 or more exposures.
+- The experiment record is the experiment log [LP §10]: hypothesis, audience, change, result,
+  decision and notes.
+
+### 10.5 Payments
+
+The checkout payment step uses Stripe's Payment Element, which shows cards, plus Apple Pay and
+Google Pay where available (ux-evidence §8). Payments are captured at checkout.

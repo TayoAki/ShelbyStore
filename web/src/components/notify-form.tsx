@@ -30,7 +30,7 @@ export function NotifyForm({ releaseId, compact = false }: { releaseId: string; 
         placeholder="Email for the drop alert"
         className="h-10 min-w-0 flex-1 rounded-[2px] border border-line bg-page px-3 text-[14px] placeholder:text-ink-faint focus:border-ink focus:outline-none"
       />
-      <Button size="sm" variant="secondary" loading={pending}>
+      <Button size="sm" variant="secondary" loading={pending} data-track="notify_me">
         Notify me
       </Button>
       {state?.error && (

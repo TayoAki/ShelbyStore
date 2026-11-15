@@ -75,7 +75,7 @@ export function CheckoutForm({
           <Field name="postal_code" label="ZIP" autoComplete="postal-code" inputMode="numeric" defaultValue={address?.postal_code} error={fe.postal_code} />
           {state?.error && <p className="col-span-2 text-[14px] text-danger" role="alert">{state.error}</p>}
           <div className="col-span-2 mt-2">
-            <Button block loading={saving}>Continue to delivery</Button>
+            <Button block loading={saving} data-track="checkout_details">Continue to delivery</Button>
           </div>
         </form>
       </Step>
@@ -124,6 +124,7 @@ export function CheckoutForm({
             </div>
             {error && <p className="text-[14px] text-danger" role="alert">{error}</p>}
             <Button
+              data-track="place_order"
               block
               loading={placing}
               onClick={() => startPlacing(async () => {

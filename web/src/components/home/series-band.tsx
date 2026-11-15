@@ -1,3 +1,4 @@
+import Link from "next/link"
 import type { StoreSeries } from "@/lib/data/content"
 import { Container } from "../container"
 
@@ -14,6 +15,9 @@ export function SeriesBand({ series }: { series: StoreSeries | null }) {
           <p className="text-eyebrow text-white/60">{series.title}</p>
           <blockquote className="font-display text-[34px] leading-[0.95] lg:text-[60px]">“{series.stance}”</blockquote>
           {series.proof && <p className="max-w-xl text-[15px] leading-relaxed text-white/70 lg:text-base">{series.proof}</p>}
+          <Link href={`/stories/${series.handle}`} className="text-eyebrow w-fit border-b border-white/40 pb-1 hover:border-white" data-track="series_story">
+            See the full test →
+          </Link>
         </div>
         <div className="flex flex-col gap-6">
           {series.episodes.length > 0 && (

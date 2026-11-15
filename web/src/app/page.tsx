@@ -1,5 +1,6 @@
 import { Suspense } from "react"
 import { Container } from "@/components/container"
+import { ContinuityBanner } from "@/components/continuity-banner"
 import { DropRow } from "@/components/drop-row"
 import { CoreBand } from "@/components/home/core-band"
 import { DropHero } from "@/components/home/drop-hero"
@@ -25,6 +26,9 @@ export default async function HomePage() {
 
   return (
     <>
+      <Suspense fallback={null}>
+        <ContinuityBanner />
+      </Suspense>
       <DropHero live={live} core={core[0] ?? null} />
       <CoreBand products={core} />
       {upcoming.length > 0 && (

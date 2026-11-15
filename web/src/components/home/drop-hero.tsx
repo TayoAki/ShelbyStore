@@ -34,11 +34,11 @@ export function DropHero({ live, core }: { live: StoreRelease | null; core: Prod
           <h1 className="font-display text-hero">{title}</h1>
           <p className="max-w-md text-[17px] leading-relaxed text-ink-muted lg:text-[19px]">{promise}</p>
           <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-            <ButtonLink href={href} block>
+            <ButtonLink href={href} block track={live ? "hero_shop_drop" : "hero_shop_core"}>
               {live ? "Shop the drop" : "Shop the core"}
             </ButtonLink>
             {live && (
-              <ButtonLink href="/#core" variant="secondary" block>
+              <ButtonLink href="/#core" variant="secondary" block track="hero_shop_core">
                 Shop the core
               </ButtonLink>
             )}
