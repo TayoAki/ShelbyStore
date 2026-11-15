@@ -106,7 +106,16 @@ export type Scorecard = {
     interrupted: boolean
   }
   workload: { capacity_hours: number | null; actual_hours: number | null; within_cap: boolean | null }
-  channel_response: { asset: string; orders: number; units: number; net_sales: number }[]
+  channel_response: {
+    asset: string
+    orders: number
+    units: number
+    net_sales: number
+    landing_sessions: number | null
+    product_view_sessions: number | null
+    conversion_rate: number | null
+  }[]
+  analytics: { sessions: "connected" | "not_configured" | "unavailable"; note: string | null }
   recommendation: {
     decision: ReleaseDecision | null
     reasons: string[]

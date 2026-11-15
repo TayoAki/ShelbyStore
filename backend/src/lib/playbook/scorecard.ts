@@ -20,6 +20,14 @@ export type ScorecardLine = {
   asset: string | null
 }
 
+/** Tagged sessions for one asset, from web analytics (Umami). */
+export type AssetSessionCounts = {
+  landing_sessions: number
+  product_view_sessions: number
+}
+
+export type AnalyticsStatus = "connected" | "not_configured" | "unavailable"
+
 export type ScorecardInputs = {
   release: ReleaseLike
   now: Date
@@ -28,6 +36,21 @@ export type ScorecardInputs = {
   unit_costs: Record<string, number | null | undefined>
   /** Stock for every variant of the core collection. */
   core_variants: VariantStock[]
+  /** asset → tagged sessions since go-live. Null per asset if the lookup failed. */
+  sessions_by_asset?: Record<string, AssetSessionCounts | null> | null
+  analytics_status?: AnalyticsStatus
+}
+
+export type ChannelResponseRow = {
+  asset: string
+  orders: number
+  units: number
+  net_sales: number
+  /** Null when analytics isn't connected (or the lookup failed). */
+  landing_sessions: number | null
+  product_view_sessions: number | null
+  /** orders / product-page sessions. Directional only. */
+  conversion_rate: number | null
 }
 
 export type ScorecardPhase =
@@ -71,8 +94,9 @@ export type Scorecard = {
     actual_hours: number | null
     within_cap: boolean | null
   }
-  /** Directional only (pilot table): orders by tagged asset. */
-  channel_response: { asset: string; orders: number; units: number; net_sales: number }[]
+  /** Directional only (pilot table): tagged product-page sessions and orders by asset. */
+  channel_response: ChannelResponseRow[]
+  analytics: { sessions: AnalyticsStatus; note: string | null }
   recommendation: {
     decision: ReleaseDecision | null
     reasons: string[]
@@ -96,6 +120,8 @@ const money = (n: number) => n.toFixed(2)
  */
 export function buildScorecard(input: ScorecardInputs): Scorecard {
   const { release, now, lines, unit_costs, core_variants } = input
+  const sessionsByAsset = input.sessions_by_asset ?? {}
+  const analyticsStatus: AnalyticsStatus = input.analytics_status ?? "not_configured"
 
   const publishedAt = toDate(release.published_at)
   const returnsWindowDays = release.returns_window_days ?? 30
@@ -194,14 +220,16 @@ export function buildScorecard(input: ScorecardInputs): Scorecard {
       interrupted: coreOut.length > 0,
     },
     workload: { capacity_hours: capacity, actual_hours: actual, within_cap: withinCap },
-    channel_response: [...byAsset.entries()]
-      .map(([asset, b]) => ({
-        asset,
-        orders: b.orders.size,
-        units: b.units,
-        net_sales: round2(b.net_sales),
-      }))
-      .sort((a, b) => b.net_sales - a.net_sales),
+    channel_response: channelRows(byAsset, release, sessionsByAsset, analyticsStatus),
+    analytics: {
+      sessions: analyticsStatus,
+      note:
+        analyticsStatus === "not_configured"
+          ? "Connect analytics (Umami) to see tagged product-page sessions per asset."
+          : analyticsStatus === "unavailable"
+            ? "Analytics didn't respond. Session counts are missing; orders are still exact."
+            : null,
+    },
     recommendation: {
       decision: null,
       reasons: [],
@@ -213,6 +241,37 @@ export function buildScorecard(input: ScorecardInputs): Scorecard {
 
   scorecard.recommendation = recommend(scorecard)
   return scorecard
+}
+
+function channelRows(
+  byAsset: Map<string, { orders: Set<string>; units: number; net_sales: number }>,
+  release: ReleaseLike,
+  sessionsByAsset: Record<string, AssetSessionCounts | null>,
+  status: AnalyticsStatus
+): ChannelResponseRow[] {
+  // Every planned asset gets a row, even before it drives an order.
+  const planned = (Array.isArray(release.assets) ? release.assets : []).map((a) => a.key)
+  const keys = new Set<string>([...byAsset.keys(), ...planned, ...Object.keys(sessionsByAsset)])
+
+  return [...keys]
+    .map((asset) => {
+      const b = byAsset.get(asset)
+      const sessions = status === "connected" && asset !== "untagged" ? sessionsByAsset[asset] ?? null : null
+      const orders = b?.orders.size ?? 0
+      return {
+        asset,
+        orders,
+        units: b?.units ?? 0,
+        net_sales: round2(b?.net_sales ?? 0),
+        landing_sessions: sessions ? sessions.landing_sessions : null,
+        product_view_sessions: sessions ? sessions.product_view_sessions : null,
+        conversion_rate:
+          sessions && sessions.product_view_sessions > 0
+            ? round2(orders / sessions.product_view_sessions)
+            : null,
+      }
+    })
+    .sort((a, b) => b.net_sales - a.net_sales || (b.product_view_sessions ?? 0) - (a.product_view_sessions ?? 0))
 }
 
 function recommend(s: Scorecard): Scorecard["recommendation"] {

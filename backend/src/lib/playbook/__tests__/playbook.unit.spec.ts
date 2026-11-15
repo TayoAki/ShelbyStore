@@ -122,8 +122,31 @@ describe("buildScorecard", () => {
     // cost 9*8=72, selling 10.8, fulfillment 3*5=15, spend 100 → 162.2
     expect(s.contribution.contribution).toBe(162.2)
     expect(s.contribution.meets_floor).toBe(false)
-    expect(s.channel_response[0]).toEqual({ asset: "untagged", orders: 1, units: 5, net_sales: 200 })
-    expect(s.channel_response[1]).toEqual({ asset: "tiktok-tryon", orders: 2, units: 4, net_sales: 160 })
+    expect(s.channel_response[0]).toMatchObject({ asset: "untagged", orders: 1, units: 5, net_sales: 200 })
+    expect(s.channel_response[1]).toMatchObject({ asset: "tiktok-tryon", orders: 2, units: 4, net_sales: 160 })
+    // Planned assets appear even without orders; sessions stay null until analytics is connected.
+    expect(s.channel_response.map((r) => r.asset)).toContain("pdp-photos")
+    expect(s.channel_response[1].product_view_sessions).toBeNull()
+    expect(s.analytics.sessions).toBe("not_configured")
+  })
+
+  it("adds tagged sessions and conversion when analytics is connected", () => {
+    const s = buildScorecard({
+      ...base,
+      now: new Date(launch.getTime() + 8 * DAY),
+      analytics_status: "connected",
+      sessions_by_asset: {
+        "tiktok-tryon": { landing_sessions: 40, product_view_sessions: 20 },
+        "pdp-photos": null,
+      },
+    })
+    const tiktok = s.channel_response.find((r) => r.asset === "tiktok-tryon")!
+    expect(tiktok).toMatchObject({ landing_sessions: 40, product_view_sessions: 20, conversion_rate: 0.1 })
+    const pdp = s.channel_response.find((r) => r.asset === "pdp-photos")!
+    expect(pdp.product_view_sessions).toBeNull()
+    const untagged = s.channel_response.find((r) => r.asset === "untagged")!
+    expect(untagged.landing_sessions).toBeNull()
+    expect(s.analytics.note).toBeNull()
   })
 
   it("recommends pause when contribution misses the floor", () => {

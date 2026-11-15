@@ -116,8 +116,10 @@ export const ScorecardSection = ({ release }: { release: AdminRelease }) => {
               <Table.Header>
                 <Table.Row>
                   <Table.HeaderCell>Asset</Table.HeaderCell>
+                  <Table.HeaderCell>Landings</Table.HeaderCell>
+                  <Table.HeaderCell>PDP sessions</Table.HeaderCell>
                   <Table.HeaderCell>Orders</Table.HeaderCell>
-                  <Table.HeaderCell>Units</Table.HeaderCell>
+                  <Table.HeaderCell>Conv.</Table.HeaderCell>
                   <Table.HeaderCell className="text-right">Net sales</Table.HeaderCell>
                 </Table.Row>
               </Table.Header>
@@ -127,8 +129,12 @@ export const ScorecardSection = ({ release }: { release: AdminRelease }) => {
                     <Table.Cell>
                       <code>{row.asset}</code>
                     </Table.Cell>
+                    <Table.Cell>{row.landing_sessions ?? "—"}</Table.Cell>
+                    <Table.Cell>{row.product_view_sessions ?? "—"}</Table.Cell>
                     <Table.Cell>{row.orders}</Table.Cell>
-                    <Table.Cell>{row.units}</Table.Cell>
+                    <Table.Cell>
+                      {row.conversion_rate === null ? "—" : `${Math.round(row.conversion_rate * 100)}%`}
+                    </Table.Cell>
                     <Table.Cell className="text-right">{formatMoney(row.net_sales)}</Table.Cell>
                   </Table.Row>
                 ))}
@@ -137,6 +143,11 @@ export const ScorecardSection = ({ release }: { release: AdminRelease }) => {
             {!s.channel_response.length && (
               <Text size="xsmall" className="text-ui-fg-subtle">
                 No orders yet.
+              </Text>
+            )}
+            {s.analytics.note && (
+              <Text size="xsmall" className="text-ui-fg-subtle mt-2">
+                {s.analytics.note}
               </Text>
             )}
           </div>

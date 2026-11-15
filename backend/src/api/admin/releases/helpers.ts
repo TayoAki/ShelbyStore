@@ -1,6 +1,7 @@
 import { MedusaContainer } from "@medusajs/framework/types"
 import { ContainerRegistrationKeys, MedusaError } from "@medusajs/framework/utils"
-import { buildScorecard, evaluateGoLive } from "../../../lib/playbook"
+import { getSessionsByAsset, isUmamiConfigured } from "../../../lib/analytics"
+import { AnalyticsStatus, buildScorecard, evaluateGoLive } from "../../../lib/playbook"
 import {
   loadCoreStock,
   loadReleaseWithProducts,
@@ -71,17 +72,41 @@ export async function getReleaseScorecard(container: MedusaContainer, id: string
   }
   const products = (release.products ?? []).filter(Boolean)
   const publishedAt = release.published_at ? new Date(release.published_at) : null
+  const now = new Date()
   const [lines, core_variants] = await Promise.all([
     publishedAt
       ? loadScorecardLines(query, products.map((p: any) => p.id), publishedAt)
       : Promise.resolve([]),
     loadCoreStock(query),
   ])
+
+  // Tagged product-page sessions per asset, from Umami (the half of "channel
+  // response" orders can't tell us). Assets = planned creative + any seen on orders.
+  let analytics_status: AnalyticsStatus = "not_configured"
+  let sessions_by_asset: Awaited<ReturnType<typeof getSessionsByAsset>> = {}
+  if (isUmamiConfigured() && publishedAt) {
+    const assets = [
+      ...((release.assets ?? []) as { key: string }[]).map((a) => a.key),
+      ...lines.map((l) => l.asset).filter((a): a is string => !!a),
+    ]
+    try {
+      sessions_by_asset = await getSessionsByAsset(assets, { startAt: publishedAt, endAt: now })
+      const results = Object.values(sessions_by_asset)
+      // Per-asset failures show as "—"; only call it unavailable if nothing came back.
+      analytics_status =
+        results.length && results.every((v) => v === null) ? "unavailable" : "connected"
+    } catch {
+      analytics_status = "unavailable"
+    }
+  }
+
   return buildScorecard({
     release,
-    now: new Date(),
+    now,
     lines,
     unit_costs: unitCostsFrom(products),
     core_variants,
+    sessions_by_asset,
+    analytics_status,
   })
 }
