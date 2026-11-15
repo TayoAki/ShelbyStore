@@ -76,13 +76,43 @@ export async function chooseShipping(optionId: string): Promise<ActionResult> {
   }
 }
 
-/** Step 3: pay and place the order. Uses Medusa's test provider until Stripe is wired. */
-export async function placeOrder(): Promise<ActionResult> {
+const STRIPE_PROVIDER = "pp_stripe_stripe"
+
+/**
+ * Step 3 (card): create or refresh the Stripe payment session for the cart's
+ * current total and return the PaymentIntent client secret for the Payment
+ * Element. Called each time the payment step opens, so the amount always
+ * matches the cart (shipping included).
+ */
+export async function startCardPayment(): Promise<{ clientSecret: string } | { error: string }> {
+  const cart = await retrieveCart()
+  if (!cart) return { error: "Your bag has expired." }
+  try {
+    const { payment_collection } = await sdk.store.payment.initiatePaymentSession(cart, {
+      provider_id: STRIPE_PROVIDER,
+    })
+    const session = payment_collection.payment_sessions?.find((s) => s.provider_id === STRIPE_PROVIDER)
+    const clientSecret = (session?.data as { client_secret?: string } | undefined)?.client_secret
+    if (!clientSecret) return { error: "Card payments aren't available right now." }
+    return { clientSecret }
+  } catch (e) {
+    return { error: (e as Error).message }
+  }
+}
+
+/**
+ * Step 3: place the order. With Stripe, the Payment Element has already
+ * confirmed the PaymentIntent and Medusa authorizes it on completion. Without
+ * Stripe configured, Medusa's test provider records the order with no charge.
+ */
+export async function placeOrder(options: { provider?: "stripe" | "test" } = {}): Promise<ActionResult> {
   const cart = await retrieveCart()
   if (!cart) return { ok: false, error: "Your bag has expired." }
   let orderId: string
   try {
-    await sdk.store.payment.initiatePaymentSession(cart, { provider_id: TEST_PROVIDER })
+    if (options.provider !== "stripe") {
+      await sdk.store.payment.initiatePaymentSession(cart, { provider_id: TEST_PROVIDER })
+    }
     const result = await sdk.store.cart.complete(cart.id)
     if (result.type !== "order") {
       return { ok: false, error: result.error?.message ?? "We couldn't place your order." }

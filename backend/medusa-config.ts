@@ -134,6 +134,9 @@ if (process.env.STRIPE_API_KEY) {
           options: {
             apiKey: process.env.STRIPE_API_KEY,
             webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+            // Capture at checkout so payments never sit as expiring
+            // authorizations. STRIPE_CAPTURE=manual keeps authorize-then-capture.
+            capture: process.env.STRIPE_CAPTURE !== "manual",
           },
         },
       ],

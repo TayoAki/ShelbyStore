@@ -4,6 +4,7 @@ import { useActionState, useEffect, useState, useTransition } from "react"
 import { chooseShipping, placeOrder, saveDetails, type CheckoutState } from "@/lib/actions/checkout"
 import { track } from "@/lib/analytics"
 import { formatMoney } from "@/lib/format"
+import { StripePayment, stripeEnabled } from "./stripe-payment"
 import { Button } from "./ui/button"
 
 type Address = {
@@ -113,24 +114,28 @@ export function CheckoutForm({
       </Step>
 
       <Step n={3} title="Payment" active={step === 3} done={false}>
-        <div className="flex flex-col gap-4">
-          <div className="rounded-[2px] bg-surface p-4 text-[14px]">
-            <p className="font-medium">Test payment</p>
-            <p className="text-ink-muted">This build uses Medusa&apos;s test provider: the order is recorded and no card is charged. Card payments get switched on before launch.</p>
+        {stripeEnabled ? (
+          <StripePayment total={total} currency={currency} cartKey={`${cartId}:${total}:${current ?? ""}`} />
+        ) : (
+          <div className="flex flex-col gap-4">
+            <div className="rounded-[2px] bg-surface p-4 text-[14px]">
+              <p className="font-medium">Test payment</p>
+              <p className="text-ink-muted">No card provider is configured, so the order is recorded and nothing is charged.</p>
+            </div>
+            {error && <p className="text-[14px] text-danger" role="alert">{error}</p>}
+            <Button
+              block
+              loading={placing}
+              onClick={() => startPlacing(async () => {
+                setError(null)
+                const r = await placeOrder()
+                if (r && !r.ok) setError(r.error)
+              })}
+            >
+              Place order · {formatMoney(total, currency)}
+            </Button>
           </div>
-          {error && <p className="text-[14px] text-danger" role="alert">{error}</p>}
-          <Button
-            block
-            loading={placing}
-            onClick={() => startPlacing(async () => {
-              setError(null)
-              const r = await placeOrder()
-              if (r && !r.ok) setError(r.error)
-            })}
-          >
-            Place order · {formatMoney(total, currency)}
-          </Button>
-        </div>
+        )}
       </Step>
     </div>
   )
