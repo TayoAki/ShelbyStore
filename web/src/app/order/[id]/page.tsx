@@ -1,4 +1,3 @@
-import { CheckCircle } from "@phosphor-icons/react/dist/ssr"
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
@@ -8,14 +7,15 @@ import { getRegion, listCatalog } from "@/lib/data/catalog"
 import { formatMoney } from "@/lib/format"
 import { sdk } from "@/lib/medusa"
 import { imageUrl, variantThumbs } from "@/lib/product"
+import { editionOf } from "@/lib/rope"
 
 export const metadata: Metadata = { title: "Order confirmed", robots: { index: false } }
 
-/** Order confirmation (SITE_SPEC §6.8). */
+/** Order confirmation (v5 §6.8, G.6.9): never shows a specific edition number. */
 export default function OrderPage(props: PageProps<"/order/[id]">) {
   return (
-    <div className="container-article py-[50.512px]">
-      <Suspense fallback={<div className="h-60 animate-pulse bg-tile" />}>
+    <div className="mx-auto max-w-[760px] px-2.5 pb-16">
+      <Suspense fallback={<div className="h-60 animate-pulse rounded-3xl bg-white" />}>
         <OrderContent params={props.params} />
       </Suspense>
     </div>
@@ -30,16 +30,18 @@ async function OrderContent({ params }: { params: PageProps<"/order/[id]">["para
     .catch(() => null)
   if (!order) notFound()
   const region = await getRegion()
-  const thumbs = region ? variantThumbs(await listCatalog(region.id)) : {}
+  const catalog = region ? await listCatalog(region.id) : []
+  const thumbs = variantThumbs(catalog)
+  const numbered = (order.items ?? []).some((i) => editionOf(catalog.find((p) => p.id === i.product_id))?.numberedInside)
   const a = order.shipping_address
   return (
-    <div className="flex flex-col items-center gap-6 text-center">
-      <CheckCircle size={48} weight="fill" className="text-instock" aria-hidden />
-      <h1 className="font-heading text-[26px] uppercase leading-[39px]">Thank You</h1>
-      <p className="font-body text-[15px]">
+    <div className="flex flex-col gap-6 rounded-3xl bg-white p-6 md:p-10">
+      <p className="font-mono text-xs leading-4 tracking-[.1em]">ORDER CONFIRMED</p>
+      <h1 className="font-display text-2xl leading-8 md:text-[30px] md:leading-9">Thanks{a?.first_name ? `, ${a.first_name}` : ""}.</h1>
+      <p className="text-sm leading-5">
         Order #{order.display_id} is confirmed. We&apos;ll email tracking to {order.email} when it ships.
       </p>
-      <ul className="w-full bg-tile text-left">
+      <ul className="-mx-5 border-t border-natural-white-60">
         {(order.items ?? []).map((i) => (
           <LineItem
             key={i.id}
@@ -57,18 +59,19 @@ async function OrderContent({ params }: { params: PageProps<"/order/[id]">["para
           />
         ))}
       </ul>
-      <div className="flex w-full justify-between font-heading text-[18px]">
+      <div className="flex w-full justify-between text-sm leading-5 font-medium">
         <span>Total</span>
         <span>{formatMoney(Number(order.total ?? 0), order.currency_code)}</span>
       </div>
       {a && (
-        <p className="w-full text-left font-body text-[13px] text-muted">
+        <p className="text-xs leading-4 text-light-charcoal">
           Shipping to {a.first_name} {a.last_name}, {a.address_1}
           {a.address_2 ? `, ${a.address_2}` : ""}, {a.city} {a.province} {a.postal_code}
         </p>
       )}
-      <ButtonLink href="/" variant="light">
-        Keep shopping
+      {numbered && <p className="text-xs leading-4 text-light-charcoal">Your edition number is printed inside the cap.</p>}
+      <ButtonLink href="/" className="w-fit" track="checkout_complete">
+        KEEP SHOPPING
       </ButtonLink>
     </div>
   )

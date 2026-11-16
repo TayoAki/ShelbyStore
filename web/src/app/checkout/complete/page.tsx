@@ -6,8 +6,9 @@ export const metadata: Metadata = { title: "Finishing your order", robots: { ind
 /** Return URL for payment methods that redirect (bank redirects, some wallets). */
 export default function CheckoutCompletePage() {
   return (
-    <div className="container-article flex flex-col items-center gap-4 py-[50.512px] text-center">
-      <h1 className="font-heading text-[26px] uppercase leading-[39px]">Finishing Your Order</h1>
+    <div className="mx-2.5 my-10 flex flex-col items-center gap-4 rounded-3xl bg-white px-5 py-16 text-center">
+      <p className="font-mono text-xs leading-4 tracking-[.1em]">CHECKOUT</p>
+      <h1 className="font-display text-2xl leading-8 md:text-[30px] md:leading-9">Finishing your order</h1>
       <CompleteAfterRedirect />
     </div>
   )

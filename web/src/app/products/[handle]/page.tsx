@@ -3,47 +3,34 @@ import Image from "next/image"
 import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
 import { Suspense } from "react"
-import { Accordion } from "@/components/accordion"
-import { Carousel } from "@/components/carousel"
+import { BundleRows } from "@/components/bundle-rows"
+import { CardCarousel } from "@/components/card-carousel"
 import { ContinuityBanner } from "@/components/continuity-banner"
-import { FitScales } from "@/components/fit-scale"
-import { OfferRow } from "@/components/offer/offer-row"
-import { BuyBox } from "@/components/pdp/buy-box"
-import { DetailsBand, LIFESTYLE } from "@/components/pdp/details-band"
+import { MaterialRing } from "@/components/material-ring"
+import { Reveal } from "@/components/motion/reveal"
+import { BuyCard, type LimitedSwatch } from "@/components/pdp/buy-card"
 import { Gallery } from "@/components/pdp/gallery"
+import { ScorecardBand } from "@/components/pdp/scorecard-band"
 import { SelectionProvider } from "@/components/pdp/selection"
-import { RETURNS_PERK, SHIPPING_PERK, STOCK_PERK, type Perk } from "@/components/perks"
-import { cardStatus, ProductCard } from "@/components/product-card"
-import { RecordView, ViewedCarousel } from "@/components/recently-viewed"
+import { ProductCard } from "@/components/product-card"
+import { RecordView } from "@/components/recently-viewed"
+import { SeriesPill } from "@/components/series-pill"
 import { Track } from "@/components/track"
-import { catalogItems } from "@/lib/catalog-items"
-import { getProduct, getRegion, liveReleaseIndex, listOffers, listProducts } from "@/lib/data/catalog"
+import { EditionBadge } from "@/components/ui/badge"
+import { getProduct, getRegion } from "@/lib/data/catalog"
+import { listSeries } from "@/lib/data/content"
+import { liveStock, ropeCatalog } from "@/lib/data/rope"
 import { getStock } from "@/lib/data/stock"
-import { formatMoney } from "@/lib/format"
 import { POLICY } from "@/lib/policy"
-import {
-  colorThumbs,
-  detailsOf,
-  fitProfileOf,
-  imagesFor,
-  isOneSize,
-  meta,
-  offerOf,
-  oneSizeRange,
-  price,
-  productTypeOf,
-  shapeOf,
-  sizeChartOf,
-} from "@/lib/product"
+import { colorThumbs, fitProfileOf, imagesFor, meta, offerOf } from "@/lib/product"
+import { CORE_COLORS, crownCm, editionOf, holeDate, ROPE_CAP, ropeName } from "@/lib/rope"
 import type { Product } from "@/lib/types"
 
 export async function generateMetadata({ params }: PageProps<"/products/[handle]">): Promise<Metadata> {
   const { handle } = await params
   const region = await getRegion()
   const product = region ? await getProduct(handle, region.id) : null
-  return product
-    ? { title: product.title, description: meta(product, "promise") ?? product.description ?? undefined }
-    : { title: "Not found" }
+  return product ? { title: product.title, description: meta(product, "promise") ?? product.description ?? undefined } : { title: "Not found" }
 }
 
 export default function ProductPage(props: PageProps<"/products/[handle]">) {
@@ -54,88 +41,62 @@ export default function ProductPage(props: PageProps<"/products/[handle]">) {
   )
 }
 
-/** Melin's PDP (SITE_SPEC §6.4). */
-async function ProductContent({
-  params,
-  searchParams,
-}: {
-  params: PageProps<"/products/[handle]">["params"]
-  searchParams: PageProps<"/products/[handle]">["searchParams"]
-}) {
-  const [{ handle }, query] = await Promise.all([params, searchParams])
-  const region = await getRegion()
-  if (!region) notFound()
-  const [product, releases, all, offers] = await Promise.all([
-    getProduct(handle, region.id),
-    liveReleaseIndex(),
-    listProducts(region.id),
-    listOffers(region.id),
-  ])
-  if (!product) notFound()
-  const ownOffer = offerOf(product)
-  if (ownOffer) redirect(ownOffer.path)
+async function ProductContent({ params, searchParams }: { params: PageProps<"/products/[handle]">["params"]; searchParams: PageProps<"/products/[handle]">["searchParams"] }) {
+  const [{ handle }, sp] = await Promise.all([params, searchParams])
+  const c = await ropeCatalog()
+  if (!c.region) notFound()
+  const product = await getProduct(handle, c.region.id)
+  if (!product) {
+    // An upcoming edition is unpublished until its release: send people to its hole.
+    const release = c.releases.find((r) => r.products.some((p) => p.handle === handle))
+    if (release) redirect(`/card/${release.handle}`)
+    notFound()
+  }
+  const offer = offerOf(product)
+  if (offer) redirect(offer.path)
 
-  const offer = offers.find((o) => offerOf(o)?.singleHandle === product.handle) ?? null
-  const offerPrice = offer ? price(offer).amount : null
-  const singlePrice = price(product).amount
-  const offerSaving = offerPrice !== null && singlePrice !== null ? singlePrice * 2 - offerPrice : null
+  const ed = editionOf(product)
+  const isEdition = !!ed && ed.hole > 1
+  const release = c.releases.find((r) => r.products.some((p) => p.id === product.id)) ?? null
+  const colors = colorThumbs(product).map((x) => x.color)
+  const requested = typeof sp.color === "string" && colors.includes(sp.color) ? sp.color : null
+  const initial = requested ?? colors[0] ?? null
+  const imagesByColor = Object.fromEntries(colors.map((col) => [col, imagesFor(product, col)]))
+  const sideByColor = Object.fromEntries(colors.map((col) => [col, imagesByColor[col][2] ?? imagesByColor[col][0]]))
+  const ropeByColor = Object.fromEntries(colors.map((col) => [col, ropeName(product, col)]))
+  const fit = fitProfileOf(product)
+  const details = Object.entries(((product.metadata as { details?: Record<string, string> } | null)?.details ?? {}) as Record<string, string>)
 
-  const release = releases[product.id] ?? null
-  const isCore = product.collection?.handle === "core"
-  const md = (product.metadata ?? {}) as Record<string, unknown>
-  const colors = colorThumbs(product).map((c) => c.color)
-  const requested = typeof query.color === "string" ? query.color : null
-  const initialColor = requested && colors.includes(requested) ? requested : (colors[0] ?? null)
-  const imagesByColor = Object.fromEntries(colors.map((c) => [c, imagesFor(product, c)]))
-  const p = price(product)
-  const fitNotes = meta(product, "fit_notes")
-  const sizeChart = sizeChartOf(product)
-  const shape = shapeOf(product)
-  const profile = fitProfileOf(product)
-  const care = Object.fromEntries(detailsOf(product)).Care
-  const oneSize = isOneSize(product)
-  const perks: Perk[] = [
-    SHIPPING_PERK,
-    RETURNS_PERK,
-    oneSize
-      ? { icon: "ruler", title: "One Size, Adjustable", detail: cap(oneSizeRange(product, POLICY.oneSize)) + "." }
-      : { icon: "ruler", title: "Sized S/M & L/XL", detail: "Measure around your head just above the ears." },
-    STOCK_PERK,
-    ...(care ? [{ icon: "care" as const, title: "Product Care", detail: care }] : []),
-  ]
-
-  const myShape = shape?.handle
-  const alsoLike = all
-    .filter((x) => x.id !== product.id)
-    .sort((a, b) => {
-      const score = (x: Product) => (shapeOf(x)?.handle !== myShape ? 0 : 2) + (x.collection?.handle === "core" ? 0 : 1)
-      return score(a) - score(b)
-    })
-  const lifestyle = LIFESTYLE[product.handle] ?? null
-  const description = product.description ? (
-    <p className="line-clamp-4 font-system text-[16px] leading-6">{product.description}</p>
-  ) : null
-
-  const buyBoxProps = {
+  // Limited group on the core PDP: live editions (their PDP) and upcoming holes (their card page).
+  const linked: { group: "CORE" | "LIMITED"; swatches: LimitedSwatch[] } = isEdition
+    ? {
+        group: "CORE",
+        swatches: CORE_COLORS.map((col) => ({ name: col, href: `/products/${ROPE_CAP}?color=${encodeURIComponent(col)}`, caption: null, selected: false })),
+      }
+    : {
+        group: "LIMITED",
+        swatches: c.holes
+          .filter((h) => !h.core && (h.status === "live" || h.status === "upcoming"))
+          .map((h) => ({
+            name: h.name,
+            href: h.productHandle ? `/products/${h.productHandle}` : `/card/${h.handle}`,
+            caption: h.status === "upcoming" ? (holeDate(h.date).day ?? "").replace(/ \d{4}$/, "") : null,
+            selected: false,
+          })),
+      }
+  const { day } = holeDate(release?.release_at ?? release?.published_at ?? null)
+  const editionInfo = isEdition ? { hole: ed!.hole, size: ed!.size, dateLabel: day, released: release?.phase === "live" } : null
+  const bundles = !isEdition ? <BundleRows pair={c.pair} foursome={c.foursome} /> : null
+  const badge = isEdition ? <EditionBadge>{`HOLE ${ed!.hole}${ed!.size ? ` · EDITION OF ${ed!.size}` : ""}`}</EditionBadge> : <span className="badge bg-white">CORE</span>
+  const buyProps = {
     product,
-    release,
-    fitNotes,
-    sizeChart,
-    perks,
-    sticky: true,
-    addOn:
-      offer && offerPrice !== null ? (
-        <OfferRow
-          href={offerOf(offer)!.path}
-          title="The Two-Pack"
-          subtitle="Any two colors"
-          price={offerPrice}
-          saving={offerSaving}
-          currency={p.currency}
-          image="/hats/everyday-cap-black-1.jpg"
-          track="pdp_offer"
-        />
-      ) : undefined,
+    colors,
+    linked,
+    ropeByColor,
+    edition: editionInfo,
+    releaseId: release?.phase === "live" ? release.id : null,
+    crown: fit ? { value: fit.crown, note: crownCm(product) ? `about ${crownCm(product)} cm` : null, structure: fit.structure } : null,
+    bundles,
   }
 
   return (
@@ -145,132 +106,114 @@ async function ProductContent({
       <Suspense fallback={null}>
         <ContinuityBanner />
       </Suspense>
-      <SelectionProvider initialColor={initialColor}>
-        <div className="container-shop grid gap-6 pb-[28.432px] pt-0 lg:grid-cols-[minmax(0,740px)_370px] lg:justify-between lg:gap-[68px] lg:pb-[50.512px] lg:pt-[21px]">
-          <div className="-mx-[21.328px] lg:mx-0">
-            <Gallery
-              images={imagesFor(product)}
-              imagesByColor={imagesByColor}
-              title={product.title}
-              videoUrl={typeof md.video_url === "string" ? md.video_url : null}
-              badge={release ? "Limited" : isCore ? "Core" : null}
-            />
-          </div>
-          <div className="flex flex-col">
-            <div className="flex items-baseline justify-between">
-              <h1 className="pr-[10px] font-body text-[20px] uppercase leading-[25px]">{product.title}</h1>
-              <span className="font-body text-[18px] leading-[25px]">{formatMoney(p.amount, p.currency)}</span>
-            </div>
-            <p className="mt-[2px] font-body text-[15px] leading-[19.5px] text-muted">{productTypeOf(product)}</p>
-            <nav aria-label="Breadcrumb" className="mt-4 font-body text-[12px] leading-[18px]">
-              <Link href="/shop" className="hover:underline">
-                Shop All
-              </Link>
-              {shape && (
-                <>
-                  {" > "}
-                  <Link href={`/shop?shape=${shape.handle}`} className="hover:underline">
-                    {shape.name}
-                  </Link>
-                </>
-              )}
-              {" > "}
-              <span className="text-muted" aria-current="page">
-                {product.title}
-              </span>
-            </nav>
-            {description && <div className="mt-3 hidden lg:block">{description}</div>}
-            <hr className="my-5 border-line" />
-            <Suspense fallback={<BuyBox {...buyBoxProps} stock={null} />}>
-              <LiveBuyBox {...buyBoxProps} />
+      <SelectionProvider initialColor={initial}>
+        <nav aria-label="Breadcrumb" className="mx-5 mb-2.5 text-xs text-light-charcoal max-lg:mt-4">
+          <Link href="/" className="hover:underline">
+            Home
+          </Link>{" "}
+          /{" "}
+          <Link href="/shop" className="hover:underline">
+            The Rope Cap
+          </Link>
+          {isEdition && <> / {ed!.hole && `Hole ${ed!.hole}`}</>}
+        </nav>
+        <div className="relative md:mx-5 md:grid md:grid-cols-[1fr_45vw] md:items-start md:gap-5 xl:grid-cols-[1fr_38vw] 2xl:grid-cols-[1fr_33vw]">
+          <Gallery imagesByColor={imagesByColor} fallback={imagesFor(product)} title={product.title} badge={badge} />
+          <div className="mt-4 md:mt-0">
+            <Suspense fallback={<BuyCard {...buyProps} stock={null} />}>
+              <LiveBuyCard {...buyProps} />
             </Suspense>
-            {description && <div className="mt-4 lg:hidden">{description}</div>}
-            {profile && (
-              <div className="mt-6 border-t border-line pt-6">
-                <h4 className="mb-5 font-heading text-[18px] leading-[23.4px]">Fit Guide</h4>
-                <FitScales profile={profile} />
-                <Link href={`/fit-guide#${product.handle}`} className="btn btn--micro mt-4" data-track="fit_guide">
-                  <span>Read the fit guide</span>
-                </Link>
-              </div>
-            )}
-            <div className="mt-6">
-              <Accordion title="Shipping & Returns">
-                {POLICY.shipping}. {POLICY.dispatch}. Returns are accepted within 30 days of delivery.{" "}
-                <Link href="/help/shipping-returns" className="underline">
-                  Full policy
-                </Link>
-              </Accordion>
-            </div>
           </div>
         </div>
-      </SelectionProvider>
 
-      <DetailsBand product={product} color={initialColor} />
-      {lifestyle && (
-        <section className="bg-band pb-[28.432px] lg:pb-[50.512px]">
-          <div className="container-shop">
-            <h2 className="mb-[22.08px] type-section">Gallery</h2>
-            <div className="relative aspect-[4/5] lg:aspect-video">
-              <Image src={lifestyle} alt={`${product.title}, worn`} fill sizes="(min-width:1024px) 1178px, 100vw" className="object-cover" />
+        <Suspense fallback={<ScorecardBand product={product} sideByColor={sideByColor} edition={isEdition ? { size: ed!.size, left: null } : null} />}>
+          <LiveScorecard product={product} sideByColor={sideByColor} size={isEdition ? ed!.size : null} isEdition={isEdition} />
+        </Suspense>
+
+        <Reveal aria-label="Details" className="m-2.5 my-10 grid min-h-[166px] gap-5 rounded-xl bg-white p-5 md:grid-cols-2 md:rounded-3xl md:p-6">
+          <div className="relative aspect-[3/2] overflow-hidden rounded-xl md:rounded-3xl">
+            <Image src="/hats/rope-brim.jpg" alt="" fill sizes="(min-width: 768px) 45vw, 100vw" className="object-cover" />
+          </div>
+          <div className="flex flex-col gap-8">
+            <div>
+              <h3 className="text-xs leading-4 font-medium uppercase md:text-sm">The details</h3>
+              <p className="mt-2 text-sm leading-[22px] tracking-[.025em] text-charcoal">{product.description}</p>
+            </div>
+            <div>
+              <h3 className="text-xs leading-4 font-medium uppercase md:text-sm">Care &amp; returns</h3>
+              <p className="mt-2 text-sm leading-[22px] tracking-[.025em] text-charcoal">
+                {details.find(([k]) => k === "Care")?.[1] ?? ""} {POLICY.returns}. {POLICY.dispatch}.
+              </p>
             </div>
           </div>
-        </section>
-      )}
-      {alsoLike.length > 0 && (
-        <section className="bg-band py-[28.432px] lg:py-[50.512px]">
-          <div className="container-shop">
-            <h2 className="mb-[22.08px] type-section">You May Also Like</h2>
-            <Suspense fallback={<AlsoLike products={alsoLike} releases={releases} />}>
-              <AlsoLikeLive products={alsoLike} releases={releases} />
-            </Suspense>
-          </div>
-        </section>
-      )}
-      <ViewedCarousel catalog={catalogItems(all)} exclude={product.handle} />
+        </Reveal>
+
+        {details.length >= 4 && (
+          <MaterialRing
+            background="/hats/rope-clubhouse.jpg"
+            callouts={details.slice(0, 4).map(([k, v]) => ({ title: k, body: v }))}
+            centre={
+              <div className="relative aspect-square w-[75%] overflow-hidden rounded-full bg-white shadow-[0_.85rem_1rem_rgba(0,0,0,0.25)]">
+                <Image src={imagesByColor[initial ?? ""]?.[0] ?? imagesFor(product)[0]} alt="" fill sizes="300px" className="object-contain p-[8%]" />
+              </div>
+            }
+          />
+        )}
+      </SelectionProvider>
+
+      <Suspense fallback={null}>
+        <AlsoLike exclude={product} active={initial} />
+      </Suspense>
+      <Suspense fallback={null}>
+        <SeriesBand />
+      </Suspense>
     </>
   )
 }
 
-async function LiveBuyBox(props: Omit<Parameters<typeof BuyBox>[0], "stock">) {
+async function LiveBuyCard(props: Omit<Parameters<typeof BuyCard>[0], "stock">) {
   const stock = await getStock([props.product.id])
-  return <BuyBox {...props} stock={stock} />
+  return <BuyCard {...props} stock={stock} />
 }
 
-async function AlsoLikeLive({ products, releases }: { products: Product[]; releases: Record<string, { id: string }> }) {
-  const stock = await getStock(products.map((p) => p.id))
-  return <AlsoLike products={products} releases={releases} stock={stock} />
+async function LiveScorecard({ product, sideByColor, size, isEdition }: { product: Product; sideByColor: Record<string, string>; size: number | null; isEdition: boolean }) {
+  if (!isEdition) return <ScorecardBand product={product} sideByColor={sideByColor} edition={null} />
+  const stock = await getStock([product.id])
+  const left = (product.variants ?? []).reduce((n, v) => n + (typeof stock[v.id] === "number" ? (stock[v.id] as number) : 0), 0)
+  return <ScorecardBand product={product} sideByColor={sideByColor} edition={{ size, left }} />
 }
 
-function AlsoLike({
-  products,
-  releases,
-  stock,
-}: {
-  products: Product[]
-  releases: Record<string, { id: string }>
-  stock?: Record<string, number | null>
-}) {
+/** "You may also like" (G.6.3 item 15): the other core colourways and the live editions. */
+async function AlsoLike({ exclude, active }: { exclude: Product; active: string | null }) {
+  const c = await ropeCatalog()
+  const { stock } = await liveStock(c)
+  const cards: { product: Product; color: string; key: string }[] = []
+  if (c.core) for (const col of CORE_COLORS) if (!(c.core.id === exclude.id && col === active)) cards.push({ product: c.core, color: col, key: `core-${col}` })
+  for (const e of c.editions) if (e.id !== exclude.id) cards.push({ product: e, color: colorThumbs(e)[0]?.color ?? e.title, key: e.handle })
+  if (!cards.length) return null
   return (
-    <Carousel label="You may also like">
-      {products.map((x) => (
-        <ProductCard key={x.id} product={x} stock={stock} status={cardStatus(x, releases)} releaseId={releases[x.id]?.id} track="pdp_also_like" />
+    <CardCarousel title="YOU MAY ALSO LIKE">
+      {cards.map((x) => (
+        <ProductCard key={x.key} product={x.product} color={x.color} colors={x.product.id === c.core?.id ? [...CORE_COLORS] : undefined} stock={stock} badge={x.product.id === c.core?.id ? "CORE" : "LIMITED"} track="pdp_also_like" />
       ))}
-    </Carousel>
+    </CardCarousel>
   )
 }
 
-const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+async function SeriesBand() {
+  const series = (await listSeries())[0]
+  if (!series?.stance) return null
+  return <SeriesPill title={series.title} stance={series.stance} href={`/stories/${series.handle}`} episodes={series.episodes.map((e) => e.title)} />
+}
 
 function ProductSkeleton() {
   return (
-    <div className="container-shop grid gap-6 lg:grid-cols-[minmax(0,740px)_370px] lg:justify-between lg:gap-[68px] lg:pt-[21px]" aria-busy>
-      <div className="-mx-[21.328px] aspect-square animate-pulse bg-tile lg:mx-0" />
-      <div className="flex flex-col gap-4">
-        <div className="h-6 w-2/3 animate-pulse bg-tile" />
-        <div className="h-4 w-24 animate-pulse bg-tile" />
-        <div className="h-12 w-full animate-pulse bg-tile" />
-        <div className="h-[52px] w-full animate-pulse bg-tile" />
+    <div className="md:mx-5 md:grid md:grid-cols-[1fr_45vw] md:gap-5 xl:grid-cols-[1fr_38vw]" aria-busy>
+      <div className="mx-2.5 aspect-square animate-pulse rounded-2xl bg-white md:mx-0 md:aspect-[7/4]" />
+      <div className="mx-2.5 mt-4 flex flex-col gap-4 rounded-xl bg-white p-6 md:mx-0 md:mt-0">
+        <div className="h-8 w-2/3 animate-pulse rounded bg-natural-white" />
+        <div className="h-5 w-24 animate-pulse rounded bg-natural-white" />
+        <div className="h-12 w-full animate-pulse rounded-full bg-natural-white" />
       </div>
     </div>
   )

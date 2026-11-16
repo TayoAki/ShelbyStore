@@ -1,73 +1,50 @@
 import Link from "next/link"
 import { Suspense } from "react"
 import { getStock } from "@/lib/data/stock"
-import { colorOption, colorThumbs, stockState, variantOptions } from "@/lib/product"
-import type { Product, VariantStock } from "@/lib/types"
-import { SwatchDot } from "../swatch"
+import { findVariant, LOW_STOCK } from "@/lib/product"
+import { CORE_COLORS } from "@/lib/rope"
+import type { Product } from "@/lib/types"
+import { Reveal } from "../motion/reveal"
+import { SwatchFace } from "../swatch"
 
 /**
- * "In Stock Today" in Melin's "Featured In" slot (SITE_SPEC §6.1.6): live
- * sellable stock per core colour, read at request time.
+ * "In stock today" (v5 §6.1.6): the four core colourways with their crown +
+ * rope swatches and live sellable stock (streams in; skeleton while loading).
  */
-export function InStockToday({ product, title = "In Stock Today", track = "core_product" }: { product: Product | null; title?: string; track?: string }) {
+export function InStockToday({ product }: { product: Product | null }) {
   if (!product) return null
   return (
-    <section id="stock" className="flex flex-col items-center gap-10 bg-tile px-4 py-10 text-center lg:min-h-[412px] lg:justify-center lg:gap-12">
-      <div>
-        <h2 className="font-heading text-[34px] uppercase leading-[51px] tracking-[2px]">{title}</h2>
-        <p className="mt-3 type-micro text-muted">Live sellable stock for the {product.title.replace(/^The /, "")}. Updated every visit.</p>
+    <Reveal id="stock" aria-label="In stock today" className="mt-10">
+      <div className="flex items-center justify-between px-5">
+        <h2 className="tab-title" data-selected="">
+          IN STOCK TODAY
+        </h2>
+        <p className="hidden text-xs leading-4 text-light-charcoal md:block">Live sellable stock. Updated every visit.</p>
       </div>
-      <Suspense fallback={<Items product={product} stock={null} track={track} />}>
-        <LiveItems product={product} track={track} />
-      </Suspense>
-    </section>
+      <div className="grid grid-cols-2 gap-2.5 p-2.5 md:grid-cols-4">
+        {CORE_COLORS.map((c) => (
+          <Link key={c} href={`/products/rope-cap?color=${encodeURIComponent(c)}`} data-track="core_product" className="flex flex-col gap-4 rounded-2xl bg-white px-5 pt-8 pb-6 md:p-8">
+            <SwatchFace name={c} />
+            <p className="eyebrow">{c}</p>
+            <Suspense fallback={<span className="h-3.5 w-24 animate-pulse rounded bg-natural-white" />}>
+              <Count product={product} color={c} />
+            </Suspense>
+          </Link>
+        ))}
+      </div>
+    </Reveal>
   )
 }
 
-async function LiveItems({ product, track }: { product: Product; track: string }) {
-  return <Items product={product} stock={await getStock([product.id])} track={track} />
-}
-
-/** One centred item per colour: swatch, name, status dot and the count. */
-export function Items({ product, stock, track }: { product: Product; stock: VariantStock | null; track: string }) {
-  const title = colorOption(product)
-  return (
-    <ul className="grid grid-cols-2 gap-6 lg:flex lg:justify-center lg:gap-16">
-      {colorThumbs(product).map(({ color }) => {
-        const variants = (product.variants ?? []).filter((v) => title && variantOptions(v)[title] === color)
-        const counts = stock ? variants.map((v) => stock[v.id]) : []
-        const untracked = counts.some((n) => n === null)
-        const available = counts.reduce<number>((s, n) => s + (typeof n === "number" ? n : 0), 0)
-        const state = stock === null ? null : untracked ? "untracked" : stockState(available)
-        return (
-          <li key={color} className="lg:w-[220px]">
-            <Link href={`/products/${product.handle}?color=${encodeURIComponent(color)}`} data-track={track} className="flex flex-col items-center">
-              <SwatchDot name={color} />
-              <span className="mt-3 font-heading text-[16px] uppercase tracking-[1.3px]">{color}</span>
-              {state === null ? (
-                <span className="mt-[6px] block h-[14px] w-24 animate-pulse bg-mega" aria-hidden />
-              ) : (
-                <span className="mt-[6px] flex items-center gap-2 font-body text-[14px] leading-[21px]">
-                  <span
-                    aria-hidden
-                    className={`h-[10px] w-[10px] rounded-full ${state === "sold_out" ? "bg-text-disabled" : state === "low" ? "bg-black" : "bg-instock"}`}
-                  />
-                  {state === "untracked" ? "In stock" : state === "sold_out" ? "Restocking" : state === "low" ? `Only ${available} left` : `${available} in stock`}
-                </span>
-              )}
-            </Link>
-          </li>
-        )
-      })}
-    </ul>
-  )
-}
-
-/** The colour row alone, with live counts streamed in (offer proof, listicle reason). */
-export function StockRow({ product, track }: { product: Product; track: string }) {
-  return (
-    <Suspense fallback={<Items product={product} stock={null} track={track} />}>
-      <LiveItems product={product} track={track} />
-    </Suspense>
+async function Count({ product, color }: { product: Product; color: string }) {
+  const stock = await getStock([product.id])
+  const v = findVariant(product, { Color: color })
+  const n = v ? stock[v.id] : undefined
+  if (n === null) return <p className="text-sm leading-[21px]">In stock</p>
+  if (!n) return <p className="text-sm leading-[21px] text-light-charcoal">● Restocking</p>
+  return n <= LOW_STOCK ? (
+    <p className="text-sm leading-[21px] text-red">● Only {n} left</p>
+  ) : (
+    <p className="text-sm leading-[21px] text-green">● {n} in stock</p>
   )
 }
