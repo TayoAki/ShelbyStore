@@ -1,132 +1,422 @@
-# Shelby app: complete specification (v4, Melin style)
+# Shelby app: complete specification (v5, Shelby hats in the Allbirds theme)
 
 The single source of truth for rebuilding the Expo app (`mobile/`) so it matches the website
-(`web/SITE_SPEC.md` v4), which follows **melin.com's mobile-web style exactly**. This file translates
-those tokens and patterns to React Native. Every value comes from the Melin capture described at the
-top of `web/SITE_SPEC.md` (Firecrawl + Playwright at 390×844). Where this file is silent, the web
-spec's mobile values apply.
+(`web/SITE_SPEC.md` v5): **Shelby's v4 app structure, screens, data and every behaviour, reskinned in
+allbirds.com's mobile-web theme and motion.** Every value comes from the Allbirds capture described at
+the top of `web/SITE_SPEC.md` v5. That capture used Firecrawl, the theme's CSS and GSAP modules, and
+Playwright at **390×664** (the iPhone 13 device profile) with state and timing probes of:
+- the mobile menu;
+- the centred category slide;
+- the PDP slider;
+- the sticky buy bar;
+- the cart drawer.
 
-Stack (unchanged): Expo SDK 58, React Native 0.88, expo-router (typed routes, `src/app`),
-TanStack Query, `@medusajs/js-sdk`, `expo-image`, `@expo/vector-icons` (Ionicons),
-`react-native-safe-area-context`, `react-native-reanimated`.
+Where this file is silent, the web spec's mobile values apply.
 
-**New dependencies (JS-only, Expo-compatible):** `@expo-google-fonts/plus-jakarta-sans` and
-`@expo-google-fonts/inter`. They are loaded with `expo-font` (already installed). Install them with
-`npx expo install`.
+**Stack (unchanged):**
+- Expo SDK 58, React Native 0.88, expo-router (typed routes, `src/app`);
+- TanStack Query, `@medusajs/js-sdk`, `expo-image`, `@expo/vector-icons` (Ionicons),
+  `react-native-safe-area-context`;
+- **`react-native-reanimated` 4.7** (installed; all motion below uses it);
+- `@expo-google-fonts/plus-jakarta-sans` and `@expo-google-fonts/inter` (installed).
+
+**One new dependency (JS-only):** `@expo-google-fonts/ibm-plex-mono`, installed with
+`npx expo install`. No SVG library: rings, dots and pills are Views positioned with trigonometry
+(§5.3).
+
+**Precedence:** §1–§6 of this file replace every visual value (colour, font, size, radius, height,
+motion) in Appendix A. Appendix A (v4 §3–§8, verbatim) stays binding for screens, data, behaviour,
+analytics and verification.
 
 ---
 
 ## 1. Rules
 
-1. **Brand:** wordmark `shelby` (lowercase, heading font). Shelby's own copy, products, prices,
-   policies and photos. No Melin logo, imagery, product names or copy.
-2. **No invented claims** (the full table is in web §1.2):
-   - no stars or reviews, no free-shipping threshold, no fit promise or warranty, no 10%-off;
-   - no "Buy it now" or BNPL;
-   - no wishlist, loyalty or chat.
-3. **Evidence rules** (web §1.3): proof only from live data, product facts and policy.
-4. **US English UI labels** ("Color").
-5. **Icons:** Ionicons outline set (already installed; no new native module). The mapping is in §6.
-6. **Layout reference:** a 390pt-wide phone. Sizes are in points and scale with
-   `useWindowDimensions().width` where noted as `W`.
+1. **Brand:** the wordmark `shelby` (lowercase, display font) sits where Allbirds' logo sits. Shelby's
+   own copy, products, prices, policies and photos. No Allbirds logo, artwork, imagery, product or
+   material names, sustainability claims or copy (web §1.2).
+2. **No invented claims:**
+   - no stars or reviews, no free-shipping threshold or progress bar, no "Final Sale" or sale
+     prices;
+   - no BNPL, no AI assistant, no SMS or email popups.
+3. **Evidence rules** (web §1.4): proof only from live data, product facts, policy and the
+   content-series record.
+4. **US English** ("Color", "Bag"). Casing per web §1.3: UPPERCASE buttons, labels, card titles and
+   mono eyebrows; sentence case headlines.
+5. **Icons:** Ionicons outline set (installed). Mapping in §3.
+6. **Layout reference:** 390pt-wide phone. Sizes in points; `W` = `useWindowDimensions().width`.
+7. **Motion:** every animation in §5 uses Reanimated with `reduceMotion: ReduceMotion.System`, plus a
+   `useReducedMotion()` check that renders end states directly (§5.4).
 
 ---
 
 ## 2. Tokens (`src/constants/theme.ts`, replace the file)
 
 ```ts
+import { Easing, ReduceMotion } from "react-native-reanimated"
 import { Platform } from "react-native"
 
-/** Melin's style system for Shelby (web/SITE_SPEC.md §2). Black on white, no accent. */
+/** Allbirds' theme for Shelby (web/SITE_SPEC.md v5 §2). */
 export const colors = {
-  primary: "#000000",
-  secondary: "#FFFFFF",
-  tertiary: "#E4E4E4",
-  text: "#000000",
-  textTab: "#0E1311",
-  textMuted: "#736B67",
-  textMutedCard: "#726B67",
-  textMutedSub: "#77706C",
-  textSteps: "#6B7280",
-  textInverse: "#FFFFFF",
-  background: "#FFFFFF",
-  tile: "#F5F5F5",
-  band: "#F8F8F9",
-  mega: "#EDEDED",
-  addon: "#ECECEC",
-  line: "#E4E4E4",
-  lineSoft: "#EEEEEE",
-  lineHeader: "#E5E7EB",
-  lineAddon: "#DDDDDD",
-  lineOffer: "#CCCCCC",
-  inStock: "#22C55E",
-  fillDisabled: "#EFEFEF",
-  textDisabled: "#C2C2C2",
-  error: "#C70000",
-  overlay: "rgba(0, 0, 0, 0.8)",
+  black: "#212121", // text, primary CTA, footer, selected states
+  white: "#FFFFFF", // cards, header pill, buy card, sheets
+  naturalWhite: "#E0DACF", // badges, pills, segmented active text, progress track
+  page: "#ECE9E2", // natural-white-60: every screen background
+  naturalWhite25: "#F5F4F1", // quiet panels
+  charcoal: "#52525B", // long-form body
+  muted: "#575757", // light-charcoal: meta, breadcrumbs, fit notes
+  mutedFill: "rgba(87, 87, 87, 0.19)", // light-charcoal-0.3: pressed size/option fill
+  swatchRing: "rgba(87, 87, 87, 0.7)", // light-charcoal-0.7
+  stroke: "#CDCDCD", // size / option borders
+  red: "#9C0F0F", // low stock only
+  green: "#10714E", // in stock
+  gray200: "#E5E7EB", // disabled fill (oklch 92.8% .006 264.531)
+  gray300: "#D1D5DC", // disabled border (oklch 87.2% .01 258.338)
+  gray400: "#99A1AF", // disabled text (oklch 70.7% .022 261.325)
+  gray500: "#6A7282", // placeholder (oklch 55.1% .027 264.364)
+  gray600: "#4A5565", // filter label (oklch 44.6% .03 256.802)
+  neutral800: "#262626", // captions (oklch 26.9% 0 0)
+  overlay: "rgba(33, 33, 33, 0.5)", // bg-black/50: sheets and modals
+  overlayMenu: "rgba(33, 33, 33, 0.3)", // bg-black/30
+  tileVeil: "rgba(0, 0, 0, 0.15)",
+  ringFill: "rgba(33, 33, 33, 0.1)",
+  ringStroke2: "rgba(255, 255, 255, 0.7)",
+  ringStroke3: "rgba(255, 255, 255, 0.4)",
+  pillBorder: "rgba(33, 33, 33, 0.5)", // #21212180
+  tileSlate: "#5D7283", // Caps
+  tileUmber: "#554B4A", // Truckers
+  tileRose: "#8D6B67", // Beanies
+  tileSage: "#80887E", // Bucket Hats
 } as const
 
+/**
+ * Geograph (heading roles) and Self Modern (serif display) → Plus Jakarta Sans.
+ * Geograph (body/UI) → Inter. Akkurat Mono → IBM Plex Mono.
+ * See web §2.2.
+ */
 export const fonts = {
-  heading: "PlusJakartaSans_800ExtraBold", // Avenir Black
-  heavy: "PlusJakartaSans_700Bold", // Avenir Heavy (hero)
-  subheading: "PlusJakartaSans_500Medium", // Avenir Medium
-  body: "Inter_400Regular", // Avenir Book
-  system: Platform.select({ ios: "System", android: "sans-serif", default: "system-ui" }) as string,
-  campaign: Platform.select({ ios: "Georgia", android: "serif", default: "Georgia, serif" }) as string,
+  display: "PlusJakartaSans_400Regular",
+  displayMedium: "PlusJakartaSans_500Medium",
+  displaySemi: "PlusJakartaSans_600SemiBold", // wordmark
+  serif: "PlusJakartaSans_400Regular", // Self Modern role (web §11 item 9)
+  body: "Inter_400Regular",
+  bodyMedium: "Inter_500Medium",
+  bodyBold: "Inter_700Bold",
+  mono: "IBMPlexMono_400Regular",
+  monoMedium: "IBMPlexMono_500Medium",
 }
 
-export const spacing = { xxs: 2, xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32, xxxl: 48 } as const
+export const spacing = { xxs: 2, xs: 4, sm: 8, md: 10, lg: 16, xl: 20, xxl: 24, xxxl: 32, section: 40 } as const
 
-/** Melin's fluid section padding at mobile width, the 14pt gap and the 21.5pt PDP gutter. */
-export const layout = { section: 28.432, gap: 14, gutter: 16, pdpGutter: 21.5 } as const
+/** Allbirds' 10pt edge gutter for rounded blocks and its 20pt text padding. */
+export const layout = {
+  edge: 10,
+  text: 20,
+  pillTop: 20,
+  pillHeight: 40,
+  pillSide: 20,
+  contentTop: 20 + 40 + 8, // under the floating pill
+} as const
 
-export const radius = { none: 0, button: 3, tile: 4, offer: 6, addon: 8, sort: 22, pill: 999 } as const
+export const radius = {
+  xs: 2, // size buttons
+  sm: 4, // progress track, footer card
+  md: 6, // sticky bar top corners
+  lg: 8, // gallery images
+  xl: 12, // header pill, buy card, option rows
+  xxl: 16, // product cards, value tiles, banners, carousel images
+  xxxl: 24, // promo tiles, bands
+  tile: 20, // hero, category tiles (rest)
+  pill: 250, // category tile active
+  full: 9999,
+} as const
 
+/** Letter-spacing in points = em × font size (web §2.2). */
 export const type = {
-  hero: { fontFamily: fonts.heavy, fontSize: 24, lineHeight: 32, letterSpacing: 1.6, textTransform: "uppercase" as const },
-  headline: { fontFamily: fonts.heading, fontSize: 26, lineHeight: 39 },
-  section: { fontFamily: fonts.heading, fontSize: 22, lineHeight: 28.6 },
-  promo: { fontFamily: fonts.heading, fontSize: 18, lineHeight: 23.4 },
-  item: { fontFamily: fonts.heading, fontSize: 16, lineHeight: 24 },
-  itemSm: { fontFamily: fonts.heading, fontSize: 14, lineHeight: 21 },
-  subline: { fontFamily: fonts.subheading, fontSize: 16, lineHeight: 20.8 },
-  body: { fontFamily: fonts.body, fontSize: 15, lineHeight: 22.5, letterSpacing: -0.12 },
-  bodySm: { fontFamily: fonts.body, fontSize: 14, lineHeight: 21, letterSpacing: -0.12 },
-  micro: { fontFamily: fonts.body, fontSize: 13, lineHeight: 15, letterSpacing: -0.1 },
-  eyebrow: { fontFamily: fonts.body, fontSize: 12, lineHeight: 18, letterSpacing: 0.48, textTransform: "uppercase" as const },
-  meta: { fontFamily: fonts.body, fontSize: 12, lineHeight: 18, letterSpacing: 0.4 },
-  nav: { fontFamily: fonts.heading, fontSize: 11.2, lineHeight: 16.8, letterSpacing: 2.8, textTransform: "uppercase" as const },
-  button: { fontFamily: fonts.heading, fontSize: 14, lineHeight: 21, letterSpacing: 1.3, textTransform: "uppercase" as const },
-  link: { fontFamily: fonts.heading, fontSize: 13, lineHeight: 19.5, letterSpacing: 0.4, textTransform: "uppercase" as const, textDecorationLine: "underline" as const },
-  system: { fontFamily: fonts.system, fontSize: 16, lineHeight: 24 },
-  campaign: { fontFamily: fonts.campaign, fontSize: 32, lineHeight: 32, letterSpacing: 3, textTransform: "uppercase" as const },
+  heroEyebrow: { fontFamily: fonts.monoMedium, fontSize: 12, lineHeight: 20, letterSpacing: 1.2, textTransform: "uppercase" as const },
+  hero: { fontFamily: fonts.display, fontSize: 24, lineHeight: 32, letterSpacing: 0.6 },
+  section: { fontFamily: fonts.display, fontSize: 24, lineHeight: 32 },
+  tile: { fontFamily: fonts.serif, fontSize: 30, lineHeight: 45 },
+  pdpTitle: { fontFamily: fonts.serif, fontSize: 24, lineHeight: 32 },
+  quote: { fontFamily: fonts.serif, fontSize: 14, lineHeight: 20 },
+  tab: { fontFamily: fonts.monoMedium, fontSize: 16, lineHeight: 24, letterSpacing: 0.8, textTransform: "uppercase" as const },
+  eyebrow: { fontFamily: fonts.mono, fontSize: 12, lineHeight: 16, letterSpacing: 1.2, textTransform: "uppercase" as const },
+  subline: { fontFamily: fonts.mono, fontSize: 12, lineHeight: 16, letterSpacing: 0.6, textTransform: "uppercase" as const },
+  label: { fontFamily: fonts.monoMedium, fontSize: 12, lineHeight: 16, letterSpacing: 0.6, textTransform: "uppercase" as const },
+  menuItem: { fontFamily: fonts.bodyMedium, fontSize: 14, lineHeight: 21, letterSpacing: 0.7, textTransform: "uppercase" as const },
+  cardTitle: { fontFamily: fonts.bodyMedium, fontSize: 12, lineHeight: 16, letterSpacing: 0.6, textTransform: "uppercase" as const },
+  cardMeta: { fontFamily: fonts.body, fontSize: 12, lineHeight: 16, letterSpacing: 0.6 },
+  price: { fontFamily: fonts.bodyMedium, fontSize: 18, lineHeight: 28, letterSpacing: 0.9 },
+  priceSm: { fontFamily: fonts.bodyMedium, fontSize: 12, lineHeight: 16, letterSpacing: 0.6 },
+  pricePill: { fontFamily: fonts.bodyMedium, fontSize: 12, lineHeight: 16, letterSpacing: 0.6, textTransform: "uppercase" as const, fontStyle: "italic" as const },
+  badge: { fontFamily: fonts.bodyMedium, fontSize: 10, lineHeight: 10, letterSpacing: 0.5, textTransform: "uppercase" as const },
+  button: { fontFamily: fonts.bodyMedium, fontSize: 12, lineHeight: 15, letterSpacing: 0.3, textTransform: "uppercase" as const },
+  buttonLarge: { fontFamily: fonts.bodyMedium, fontSize: 14, lineHeight: 20, letterSpacing: 0.35, textTransform: "uppercase" as const },
+  size: { fontFamily: fonts.bodyMedium, fontSize: 12, lineHeight: 16 },
+  body: { fontFamily: fonts.body, fontSize: 14, lineHeight: 21 },
+  bodyLong: { fontFamily: fonts.body, fontSize: 14, lineHeight: 22, letterSpacing: 0.35 },
+  article: { fontFamily: fonts.body, fontSize: 16, lineHeight: 26 },
+  meta: { fontFamily: fonts.body, fontSize: 12, lineHeight: 16 },
+  caption: { fontFamily: fonts.body, fontSize: 12, lineHeight: 16 },
+  announcement: { fontFamily: fonts.body, fontSize: 10, lineHeight: 15, letterSpacing: 0.5 },
+  empty: { fontFamily: fonts.body, fontSize: 20, lineHeight: 28 },
+  tabBar: { fontFamily: fonts.bodyMedium, fontSize: 10, lineHeight: 12, letterSpacing: 0.5, textTransform: "uppercase" as const },
+  wordmark: { fontFamily: fonts.displaySemi, fontSize: 20, lineHeight: 24, letterSpacing: -0.4 },
+  countBadge: { fontFamily: fonts.bodyMedium, fontSize: 9, lineHeight: 13.5 },
 }
 
 export const shadow = {
-  sticky: Platform.select({
-    ios: { shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 15, shadowOffset: { width: 0, height: 10 } },
-    android: { elevation: 8 },
-    default: { boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)" },
+  /** Tailwind `shadow` / `shadow-sm`: header pill, buy card. */
+  sm: Platform.select({
+    ios: { shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 3, shadowOffset: { width: 0, height: 1 } },
+    android: { elevation: 2 },
+    default: { boxShadow: "0 1px 3px 0 #0000001a, 0 1px 2px -1px #0000001a" },
+  }),
+  /** Tailwind `shadow-xl`: sheets. */
+  xl: Platform.select({
+    ios: { shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 25, shadowOffset: { width: 0, height: 20 } },
+    android: { elevation: 16 },
+    default: { boxShadow: "0 20px 25px -5px #0000001a, 0 8px 10px -6px #0000001a" },
   }),
 }
 
+/** web §2.4.2: GSAP eases as Reanimated beziers. */
+export const ease = {
+  sineOut: Easing.bezier(0.61, 1, 0.88, 1),
+  sineIn: Easing.bezier(0.12, 0, 0.39, 0),
+  sineInOut: Easing.bezier(0.37, 0, 0.63, 1),
+  power3Out: Easing.bezier(0.25, 1, 0.5, 1),
+  power3In: Easing.bezier(0.5, 0, 0.75, 0),
+  power3InOut: Easing.bezier(0.76, 0, 0.24, 1),
+  tailwind: Easing.bezier(0.4, 0, 0.2, 1),
+  linear: Easing.linear,
+}
+
+/** web §2.4.1 timing constants, in ms. */
+export const dur = {
+  section: 800,
+  hover: 600,
+  hoverDelay: 100,
+  dropdown: 300,
+  slide: 600,
+  accordion: 300,
+  carouselFade: 200,
+  quickViewIn: 400,
+  quickViewOut: 200,
+  marquee: 10000,
+  orbitMobile: 15000,
+  orbitDesktop: 4000,
+  sheetOverlay: 400,
+  sheetPanel: 800,
+  button: 200,
+}
+
+export const motion = { reduceMotion: ReduceMotion.System } as const
 export const MAX_CONTENT_WIDTH = 720
 ```
 
 **Font loading** (`src/app/_layout.tsx`):
-- Load the fonts with `useFonts({ PlusJakartaSans_500Medium, PlusJakartaSans_700Bold,
-  PlusJakartaSans_800ExtraBold, Inter_400Regular })`.
-- Keep the splash screen until they load.
-- Set the root background `#FFFFFF`. In `app.json`, splash and adaptive-icon backgrounds become
-  `#FFFFFF`.
-- Text never uses `fontWeight` with these families; the family carries the weight.
+- Load with `useFonts`:
+  - `PlusJakartaSans_400Regular`, `_500Medium`, `_600SemiBold`;
+  - `Inter_400Regular`, `_500Medium`, `_700Bold`;
+  - `IBMPlexMono_400Regular`, `_500Medium`.
+- Keep the splash until they load.
+- Root background `colors.page` (`#ECE9E2`). In `app.json`, the splash and adaptive-icon
+  backgrounds become `#ECE9E2`.
+- The family carries the weight; never set `fontWeight` with these families.
 
-`src/components/text.tsx` maps its `variant` prop onto `type.*`. Tones: `default` `#000`, `muted`
-`#736B67`, `mutedCard` `#726B67`, `inverse` `#FFF`, `error` `#C70000`.
+`src/components/text.tsx` maps `variant` onto `type.*`. Tones: `default` `#212121`, `muted`
+`#575757`, `charcoal` `#52525B`, `inverse` `#FFFFFF`, `error` `#9C0F0F`, `success` `#10714E`.
 
 ---
 
-## 3. Components (`src/components/`)
+## 3. Components (`src/components/`, restyle in place; keep names and props)
+
+| Component | v5 spec |
+|---|---|
+| **Button** | `Pressable` + `Animated.View`. Base: height **33**, paddingHorizontal 16, radius **9999**, borderWidth 1, centred, `type.button`. Colour change on press-in/out: `withTiming(…, { duration: 200, easing: ease.sineInOut })` (web M11). |
+| ↳ `primary` (light) | white fill and border, `#212121` label. Pressed: `#212121` fill and border, white label. |
+| ↳ `secondary` (main CTA) | `#212121` fill and border, white label. Pressed: `#575757` fill and border. |
+| ↳ `outlineBlack` | transparent, `#212121` border and label. Pressed: `#212121` fill, white label. |
+| ↳ `outlineWhite` | transparent, white border and label (over photos). Pressed: white fill, `#212121` label. |
+| ↳ `icon` | circle 40 (or 32), 1pt border, Ionicon 16. Pressed: filled. Disabled: opacity .5. |
+| ↳ `link` | no box, `type.meta` (or `type.body`) underlined. |
+| ↳ size `small` | height 33, paddingHorizontal 12, label 11 |
+| ↳ size `large` | height **42**, paddingHorizontal 14, `type.buttonLarge` |
+| ↳ size `atc` | height **49**, full width |
+| ↳ disabled | fill `#E5E7EB`, border `#D1D5DC`, label `#99A1AF` |
+| ↳ loading | `ActivityIndicator` (white or `#212121`), width kept. |
+| **Badge** | `#E0DACF` fill (white variant on PDP photos), radius 9999, padding 8, `type.badge` `#212121`. Values: Core · Limited · New · Low Stock · Coming Soon. Top 10, left 10 on images. |
+| **Swatch** | 36pt circle: a 3pt white border around the colour fill (hex from `swatchColor(name)`; two-tone = two half-circles split on a 135° diagonal, built from 2 rotated half Views), plus a 1pt inner ring `rgba(87,87,87,.7)`. Selected: an extra 1pt `#212121` outer ring (a 38pt wrapper with borderWidth 1). Card variant: 20pt. Change: `withTiming` 200, `ease.tailwind`. |
+| **SizeButton** | height **42**, radius **2**, borderWidth 1 `#CDCDCD`, `type.size`, flex 1 in a 7-column row (gap 8). Pressed: fill `rgba(87,87,87,.19)`. Selected: `#212121` fill and border, white label. Sold out: label `#99A1AF`, opacity .7, a 1.6pt diagonal line (rotated View, `rgba(0,0,0,.5)`) corner to corner. Low stock: a second line `type.badge` `#9C0F0F` "3 left". Colour transitions 200 `ease.sineInOut`. |
+| **SegmentedControl** | pill: borderWidth 1 `#212121`, radius 9999, padding 4, gap 4. Segments are `Button` size small. Active: `#212121` fill, label `#ECE9E2`. Inactive: transparent, `#212121`. |
+| **FitScale** | label row `type.label` + value `type.meta`. Track: 3 segments, gap 4, each height 7, radius 4, `#E0DACF`; active `#212121`. Step labels `type.badge` `#575757` under it, 4 below. |
+| **StockLine** | 6pt dot + `type.meta`: green `#10714E` "In stock · ships in 1–2 business days"; red `#9C0F0F` "Only N left in S/M"; `#575757` "Sold out in …". |
+| **PerkRow** → **ValueTile** | `#FFFFFF` card, radius 16, paddingTop 40, paddingBottom 32, paddingHorizontal 20, gap 20: `type.eyebrow` + `type.body`. |
+| **Accordion** | row height 56, bottom 1pt `#ECE9E2`: `type.menuItem` + `add` Ionicon 16 rotating 45° (`withTiming` 300 `ease.power3InOut`). Body height animates 0 → measured (300 `ease.power3InOut`); `type.bodyLong` `#52525B`, paddingBottom 20. |
+| **QuantityStepper** | height 32, radius 9999, 1pt `#CDCDCD`, `remove`/`add` 14pt with 44pt hit slop, count `type.priceSm` centred, width 96. |
+| **Dashes** → **ScrollThumb** | a 2pt track `#E0DACF`, full width minus 20, with a `#212121` thumb (width = track ÷ N) whose `translateX` follows the slider's scroll offset (`useAnimatedScrollHandler`). |
+| **SearchPill** | height 42, radius 9999, white, 1pt `#212121`, paddingLeft 40, `search` icon 18 at left 14, `type.body` 16. Placeholder rotation kept (every 2s). |
+| **AnnouncementBar** | `#212121`, paddingVertical 8, paddingHorizontal 32, `type.announcement` white centred (two lines max, so 46pt tall). Chevrons 24pt at the edges. Messages crossfade every **5s** (`withTiming` opacity 300). With one message: static. |
+| **Icons** | search `search-outline`, bag `bag-handle-outline`, recently viewed `eye-outline`, chevrons `chevron-back` / `chevron-forward`, circled chevron `chevron-forward-circle-outline`, add `add`, remove `remove`, close `close`, filter `options-outline`, check `checkmark-circle-outline`, play `play-circle-outline`, ruler `resize-outline`. |
+
+---
+
+## 4. App chrome
+
+### 4.1 Header pill (`src/components/app-header.tsx`; Home, Shop, Drops, Product)
+- **Floating, Allbirds style:** `position: absolute`, top = safe-area top + 20 (+ 46 when the
+  AnnouncementBar shows), left 20, right 20, height **40**, `#FFFFFF`, radius **12**, `shadow.sm`,
+  paddingHorizontal 10. zIndex 80.
+- **Contents:**
+  - left: no hamburger in the app (tabs handle navigation). An `eye-outline` 24 (recently viewed,
+    hidden when empty) sits at the left instead.
+  - centre: wordmark `shelby` (`type.wordmark`), absolutely centred, max-width 75; tap → Home.
+  - right: `search-outline` 24 (opens §4.3), `bag-handle-outline` 24 (Bag tab), gap 8.
+  - Count badges: 14pt `#212121` circle, `type.countBadge` white, top 6, right −2; opacity
+    `withTiming` 50 `ease.sineIn` on 0 ↔ ≥1.
+- Screens start their content at the pill's bottom + 8 (`layout.contentTop`). Home's hero starts
+  10pt under the AnnouncementBar so the pill floats over the photo.
+- The pill stays put while scrolling (Allbirds' captured state; no hide).
+
+### 4.2 Tabs (`src/app/(tabs)/_layout.tsx`)
+- Tabs: Home · Shop · Drops · Bag · Account (order kept).
+- Bar: `#FFFFFF`, no top border, top corners radius 12, `shadow.sm`, height 56 + safe area.
+- Labels `type.tabBar`: active `#212121`, inactive `#575757`.
+- Icons outline (filled when focused): `home`, `grid`, `flash`, `bag-handle`, `person`.
+- Bag badge `#212121` with `type.countBadge`.
+- Focus change: icon scale 1 → 1.08 → 1 (`withSequence`, 150 + 150, `ease.sineOut`).
+
+### 4.3 Search sheet
+- The search icon opens a top sheet under the pill.
+  - Sheet: `#ECE9E2`, bottom radius 12, `shadow.xl`, paddingTop `layout.contentTop`.
+  - Contents: the SearchPill, then result rows (56pt white radius 8 thumbnail, `type.cardTitle`,
+    `type.meta` `#575757`) and "View all results" `link`.
+- Motion M17 (§5.2): sheet `scaleY` 0 → 1 from the top (`transformOrigin: "top"`, 300
+  `ease.power3InOut`). Overlay `rgba(33,33,33,.3)` opacity 0 → 1 (240 `ease.sineOut`). Content opacity
+  at +150 (150 `ease.sineOut`).
+
+---
+
+## 5. Screens and motion
+
+### 5.1 Screen styling (functions in Appendix A §5)
+
+| Screen | v5 visual (web reference) |
+|---|---|
+| **Home** `(tabs)/index` | Page `#ECE9E2`. Order and data from Appendix A §5.1. **Hero** (web §6.1.1): `W−20 × (screenHeight − 132 − 46)`, margin 10, radius 20, `lifestyle-hero-mobile.jpg` cover with the banner veil `rgba(0,0,0,.2)` → transparent (`expo-linear-gradient` is not installed: use RN 0.88's `experimental_backgroundImage: "linear-gradient(0deg, rgba(0,0,0,.2), rgba(0,0,0,0))"` on an absolute View; raise the first stop to `.35` if white-text contrast is below 4.5:1). Copy bottom-left, padding 32, paddingTop 80: `type.heroEyebrow` white, `type.hero` white "One cap. Every color. Always in stock.", `type.body` white "The Everyday Cap · $38 · 4 colors", then 2 `primary` buttons in a 2-column row (gap 8). **Browse By Style** (web §6.1.2): horizontal `FlatList` `snapToInterval`, item width `W/1.4`, centred, gap 10; tile aspect 0.77, radius 20 → 250 when centred (M5). Background tone per shape; photo `contentFit="contain"` with `tintColor` none on a white-backdrop photo, so wrap the image in a View with `mixBlendMode: "multiply"` (RN 0.88 supports `mixBlendMode`). **Drop banner** (§6.1.3): radius 12, aspect 0.63, pill outline + orbiting dots + marquee (M27). **Find Your Fit** (§6.1.4): radius 12, height `min(W×1.75, screenH×.98)`, ring (M26) with the centre text and `primary` "TAKE THE QUIZ" (opens the web quiz, Appendix A), callouts stacked 2×2 under the ring. **Shop By Color** (§6.1.5): carousel of 7:10 tiles, width `W×.8`, radius 24, colour fill + multiply photo, `type.tile` title, `outlineWhite` (`outlineBlack` on Bone/Cream) "SHOP [COLOR]". **In Stock Today** (§6.1.6): `type.tab` title with a 2pt underline, then a 2×2 grid of ValueTiles with Swatch + StockLine. **From The Crush Test** (§6.1.7): `type.tab` header, carousel of cards (image 4:5 radius 16, `type.eyebrow`, `type.cardTitle`, `type.caption`), captions rise in (M29). **About Shelby** (§6.1.8): pill window (M28) with `type.quote` white, then `secondary` "WHY THE EVERYDAY CAP" (opens web). **Stories** (§6.1.9): `type.section` centred, 2 cards (image 5:4, `type.body` 18/28 title, `type.meta` excerpt). Then ValueTiles (3) and a dark footer card (`#212121`, radius 16, margin 10: `type.eyebrow` white "GET DROP ALERTS" + the NotifyMe pill input + `link`s). |
+| **Shop** `(tabs)/shop` | Banner (web §6.3 item 1): radius 16, aspect 1, image by shape, veil, breadcrumb + `type.section` white + `type.body` `#E0DACF` description + count. Then a row: `outlineBlack` "FILTER AND SORT" (`options-outline` 16) + SegmentedControl of shapes (horizontal scroll). Filter sheet: bottom sheet, white, top radius 16, padding 20 (M23). Grid: 2 columns, gap 10, padding 10, ProductCards. |
+| **ProductCard** | `#FFFFFF`, radius 16. Image 1:1 (top radius 16) `contain` on white; Badge top-left 10. Info padding 16, gap 4: `type.cardTitle`, `type.cardMeta` (colour), `type.priceSm`, swatches (20pt, max 5 + "+N" `type.priceSm` underlined), then the row `type.meta` `#575757` "One size" / "2 sizes" + a `bag-handle-outline` 16 + "ADD" `type.cardTitle` button (adds one-size; opens the size sheet for sized). Press feedback: the card scales 0.98 (`withTiming` 150 `ease.tailwind`). |
+| **Product** `products/[handle]` | Page `#ECE9E2`. Breadcrumb `type.meta` `#575757` (margin 20, top = `layout.contentTop` + 40). **Gallery** (web §6.4.2 mobile): full-width paging slider, slides W×W, white, radius 16, images `contain`; ScrollThumb under it. A colour change fades the slider (opacity 0 → 1, 200 `ease.sineOut`) and resets to page 0. **Buy card** (web §6.4.3): margin 10, white, radius 12, padding 20, gap 24. Contents in order: `type.pdpTitle`; `type.subline` `#575757`; price row (`type.price` + the price pill `#E0DACF`); Make It Two row (`#F5F4F1` radius 16, padding 12); Color label row (`type.label` "COLOR:" + `type.meta` value + "(Core)"); swatches 36pt, gap 4; size (SizeButtons 7-column) or the one-size line; fit note + `link` "Fit guide"; `secondary` size `atc` "ADD TO BAG – $38"; centred `type.meta` policy; StockLine; limited-run line; quiz `link`; FitScales. **Details band** (§6.4.5): white, radius 12, padding 20; image 3:2 radius 12; three blocks `type.label` + `type.bodyLong` `#52525B`. **Material ring** (§6.4.7) when there are ≥4 details. **You May Also Like** and **Previously Viewed**: `type.tab` + carousel of ProductCards (width `W/1.3`, gap 10, inset 10). **Brand pill** (§6.4.10). **Sticky buy bar** (§6.4.4): absolute bottom (above the tab bar's absence on this stack screen: bottom = safe area), white, top radius 6, paddingHorizontal 28, paddingVertical 20: centred `type.body` title + price, then the CTA; opacity 0 → 1 when the main CTA scrolls off (`withTiming` 150 `ease.tailwind`). |
+| **Two-pack** (offer) | The Product layout with two colour pickers ("FIRST CAP:", "SECOND CAP:"), price row "$68" + struck "$76" (`type.priceSm`, opacity .65, line-through) + pill "SAVE $8", the CTA "ADD THE PAIR – $68". |
+| **Bag** `(tabs)/cart` | Page `#ECE9E2`. Header row: `type.cardTitle` "BAG (N)" + `type.meta` `#575757` policy line. Lines in a white radius 16 card (85pt image radius 20 on `#F5F4F1`, `type.cardTitle`, `type.meta` variant, QuantityStepper, `type.priceSm`). Make It Two row, "COMPLETE THE LOOK" (`type.eyebrow`) mini cards (`#F5F4F1` radius 16, `secondary` small "ADD · $34"). Footer card (white, radius 16): subtotal, note, `secondary` `atc` "CHECKOUT", "Guest checkout. No account needed." Empty: `type.empty` centred "Your bag is empty." + stacked `secondary` buttons (gap 20, width W−80). |
+| **Added sheet** | Allbirds' drawer as a native bottom sheet. Overlay `rgba(33,33,33,.5)`; white sheet, top radius 16, `shadow.xl`: "ADDED TO YOUR BAG" `type.label` with `checkmark-circle-outline` `#10714E`, the line (85pt image), then `outlineBlack` "KEEP SHOPPING" + `secondary` "VIEW BAG" (row, gap 10). Motion M20 (§5.2). |
+| **Checkout / Order** | Page `#ECE9E2`; numbered section cards (white radius 16 padding 24, `type.eyebrow` "1 · CONTACT"…); inputs: height 42, radius 9999, 1pt `#212121`, white, paddingHorizontal 16, `type.body` 16; labels `type.label`; errors `type.meta` `#9C0F0F`; shipping options as rows radius 12 1pt `#CDCDCD` (selected `#212121`); `secondary` `atc` "PLACE ORDER". Order: white radius 24 card, `type.eyebrow` "ORDER CONFIRMED", `type.section` "Thanks, [name].", lines, `secondary` "KEEP SHOPPING". |
+| **Recently viewed** | Bottom sheet (Added-sheet frame), title `type.cardTitle` "PREVIOUSLY VIEWED (N)", 2-column ProductCards. |
+| **Drops** `(tabs)/drops` | `type.tab` tabs "LIVE & UPCOMING" / "PAST" with the 2pt underline (`withTiming` 300). Live/upcoming: promo tiles (web §6.6) width W−20, aspect 7:10, radius 24, release image, `type.tile` title, `type.heroEyebrow` phase/date, the Countdown (digits `type.section` 40/48 `fontVariant: ["tabular-nums"]` white; units `type.badge` white 80%), `outlineWhite` "SHOP THE DROP" / "GET NOTIFIED". Past: 2-column white cards with "ENDED" Badge. **Drop detail** `drops/[handle]`: hero (Home hero box), white radius 24 article card (`type.article` `#52525B`), then by phase (countdown ValueTile + NotifyMe / product carousel / ended). |
+| **Account** | Page `#ECE9E2`; white radius 16 cards with `type.label` headings and Accordion rows. |
+| **Not found** | ValueTile centred: `type.eyebrow` "404" + `type.empty` "This page wandered off." + `secondary` "SHOP ALL HATS". |
+
+### 5.2 Motion map (web §2.4.3 → Reanimated)
+
+Every entry: `withTiming(value, { duration, easing, reduceMotion: ReduceMotion.System })` unless
+noted. "Trigger" is the native event.
+
+| Web | Native element | Trigger | Animation |
+|---|---|---|---|
+| M1 section reveal | each Home / Product section wrapped in `<Reveal>` | the section's top crosses 85% of the window height while scrolling (§5.3), once | opacity 0 → 1, `dur.section` (800), `ease.sineOut` |
+| M2 category row | Browse By Style | top crosses 100% of the window | opacity 0 → 1, 800, `ease.sineOut`, `withDelay(800)` |
+| M3 hero | Home hero container, then its copy | on mount | container opacity 0 → 1 (800, `sineOut`); copy `withDelay(300)` opacity 0 → 1 (800, `sineOut`) |
+| M4 title stagger | category tile titles | Browse By Style top crosses 75% | opacity 0 → 1, 800, `sineOut`, `withDelay(i × 150)` |
+| M5 tile morph | the centred category tile (the `FlatList` viewable item with the most area) | becomes centred: play; stops being centred: reverse | `borderRadius` 20 → 250 (600, `power3InOut`); hover image opacity 0 → 1 (600, `sineOut`); title border colour white → transparent (`interpolateColor`, 300, `sineIn`); text block `translateY` 30% of its height → 0 (600, `power3InOut`); CTA opacity 0 → 1 (600, `sineOut`), `pointerEvents` on when done. Reverse uses `power3InOut` / `sineIn` / `sineOut`. |
+| M6 promo zoom | Shop By Color tile image | press-in (touch has no hover; Allbirds mobile web shows no zoom) | scale 1 → 1.04 (300, `ease.tailwind`), back on press-out. The web's 1.08 / 900ms hover zoom is not used on touch. |
+| M7 promo content | Shop By Color veil + labels | after M1 of the section | opacity 0 → 1, 800, `sineOut`, `withDelay(800 + i × 50)` |
+| M8–M10 card hover / flip | ProductCard | — | Not on touch (Allbirds' mobile web uses the static "N sizes · ADD" row). Press feedback: scale 0.98 (150, `ease.tailwind`). |
+| M11 buttons | Button | press-in / press-out | background, border and label colours via `interpolateColor` on a 0 → 1 progress, 200, `sineInOut` |
+| M12 size / option | SizeButton, quiz options | press / select | colours, 200, `sineInOut` |
+| M13 swatch | Swatch | select | outer ring opacity 0 → 1, 200, `ease.tailwind` |
+| M14 checkbox | filter checkboxes | toggle | inner square scale 0 → 1, 50, `ease.tailwind` |
+| M15 tab underline | `type.tab` titles | active | underline opacity 0 → 1 and `scaleX` 0 → 1 (`transformOrigin: "left"`), 300 |
+| M17 dropdown | Search sheet (§4.3), Filter top variant | open / close | overlay opacity (240 `sineOut` / 240 `sineIn`); sheet `scaleY` 0 → 1 (300 `power3InOut`, `transformOrigin: "top"`); content opacity `withDelay(150)` 150 `sineOut` |
+| M19 accordion | Accordion | toggle | height 0 ↔ measured (300 `power3InOut`); icon rotate 0 ↔ 45° (300 `power3InOut`) |
+| M20 drawer → sheet | Added sheet, Recently viewed sheet, Filter sheet, size sheet | open | overlay opacity 0 → 1 (400, `sineOut`); sheet `translateY` 100% → 0 (800, `power3Out`) |
+| M20b close | same | close / swipe down / overlay tap | sheet `translateY` → 100% (800, `power3In`; a fast fling uses `withSpring({ velocity })` with damping 20 instead); overlay → 0 (400, `sineIn`) |
+| M21 progress | quiz progress (web quiz; in-app checkout step bar uses the same) | step change | fill `scaleX` → step/total, `transformOrigin: "left"`, 600, `power3InOut` |
+| M22 modal | size chart | open | overlay 0 → 1 (300, `sineOut`); dialog opacity 0 → 1 and scale .95 → 1 (400, `power3Out`, `withDelay(100)`) |
+| M23 quick view | search results, quick-add size sheet content swap | in / out | in: opacity 0 → 1 and `translateY` 10% → 0 (400, `sineOut`); out: opacity → 0, `translateY` → 10% (200, `sineIn`) |
+| M24 crossfade | AnnouncementBar; PDP gallery on colour change | every 5000 ms / colour change | opacity crossfade 300 (bar) / 200 `sineOut` (gallery) |
+| M25 carousel | horizontal lists | swipe / arrow | native `FlatList` paging with `snapToInterval` (`decelerationRate="fast"`) |
+| M26 material ring | Find Your Fit band, Product ring band | band reveal | band opacity 0 → 1 (800 `sineOut`). 3 circles (Views, radius 9999, sizes 140/160/180 of a 200-unit box scaled to the ring width): scale 0 → 1 + opacity 0 → 1 (1500 `sineOut`). 4 dots (3pt Views): progress `p` from `s + .15` to `s` (1500 `sineOut`, `withDelay(800 + i × 400)`), placed by §5.3's `circlePoint`, scale 0 → 1. Callouts in order 4, 3, 1, 2: opacity 0 → 1 (500 `sineOut`, `withDelay(1600 + k × 400)`). Centre content opacity 0 → 1 (600 `sineOut`, `withDelay(1400)`). |
+| M27 brand pill | Drop banner, Product brand pill | section reveal | content opacity 0 → 1 (800 `sineOut`) and `translateY` 16 → 0 (800 `power3Out`). 3 dots orbit the stadium path: `withRepeat(withTiming(1, { duration: 15000, easing: linear }), -1)` on a phone (the mobile value). Marquee: two copies side by side, `translateX` 0 → −copyWidth, `withRepeat(withTiming(…, { duration: 10000, easing: linear }), -1)`. |
+| M28 pill window | About Shelby, story stance | section reveal | container opacity 0 → 1 (300 `sineOut`). Pill `scale` .01 → 1 (2200 `power3Out`, `withDelay(800)`) with the image inside counter-scaled by `1 / scale` in the same `useAnimatedStyle` (Allbirds' technique). 2 border pills `scale` 0 → 1 (2200 `power3Out`, `withDelay(800)`). Quote opacity 0 → 1 (1500 `sineOut`, `withDelay(1700)`). |
+| M29 caption rise | Crush Test cards | section reveal | caption `translateY` 100% → 0 (800 `power3Out`) and opacity 0 → 1 (800 `sineOut`), `withDelay(400)` |
+| M30 skeleton | loading blocks | while loading | `withRepeat(withSequence(withTiming(.5, 1000, ease.tailwind), withTiming(1, 1000, ease.tailwind)), -1)` (the 2s pulse) |
+| M31 spinner | Button loading | while pending | `ActivityIndicator` (native) |
+| M32 badge | header count badges | 0 ↔ ≥1 | opacity, 50, `sineIn` |
+| M33 sticky bar | Product sticky buy bar | main CTA leaves the viewport (measure with `onLayout` + scroll offset) | opacity 0 → 1 and `pointerEvents` on, 150, `ease.tailwind` |
+
+### 5.3 Motion helpers (`src/lib/motion.ts`)
+
+- **`<RevealScrollView>`:** an `Animated.ScrollView` that publishes `scrollY`
+  (`useAnimatedScrollHandler`) and `viewportH` through context.
+- **`<Reveal threshold={0.85} delay={0} once>`:** records its `y` from `onLayout`, relative to the
+  scroll content. A `useAnimatedReaction` on `scrollY` fires `withDelay(delay, withTiming(1, …))`
+  when `scrollY + viewportH × threshold >= y`. Once fired, it stays.
+- **`circlePoint(p, cx, cy, r)`** (worklet): Allbirds' path `M 100,10 a 90,90 0 1,0 0.01,0` starts at
+  the top and runs counter-clockwise.
+  - `θ = -π/2 - 2πp`; return `{ x: cx + r cos θ, y: cy + r sin θ }`.
+  - Check: `p = .681` gives (181.69, 137.83) in the 200-unit box, matching the captured dot.
+- **`stadiumPoint(p, w, h)`** (worklet): a point at fraction `p` of the perimeter of a stadium
+  (radius `w/2`, two straight sides of `h − w`), starting at the top centre and running clockwise.
+  Used for the brand pill's dots (the web pill is drawn rotated 90° on desktop; on phones it is
+  upright).
+- **`useCentredItem(listRef)`:** the viewable item with the largest visible area, for M5.
+- All helpers read `useReducedMotion()`.
+
+### 5.4 Reduced motion
+
+When `useReducedMotion()` is true (iOS Reduce Motion / Android "Remove animations"):
+- every `<Reveal>` renders at opacity 1;
+- the hero shows immediately;
+- dots sit at their resting points (`p = s`);
+- marquee and orbit loops do not start (the first copy is shown static);
+- the AnnouncementBar does not auto-rotate (chevrons only);
+- sheets appear and disappear without translate (opacity only, duration 0);
+- the M5 morph jumps to its end state for the centred tile.
+
+Every `withTiming` also passes `reduceMotion: ReduceMotion.System`.
+
+---
+
+## 6. Hat-catalog behaviours (unchanged; Appendix A §6)
+
+All v4 behaviours stay:
+- per-colour galleries from variant images;
+- one-size hats with no size pick, sized S/M and L/XL with stock;
+- fit-profile scales and spec lists;
+- the two-pack excluded from lists but reachable, with two pickers;
+- `/hats/` image URLs resolved against `EXPO_PUBLIC_STOREFRONT_URL`;
+- `page_type` on every event and `source` on `add_to_cart`;
+- the recently-viewed store.
+
+## 7. Verify
+
+Appendix A §8, plus:
+- screenshots at 390×844 of every screen, after each motion settles;
+- one recording per motion family (hero reveal, centred tile morph, Added sheet open/close, ring
+  band, pill window), sampled at 0 / 300 / 900ms against §5.2;
+- a run with Reduce Motion on, confirming that content is visible and static.
+
+---
+
+# Appendix A: v4 app structure and behaviour (verbatim, binding for function; visuals superseded)
+
+The text below is mobile/APP_SPEC.md v4 §3–§8 exactly as committed in `02852f5`. Screens, data,
+behaviour, analytics and verification stay binding. Every visual value inside it (colours, fonts,
+sizes, radii, heights, motion) is replaced by v5 §1–§5 above. Headings are prefixed `A.`, so v4's
+§5.4 is A.5.4. References in the main body to "Appendix A §5.1" mean A.5.1.
+
+## A.3. Components (`src/components/`)
 
 | Component | Spec |
 |---|---|
@@ -159,9 +449,9 @@ export const MAX_CONTENT_WIDTH = 720
 
 ---
 
-## 4. App chrome
+## A.4. App chrome
 
-### 4.1 Header (`src/components/app-header.tsx`, used at the top of Home, Shop and Drops)
+### A.4.1 Header (`src/components/app-header.tsx`, used at the top of Home, Shop and Drops)
 
 - White, bottom border 1pt `#E5E7EB`, under the safe area.
 - **Row 1** (61pt, paddingHorizontal 16):
@@ -173,7 +463,7 @@ export const MAX_CONTENT_WIDTH = 720
   (`withTiming` height 0.3s). Row 1 then shows the wordmark-less layout: SearchPill (flex 1) and the
   bag icon. Scrolling up expands it again.
 
-### 4.2 Tabs (`src/app/(tabs)/_layout.tsx`)
+### A.4.2 Tabs (`src/app/(tabs)/_layout.tsx`)
 
 - **Tabs:** Home · Shop · Drops · Bag · Account (order kept).
 - **Bar:** `#FFFFFF`, top border 1pt `#E5E7EB`, height 56 + the safe area.
@@ -184,9 +474,9 @@ export const MAX_CONTENT_WIDTH = 720
 
 ---
 
-## 5. Screens
+## A.5. Screens
 
-### 5.1 Home `(tabs)/index`
+### A.5.1 Home `(tabs)/index`
 
 The web home (§6.1 of `web/SITE_SPEC.md`) at phone size, in the same order, with live data:
 
@@ -264,7 +554,7 @@ The web home (§6.1 of `web/SITE_SPEC.md`) at phone size, in the same order, wit
       radius 3 left only) joined to Button `primary` "SIGN UP" (radius 3 right only).
     - Hidden with no upcoming release.
 
-### 5.2 Shop `(tabs)/shop`
+### A.5.2 Shop `(tabs)/shop`
 
 Replaces "core + live drops" with the full catalog, like web `/shop`.
 
@@ -293,7 +583,7 @@ Replaces "core + live drops" with the full catalog, like web `/shop`.
    - Drop `metadata.offer === true` products.
    - Order: core first, then products of live releases, then others.
 
-### 5.3 Product card (`product-card.tsx`)
+### A.5.3 Product card (`product-card.tsx`)
 
 - **Image area:** width `(W − 48)/2` (171 at 390), square, white, `contentFit="contain"`, with a 1pt
   `#E5E7EB` bottom border and 8 paddingBottom.
@@ -311,7 +601,7 @@ Replaces "core + live drops" with the full catalog, like web `/shop`.
     closure + category, e.g. "Unstructured Strapback Cap"), and "+N Colors" when there is more
     than one colour.
 
-### 5.4 Product `products/[handle]`
+### A.5.4 Product `products/[handle]`
 
 The web PDP (§6.4) at phone size. Gutter 21.5.
 
@@ -374,7 +664,7 @@ $8" badge and "$76" struck through (`fonts.body` 14 `#736B67`, `textDecorationLi
 excluded from every list (Shop, Home, You May Also Like, suggestions) and reachable only through
 Make It Two and deep links.
 
-### 5.5 Bag `(tabs)/cart`
+### A.5.5 Bag `(tabs)/cart`
 
 Melin's cart drawer as a full screen, on a `#F5F5F5` background.
 
@@ -402,7 +692,7 @@ Melin's cart drawer as a full screen, on a `#F5F5F5` background.
 5. **Empty:** `bag-outline` 48, `fonts.heading` 16 "Your Bag Is Empty", then Button `primary` "SHOP
    THE EVERYDAY CAP".
 
-### 5.6 Added sheet (`src/components/added-sheet.tsx`)
+### A.5.6 Added sheet (`src/components/added-sheet.tsx`)
 
 Native stand-in for Melin's slide-in drawer, after any add to cart.
 - A bottom-sheet `Modal`, white, top radius 8, over `rgba(0,0,0,0.8)`.
@@ -410,7 +700,7 @@ Native stand-in for Melin's slide-in drawer, after any add to cart.
   1.3); the added line (image 72, title, colour/size, price); Button `light` "KEEP SHOPPING" and
   Button `primary` "VIEW BAG", side by side.
 
-### 5.7 Checkout `checkout` and order `order/[id]`
+### A.5.7 Checkout `checkout` and order `order/[id]`
 
 Melin hands off to Shopify; Shelby keeps its three-step flow with these tokens (web §6.8).
 - **Step headers:** `fonts.heading` 18 UPPERCASE ls 1.3 "1. CONTACT & ADDRESS".
@@ -424,7 +714,7 @@ Melin hands off to Shopify; Shelby keeps its three-step flow with these tokens (
 - **Order confirmation:** `checkmark-circle` 48 `#22C55E`, `fonts.heading` 26/39 UPPERCASE "THANK
   YOU", the lines and totals, Button `light` "KEEP SHOPPING".
 
-### 5.8 Recently viewed
+### A.5.8 Recently viewed
 
 - AsyncStorage key `shelby.viewed`: the last 12 handles, written on PDP view.
 - The header eye icon opens a full-screen `Modal`: a 75pt header row ("Previously Viewed"
@@ -432,7 +722,7 @@ Melin hands off to Shopify; Shelby keeps its three-step flow with these tokens (
   grid.
 - The badge shows the count; the icon is hidden at 0.
 
-### 5.9 Drops `(tabs)/drops` and `drops/[handle]`
+### A.5.9 Drops `(tabs)/drops` and `drops/[handle]`
 
 - **Drops** (web §6.6, blog-index style):
   - **Featured hero:** the image `W × 293·W/390` (cover). Then, centred and padded 24/16:
@@ -462,7 +752,7 @@ Melin hands off to Shopify; Shelby keeps its three-step flow with these tokens (
     (past);
   - a 4pt black rule and Button `link` "← BACK TO DROPS".
 
-### 5.10 Account `(tabs)/account`
+### A.5.10 Account `(tabs)/account`
 
 Restyled with the tokens:
 - title `fonts.heading` 26/39 UPPERCASE "ACCOUNT";
@@ -472,7 +762,7 @@ Restyled with the tokens:
 
 ---
 
-## 6. Hat-catalog behaviours the app lacks today (must ship)
+## A.6. Hat-catalog behaviours the app lacks today (must ship)
 
 1. **Variant images per colour:** request `*variants.images,*images` and port `imagesFor`,
    `colorOption`, `colorThumbs` and `detailsOf` from `web/src/lib/product.ts` into
@@ -487,13 +777,13 @@ Restyled with the tokens:
    in `expo-image`.
 7. **Categories** for Browse By Style and the Shop pills: `sdk.store.category.list({ fields: "id,name,handle,description" })`.
 
-## 7. Analytics (unchanged)
+## A.7. Analytics (unchanged)
 
 Keep `src/lib/analytics.ts` and attribution. Every event carries `page_type` mapped from the screen:
 home, collection, pdp, offer (the two-pack screen), drops, cart, checkout, order, other.
 `add_to_cart` carries `source` (`"app_pdp"`, `"app_quick_add"`, `"app_bag"`).
 
-## 8. Verify
+## A.8. Verify
 
 1. `npm run typecheck`.
 2. `npx expo export --platform web` (the existing `export:web` script). Serve `dist/` and take
