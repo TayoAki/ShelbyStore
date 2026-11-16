@@ -30,6 +30,7 @@ import {
   goLiveReleaseWorkflow,
 } from "../workflows/release"
 import { CORE_COLLECTION_HANDLE } from "../lib/release-data"
+import { ensureLandingPages } from "./seed-landing"
 
 const DAY = 24 * 60 * 60 * 1000
 
@@ -294,10 +295,11 @@ export default async function seedShelby({ container }: ExecArgs) {
     })
   }
 
-  // --- Fit profiles (every run, only where missing) ---------------------------
+  // --- Fit profiles and uses (every run, only where missing) ------------------
   // Crown height and structure drive the PDP fit scales and the fit guide
-  // (web SITE_SPEC §6.4.10, §6.5). Beanies have no profile. Runs before the
-  // catalog check (for existing databases) and after seeding (for new ones).
+  // (web SITE_SPEC §6.4.10, §6.5); `uses` drives the fit quiz (§12.4). Beanies
+  // have no fit profile. Runs before the catalog check (for existing databases)
+  // and after seeding (for new ones).
   const fitProfiles: Record<string, { crown: string; structure: string }> = {
     "everyday-cap": { crown: "Low", structure: "Unstructured" },
     "corduroy-cap": { crown: "Low", structure: "Unstructured" },
@@ -306,18 +308,29 @@ export default async function seedShelby({ container }: ExecArgs) {
     "waxed-field-cap": { crown: "Mid", structure: "Semi-structured" },
     "bucket-hat": { crown: "Mid", structure: "Unstructured" },
   }
+  /** What each hat is for, as the quiz asks it: everyday, running, sun, cold. */
+  const uses: Record<string, string[]> = {
+    "everyday-cap": ["everyday"],
+    "corduroy-cap": ["everyday", "cold"],
+    trucker: ["everyday", "sun"],
+    "performance-cap": ["running", "sun"],
+    "waxed-field-cap": ["everyday", "cold"],
+    "bucket-hat": ["sun"],
+    "ribbed-beanie": ["cold"],
+  }
   const ensureFitProfiles = async () => {
-    const profiled = await productModuleService.listProducts({ handle: Object.keys(fitProfiles) })
+    const handles = [...new Set([...Object.keys(fitProfiles), ...Object.keys(uses)])]
+    const profiled = await productModuleService.listProducts({ handle: handles })
     for (const product of profiled) {
       const metadata = (product.metadata ?? {}) as Record<string, unknown>
-      if (metadata.fit_profile) continue
+      const add: Record<string, unknown> = {}
+      if (!metadata.fit_profile && fitProfiles[product.handle]) add.fit_profile = fitProfiles[product.handle]
+      if (!metadata.uses && uses[product.handle]) add.uses = uses[product.handle]
+      if (!Object.keys(add).length) continue
       await updateProductsWorkflow(container).run({
-        input: {
-          selector: { id: product.id },
-          update: { metadata: { ...metadata, fit_profile: fitProfiles[product.handle] } },
-        },
+        input: { selector: { id: product.id }, update: { metadata: { ...metadata, ...add } } },
       })
-      logger.info(`Set the fit profile on ${product.handle}.`)
+      logger.info(`Set ${Object.keys(add).join(" and ")} on ${product.handle}.`)
     }
   }
   await ensureFitProfiles()
@@ -326,6 +339,7 @@ export default async function seedShelby({ container }: ExecArgs) {
   const existing = await productModuleService.listProducts({ handle: "everyday-cap" })
   if (existing.length) {
     logger.info("Shelby hat catalog already present. Skipping.")
+    await ensureLandingPages(container, { salesChannelId: salesChannel.id, shippingProfileId: shippingProfile.id })
     return
   }
 
@@ -810,5 +824,6 @@ export default async function seedShelby({ container }: ExecArgs) {
   })
 
   await ensureFitProfiles()
+  await ensureLandingPages(container, { salesChannelId: salesChannel.id, shippingProfileId: shippingProfile.id })
   logger.info("Finished seeding Shelby hats.")
 }
