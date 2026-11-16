@@ -3,16 +3,16 @@ import { catalogItems } from "@/lib/catalog-items"
 import { itemCount, retrieveCart } from "@/lib/data/cart"
 import { getRegion, listCatalog, listReleases } from "@/lib/data/catalog"
 import { listSeries } from "@/lib/data/content"
-import { formatMoney } from "@/lib/format"
-import { price } from "@/lib/product"
-import { buildHoles, CORE_COLORS, holeDate, nextHole } from "@/lib/rope"
-import { SiteHeader, type Panel } from "./site-header"
+import { buildHoles, CORE_COLORS, nextHole, pad2 } from "@/lib/rope"
+import { CountBadge } from "./recently-viewed"
+import { SiteHeader, type Panel, type StripTile } from "./site-header"
 
-const lead = (color: string) => `/hats/rope-cap-${color.toLowerCase().replace(/\s+/g, "-")}-1.jpg`
+export const lead = (color: string) => `/hats/rope-cap-${color.toLowerCase().replace(/\s+/g, "-")}-1.jpg`
 
 /**
- * Builds the header's menus and search index from the cached catalog
- * (SITE_SPEC §6.0.2–§6.0.5, G.6.1). SHOP · THE CARD · CUSTOM · QUIZ · EXPLORE.
+ * Builds the header's mega-menu panels, the mobile colour strip and the
+ * search index from the cached catalog (SITE_SPEC v8 E.6.0.2–E.6.0.5).
+ * SHOP · THE CARD · EXPLORE · CUSTOM · QUIZ.
  */
 export async function Header() {
   const region = await getRegion()
@@ -22,12 +22,12 @@ export async function Header() {
     listSeries(),
   ])
   const holes = buildHoles(releases)
-  const editions = holes.filter((h) => !h.core && (h.status === "live" || h.status === "upcoming"))
   const pair = catalog.find((p) => p.handle === "the-pair")
   const foursome = catalog.find((p) => p.handle === "the-foursome")
   const next = nextHole(holes)
-  const liveHoles = holes.filter((h) => h.status === "live")
+  const liveHoles = holes.filter((h) => h.status === "live" && !h.core)
   const story = series[0] ?? null
+  const holeHref = (h: (typeof holes)[number]) => (h.productHandle ? `/products/${h.productHandle}` : h.handle ? `/card/${h.handle}` : "/card")
 
   const panels: Panel[] = [
     {
@@ -35,46 +35,35 @@ export async function Header() {
       label: "Shop",
       track: "nav_shop",
       columns: [
-        { heading: "CORE COLORS", links: CORE_COLORS.map((c) => ({ label: c, href: `/products/rope-cap?color=${encodeURIComponent(c)}` })) },
-        ...(editions.length
-          ? [
-              {
-                heading: "LIMITED",
-                links: editions.map((h) => ({
-                  label: `${h.name} · ${h.status === "live" ? "Live" : (holeDate(h.date).day ?? "").replace(/ \d{4}$/, "")}`,
-                  href: h.productHandle ? `/products/${h.productHandle}` : `/card/${h.handle}`,
-                })),
-              },
-            ]
-          : []),
         {
-          heading: "BUNDLES",
+          heading: "Shop",
           links: [
-            ...(pair ? [{ label: `The Pair · ${formatMoney(price(pair).amount)}`, href: "/offer/the-pair" }] : []),
-            ...(foursome ? [{ label: `The Foursome · ${formatMoney(price(foursome).amount)}`, href: "/offer/the-pair#foursome" }] : []),
+            { label: "The Rope Cap", href: "/products/rope-cap" },
+            ...(pair ? [{ label: "The Pair", href: "/offer/the-pair" }] : []),
+            ...(foursome ? [{ label: "The Foursome", href: "/offer/the-pair#foursome" }] : []),
+            { label: "Numbered editions", href: "/shop?group=limited" },
+            { label: "Shop all", href: "/shop" },
           ],
         },
+        { heading: "Colors", links: CORE_COLORS.map((c) => ({ label: c, href: `/products/rope-cap?color=${encodeURIComponent(c)}` })) },
       ],
       cards: [
         { label: "The Rope Cap", href: "/products/rope-cap", image: lead("Tour White"), contain: true },
         ...(pair ? [{ label: "The Pair", href: "/offer/the-pair", image: lead("Pine"), contain: true }] : []),
-        { label: "Shop All", href: "/shop", image: "/hats/rope-lifestyle-hero.jpg", contain: false },
       ],
     },
     {
       key: "card",
       label: "The Card",
       track: "nav_drops",
-      dot: liveHoles.some((h) => !h.core),
       columns: [
-        { heading: "NOW", links: liveHoles.map((h) => ({ label: `Hole ${h.hole}: ${h.name}`, href: h.productHandle ? `/products/${h.productHandle}` : `/card/${h.handle}` })) },
-        ...(next ? [{ heading: "NEXT", links: [{ label: `Hole ${next.hole}: ${next.name} · ${holeDate(next.date).day ?? ""}`, href: `/card/${next.handle}` }] }] : []),
-        { heading: "THE CARD", links: [{ label: "All six holes", href: "/card" }] },
+        ...(liveHoles.length ? [{ heading: "Now", links: liveHoles.map((h) => ({ label: `No. ${pad2(h.hole)} ${h.name}`, href: holeHref(h) })) }] : []),
+        ...(next ? [{ heading: "Next", links: [{ label: `No. ${pad2(next.hole)} ${next.name}`, href: `/card/${next.handle}` }] }] : []),
+        { heading: "All six holes", links: [{ label: "The Card", href: "/card" }, ...holes.filter((h) => h.status === "announced").map((h) => ({ label: `No. ${pad2(h.hole)} ${h.name}`, href: "/card" }))] },
       ],
-      cards: holes
-        .filter((h) => h.image && h.handle)
-        .slice(0, 3)
-        .map((h) => ({ label: `Hole ${h.hole}: ${h.name}`, href: `/card/${h.handle}`, image: h.image!, contain: true })),
+      cards: [...liveHoles.slice(0, 1), ...(next ? [next] : [])]
+        .filter((h) => h.image)
+        .map((h) => ({ label: `No. ${pad2(h.hole)} ${h.name}`, href: h === next ? `/card/${h.handle}` : holeHref(h), image: h.image!, contain: true })),
     },
     {
       key: "explore",
@@ -82,23 +71,37 @@ export async function Header() {
       track: "nav_explore",
       columns: [
         {
-          heading: "EXPLORE",
+          heading: "Explore",
           links: [
             ...(story ? [{ label: story.title, href: `/stories/${story.handle}` }] : []),
-            { label: "Fit Guide", href: "/fit-guide" },
-            { label: "Why The Rope Cap", href: "/reasons/rope-cap" },
-            { label: "Custom Orders", href: "/custom" },
-            { label: "Shipping & Returns", href: "/help/shipping-returns" },
+            { label: "Why the Rope Cap", href: "/reasons/rope-cap" },
+            { label: "Fit guide", href: "/fit-guide" },
+            { label: "The quiz", href: "/quiz" },
+          ],
+        },
+        {
+          heading: "Help",
+          links: [
+            { label: "Shipping & returns", href: "/help/shipping-returns" },
+            { label: "Custom orders", href: "/custom" },
           ],
         },
       ],
-      cards: [{ label: story?.title ?? "The Crown Test", href: story ? `/stories/${story.handle}` : "/fit-guide", image: "/hats/rope-brim.jpg", contain: false }],
+      cards: story ? [{ label: story.title, href: `/stories/${story.handle}`, image: "/hats/story-crush.jpg", contain: false }] : [],
     },
+  ]
+
+  const live = liveHoles[0] ?? null
+  const strip: StripTile[] = [
+    ...CORE_COLORS.map((c) => ({ label: c === "Clubhouse Navy" ? "Navy" : c, href: `/products/rope-cap?color=${encodeURIComponent(c)}`, image: lead(c), track: "shop_by_color" })),
+    { label: "Holes", href: "/card", image: live?.image ?? lead("Pine"), track: "home_scorecard" },
+    ...(pair ? [{ label: "Pair", href: "/offer/the-pair", image: lead("Pine"), track: "home_pair" }] : []),
   ]
 
   return (
     <SiteHeader
       panels={panels}
+      strip={strip}
       catalog={catalogItems(catalog)}
       bagBadge={
         <Suspense fallback={null}>
@@ -109,14 +112,14 @@ export async function Header() {
   )
 }
 
-/** Bag count as a printed tag; hidden at 0. */
+/** The bag count in its 16px green circle; nothing at 0. */
 async function BagBadge() {
   const count = itemCount(await retrieveCart())
   if (!count) return null
   return (
-    <span className="figure inline-flex h-[1.375rem] min-w-[1.375rem] items-center justify-center rounded-[2px] border-[1.5px] border-current px-1 text-[13px]">
-      {count}
-      <span className="sr-only"> items in bag</span>
-    </span>
+    <>
+      <CountBadge count={count} />
+      <span className="sr-only">, {count} items</span>
+    </>
   )
 }

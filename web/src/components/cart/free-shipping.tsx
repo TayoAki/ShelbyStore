@@ -1,27 +1,29 @@
-import { CheckCircle } from "@phosphor-icons/react/dist/ssr"
 import { formatMoney } from "@/lib/format"
 import { POLICY } from "@/lib/policy"
 
 /**
- * The free-shipping progress (G.6.8): only the real $85 threshold, which must
- * match the Medusa shipping-price rule. Fill scales from the left (M21 timing).
+ * Free-shipping progress (SITE_SPEC v8 E.5.10): the message, then Eastside's
+ * 8px bar in green (M20). Only the real $85 threshold, which must match the
+ * Medusa shipping-price rule.
  */
-export function FreeShipping({ subtotal, currency }: { subtotal: number; currency: string }) {
+export function FreeShipping({ subtotal, currency, className = "" }: { subtotal: number; currency: string; className?: string }) {
   const t = POLICY.freeShippingThreshold
   const left = Math.max(0, t - subtotal)
   return (
-    <div className="px-5 py-3">
-      <p className="flex items-center gap-1.5 text-[0.875rem] leading-5">
+    <div className={`py-3 ${className}`}>
+      <p className="text-center text-[14.4px] leading-[19.73px]">
         {left > 0 ? (
-          <>Add {formatMoney(left, currency)} for free shipping.</>
+          <>
+            You&apos;re <strong className="tabular font-bold">{formatMoney(left, currency)}</strong> away from <strong className="font-bold">free shipping</strong>.
+          </>
         ) : (
           <>
-            <CheckCircle size={16} weight="fill" className="text-ok" aria-hidden /> Free shipping unlocked.
+            You&apos;ve got <strong className="font-bold">free standard shipping</strong>.
           </>
         )}
       </p>
-      <div className="mt-2 h-3 overflow-hidden rounded-[2px] border-2 border-ink bg-paper" role="progressbar" aria-valuemin={0} aria-valuemax={t} aria-valuenow={Math.min(subtotal, t)} aria-label="Progress to free shipping">
-        <div className="h-full origin-left bg-ink transition-transform duration-[420ms] ease-[var(--ease-box)]" style={{ transform: `scaleX(${Math.min(subtotal / t, 1)})` }} />
+      <div className="progress mt-2" role="progressbar" aria-valuemin={0} aria-valuemax={t} aria-valuenow={Math.min(subtotal, t)} aria-label="Progress to free shipping">
+        <span style={{ width: `${Math.min(subtotal / t, 1) * 100}%` }} />
       </div>
     </div>
   )

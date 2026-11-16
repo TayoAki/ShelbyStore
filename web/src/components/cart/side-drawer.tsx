@@ -4,21 +4,26 @@ import { X } from "@phosphor-icons/react"
 import { useEffect, useRef } from "react"
 
 /**
- * Right-hand drawer frame shared by the cart and "Previously Viewed"
- * (SITE_SPEC §6.0.4, §6.7): a modal <dialog> (focus trap, Escape, inert page),
- * white, 500px on md+ and full screen on mobile, sliding in from the right
- * over a black/50 overlay (M20: 0.8s power3.out).
+ * Eastside's drawer shell (SITE_SPEC v8 E.5.11): a modal <dialog> (focus
+ * trap, Escape, inert page, focus back to the opener). `side="right"` is the
+ * 650px cart flyout (M13) or, with `narrow`, the 380px recently-viewed drawer;
+ * `side="left"` is the mobile menu (M12). A click on the scrim, or on any link
+ * inside, closes it.
  */
 export function SideDrawer({
   open,
   onClose,
   label,
-  className = "bg-paper",
+  side = "right",
+  narrow = false,
+  className = "",
   children,
 }: {
   open: boolean
   onClose: () => void
   label: string
+  side?: "right" | "left"
+  narrow?: boolean
   className?: string
   children: React.ReactNode
 }) {
@@ -42,27 +47,43 @@ export function SideDrawer({
     <dialog
       ref={ref}
       aria-label={label}
+      className="drawer"
       onClose={onClose}
       onCancel={(e) => {
         e.preventDefault()
         onClose()
       }}
       onClick={(e) => {
-        // A click on the backdrop lands on the dialog element itself; following
-        // a link inside the drawer closes it too.
-        if (e.target === ref.current || (e.target as HTMLElement).closest("a")) onClose()
+        const t = e.target as HTMLElement
+        if (t === ref.current || t.classList.contains("drawer-scrim") || t.closest("a")) onClose()
       }}
-      className={`fixed inset-y-0 left-auto right-0 m-0 h-dvh max-h-none w-screen max-w-none p-0 border-l-2 border-ink text-ink shadow-xl backdrop:bg-ink/50 md:w-[500px] ${className} translate-x-0 transition-transform duration-[420ms] ease-[var(--ease-box)] starting:translate-x-full open:flex open:flex-col`}
     >
-      {children}
+      {open && (
+        <>
+          <div className="drawer-scrim" aria-hidden />
+          <div className={`${side === "left" ? "menu-panel" : `drawer-panel${narrow ? " drawer-narrow" : ""}`} ${className}`}>{children}</div>
+        </>
+      )}
     </dialog>
   )
 }
 
+/** The drawer's close button: 34×34 visual in a 44px hit area, X 24px rotating 90° on hover (M14). */
 export function DrawerClose({ onClose, className = "" }: { onClose: () => void; className?: string }) {
   return (
-    <button type="button" aria-label="Close" onClick={onClose} className={`flex h-6 w-6 items-center justify-center ${className}`}>
+    <button type="button" aria-label="Close" onClick={onClose} className={`drawer-close ${className}`}>
       <X size={24} />
     </button>
+  )
+}
+
+/** The 64px drawer head. */
+export function DrawerHead({ children, onClose, closeFirst = false }: { children?: React.ReactNode; onClose: () => void; closeFirst?: boolean }) {
+  return (
+    <div className="flex h-16 shrink-0 items-center gap-3 border-b border-border px-[15px]">
+      {closeFirst && <DrawerClose onClose={onClose} className="-ml-[5px]" />}
+      <div className="flex min-w-0 flex-1 items-center gap-3">{children}</div>
+      {!closeFirst && <DrawerClose onClose={onClose} className="-mr-[5px]" />}
+    </div>
   )
 }

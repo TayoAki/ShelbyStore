@@ -6,10 +6,10 @@ import Link from "next/link"
 import { useEffect, useState, useSyncExternalStore } from "react"
 import type { CatalogItem } from "@/lib/catalog-items"
 import { formatMoney } from "@/lib/format"
-import { DrawerClose, SideDrawer } from "./cart/side-drawer"
+import { DrawerHead, SideDrawer } from "./cart/side-drawer"
 
 /**
- * "Previously Viewed" (SITE_SPEC §6.0.4): the last 12
+ * "Recently viewed" (SITE_SPEC v8 E.6.0.7): the last 12
  * product handles in localStorage, local to this browser only. Storage can be
  * missing (private mode, previews), so every read and write is guarded.
  */
@@ -80,9 +80,8 @@ export function RecentlyViewedButton({ catalog }: { catalog: CatalogItem[] }) {
   if (!items.length) return null
   return (
     <>
-      <button type="button" className="relative flex size-6 items-center justify-center" aria-label={`Previously viewed (${items.length})`} onClick={() => setOpen(true)} data-track="recently_viewed">
-        <Eye size={24} />
-        <CountBadge count={items.length} />
+      <button type="button" className="flex size-11 items-center justify-center" aria-label={`Recently viewed (${items.length})`} onClick={() => setOpen(true)} data-track="recently_viewed">
+        <Eye size={22} />
       </button>
       <ViewedDrawer open={open} onClose={() => setOpen(false)} items={items} />
     </>
@@ -91,43 +90,44 @@ export function RecentlyViewedButton({ catalog }: { catalog: CatalogItem[] }) {
 
 export function ViewedDrawer({ open, onClose, items }: { open: boolean; onClose: () => void; items: CatalogItem[] }) {
   return (
-    <SideDrawer open={open} onClose={onClose} label="Previously viewed">
-      <div className="flex items-center justify-between border-b-2 border-ink px-5 py-4">
-        <p className="panel-title !text-[1.75rem]">Previously viewed</p>
-        <DrawerClose onClose={onClose} />
-      </div>
-      <div className="grid flex-1 grid-cols-2 content-start gap-3 overflow-y-auto p-5">
-        {items.map((i) => (
-          <MiniCard key={i.key} item={i} track="recently_viewed" />
-        ))}
-      </div>
+    <SideDrawer open={open} onClose={onClose} label="Recently viewed" narrow>
+      <DrawerHead onClose={onClose}>
+        <h2 className="label !text-[14.4px]">Recently viewed</h2>
+      </DrawerHead>
+      {items.length ? (
+        <div className="grid flex-1 grid-cols-2 content-start gap-x-1 gap-y-5 overflow-y-auto p-4">
+          {items.map((i) => (
+            <MiniCard key={i.key} item={i} track="recently_viewed" />
+          ))}
+        </div>
+      ) : (
+        <p className="p-4 text-[14.4px]">Caps you look at will show here, on this device only.</p>
+      )}
     </SideDrawer>
   )
 }
 
-/** Count on header icons, printed as a small tag. */
+/** The bag count: an 11px/700 white number in a 16px green circle at the icon's top right. */
 export function CountBadge({ count }: { count: number }) {
   return (
-    <span
-      aria-hidden
-      className="ml-1 figure inline-flex h-[1.375rem] min-w-[1.375rem] items-center justify-center rounded-[2px] border-[1.5px] border-current px-1 text-[13px]"
-    >
+    <span aria-hidden className="tabular absolute top-1 right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-green px-1 text-[11px] leading-none font-bold text-white">
       {count}
     </span>
   )
 }
 
-/** A small product card (no quick add) for drawers. */
-export function MiniCard({ item, track }: { item: CatalogItem; track?: string }) {
+/** An E.5.2 card without quick add, for drawers and search results. */
+export function MiniCard({ item, track, onClick }: { item: CatalogItem; track?: string; onClick?: () => void }) {
   return (
-    <Link href={item.href} data-track={track} className="group flex flex-col overflow-hidden rounded-[4px] border-2 border-ink bg-paper">
-      <span className="relative aspect-square border-b-2 border-ink">
-        {item.image && <Image src={item.image} alt="" fill sizes="200px" className="object-contain" />}
+    <Link href={item.href} data-track={track} onClick={onClick} className="card flex flex-col">
+      <span className="tile relative block aspect-[5/6]">
+        {item.image && <Image src={item.image} alt="" fill sizes="(min-width: 750px) 260px, 45vw" className="tile-photo object-contain" />}
+        {item.image2 && <Image src={item.image2} alt="" fill sizes="(min-width: 750px) 260px, 45vw" className="card-img-2 tile-photo object-contain" />}
       </span>
-      <span className="flex flex-col gap-0.5 p-3">
-        <span className="label">{item.title}</span>
-        <span className="text-[0.9375rem] leading-5 text-ink-2">{item.meta}</span>
-        <span className="text-[1rem] leading-6 font-semibold tabular-nums">{formatMoney(item.price, item.currency)}</span>
+      <span className="flex flex-col px-2 pt-2 pb-0.5">
+        <span className="card-title">{item.title}</span>
+        {item.meta && <span className="meta">{item.meta}</span>}
+        <span className="price-card mt-[5px]">{formatMoney(item.price, item.currency)}</span>
       </span>
     </Link>
   )

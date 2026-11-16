@@ -1,12 +1,13 @@
 "use client"
 
-import { CaretDown, Eye, Handbag, List, MagnifyingGlass, X } from "@phosphor-icons/react"
+import { ArrowLeft, ArrowRight, Eye, Handbag, List, MagnifyingGlass } from "@phosphor-icons/react"
 import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Suspense, useEffect, useRef, useState, type ReactNode } from "react"
 import type { CatalogItem } from "@/lib/catalog-items"
 import { useCartDrawer } from "./cart/drawer-context"
+import { DrawerHead, SideDrawer } from "./cart/side-drawer"
 import { useViewed, viewedItems, ViewedDrawer } from "./recently-viewed"
 import { SearchPanel } from "./search"
 
@@ -14,142 +15,169 @@ export type Panel = {
   key: "shop" | "card" | "explore"
   label: string
   track: string
-  dot?: boolean
   columns: { heading: string; links: { label: string; href: string }[] }[]
   cards: { label: string; href: string; image: string; contain: boolean }[]
 }
+
+export type StripTile = { label: string; href: string; image: string; track: string }
 
 const LINKS = [
   { label: "Custom", href: "/custom", track: "nav_custom" },
   { label: "Quiz", href: "/quiz", track: "nav_quiz" },
 ]
 
+const ICON = "flex size-11 items-center justify-center text-text transition-colors duration-250 hover:text-link-hover"
+
 /**
- * The box's top flap: a printed white strip with the wordmark set like the
- * brand on a ball box, the nav as printed links, and the bag with its count in
- * a digit slot. Menus fold down from the flap as keylined board panels on the
- * shared beat. Mobile: menu, wordmark, search and bag.
+ * Eastside's header (SITE_SPEC v8 E.6.0.2–E.6.0.5). Desktop: the wordmark at
+ * the left, the nav in the centre (Shop, The Card and Explore open full-width
+ * mega menus on a 120ms hover intent; Custom and Quiz are links), and the eye,
+ * search and bag at the right. Mobile: menu and search, the centred wordmark,
+ * the eye and bag. Sticky (M6); the announcement bar scrolls away above it.
  */
-export function SiteHeader({ panels, catalog, bagBadge }: { panels: Panel[]; catalog: CatalogItem[]; bagBadge: ReactNode }) {
+export function SiteHeader({ panels, strip, catalog, bagBadge }: { panels: Panel[]; strip: StripTile[]; catalog: CatalogItem[]; bagBadge: ReactNode }) {
   const { open: openBag } = useCartDrawer()
   const [openKey, setOpenKey] = useState<string | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [sub, setSub] = useState<Panel["key"] | null>(null)
   const [viewedOpen, setViewedOpen] = useState(false)
   const viewed = viewedItems(catalog, useViewed())
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   useEffect(() => {
-    document.documentElement.classList.toggle("scroll-locked", menuOpen)
-    return () => document.documentElement.classList.remove("scroll-locked")
-  }, [menuOpen])
-  useEffect(() => {
-    if (!openKey && !menuOpen) return
+    if (!openKey) return
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return
-      setOpenKey(null)
-      setMenuOpen(false)
+      if (e.key === "Escape") setOpenKey(null)
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
-  }, [openKey, menuOpen])
+  }, [openKey])
 
   const hoverOpen = (key: string | null, delay = 120) => {
     clearTimeout(timer.current)
     timer.current = setTimeout(() => setOpenKey(key), delay)
   }
   const closeAll = () => {
+    clearTimeout(timer.current)
     setOpenKey(null)
     setMenuOpen(false)
+    setSub(null)
   }
-  const panel = panels.find((p) => p.key === openKey)
+  const toggleSearch = () => {
+    clearTimeout(timer.current)
+    setMenuOpen(false)
+    setOpenKey((k) => (k === "search" ? null : "search"))
+  }
+  const subPanel = panels.find((p) => p.key === sub)
 
   return (
     <>
       <Suspense fallback={null}>
         <OnNavigate run={closeAll} />
       </Suspense>
-      <header className="sticky top-0 z-[80] border-b-2 border-ink bg-paper" onMouseLeave={() => openKey && openKey !== "search" && hoverOpen(null, 180)}>
-        <div className="mx-auto grid h-16 max-w-[1440px] grid-cols-[1fr_auto_1fr] items-center px-3 md:px-6">
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              className="flex size-11 items-center justify-center lg:hidden"
-              aria-label={menuOpen ? "Close menu" : "Open menu"}
-              aria-expanded={menuOpen}
-              onClick={() => {
-                setMenuOpen((o) => !o)
-                setOpenKey(null)
-              }}
-            >
-              {menuOpen ? <X size={26} weight="bold" /> : <List size={26} weight="bold" />}
-            </button>
-            <nav aria-label="Main" className="hidden lg:block">
-              <ul className="flex items-center gap-7">
-                {panels.slice(0, 2).map((p) => (
-                  <NavButton key={p.key} panel={p} openKey={openKey} onHover={hoverOpen} onToggle={setOpenKey} />
-                ))}
-                {LINKS.map((l) => (
-                  <li key={l.href}>
-                    <Link href={l.href} data-track={l.track} className="label !text-[14px] decoration-2 underline-offset-[6px] hover:underline">
-                      {l.label}
-                    </Link>
-                  </li>
-                ))}
-                {panels.slice(2).map((p) => (
-                  <NavButton key={p.key} panel={p} openKey={openKey} onHover={hoverOpen} onToggle={setOpenKey} />
-                ))}
-              </ul>
-            </nav>
-          </div>
-
-          <Link href="/" aria-label="Shelby home" className="font-model text-[2rem] leading-none font-[850] tracking-[.06em] uppercase md:text-[2.25rem]">
+      <header className="site-header">
+        {/* Desktop */}
+        <div className="wrap hidden h-[70px] grid-cols-[1fr_auto_1fr] items-center md:grid">
+          <Link href="/" aria-label="Shelby home" className="display-mark flex h-[60px] w-fit items-center !text-text hover:!text-text">
             Shelby
           </Link>
-
-          <div className="flex items-center justify-end gap-1 md:gap-2">
-            <button
-              type="button"
-              aria-label="Search"
-              aria-expanded={openKey === "search"}
-              className="flex size-11 items-center justify-center"
-              onClick={() => {
-                setMenuOpen(false)
-                setOpenKey((k) => (k === "search" ? null : "search"))
-              }}
-            >
-              <MagnifyingGlass size={24} weight="bold" />
+          <nav aria-label="Main">
+            <ul className="flex items-center">
+              {panels.map((p) => (
+                <li
+                  key={p.key}
+                  onMouseEnter={() => hoverOpen(p.key)}
+                  onMouseLeave={() => hoverOpen(null)}
+                  onBlur={(e) => {
+                    if (!e.currentTarget.contains(e.relatedTarget as Node)) setOpenKey((k) => (k === p.key ? null : k))
+                  }}
+                >
+                  <button
+                    type="button"
+                    aria-expanded={openKey === p.key}
+                    aria-controls={`mega-${p.key}`}
+                    data-track={p.track}
+                    onClick={() => {
+                      clearTimeout(timer.current)
+                      setOpenKey((k) => (k === p.key ? null : p.key))
+                    }}
+                    className="navlink nav-label h-[60px]"
+                  >
+                    <span className="navtext">{p.label}</span>
+                  </button>
+                  <Mega panel={p} open={openKey === p.key} onNavigate={closeAll} />
+                </li>
+              ))}
+              {LINKS.map((l) => (
+                <li key={l.href} onMouseEnter={() => hoverOpen(null)}>
+                  <Link href={l.href} data-track={l.track} className="navlink nav-label h-[60px]">
+                    <span className="navtext">{l.label}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+          <div className="flex items-center justify-end">
+            <button type="button" aria-label="Recently viewed" className={ICON} onClick={() => setViewedOpen(true)} data-track="recently_viewed">
+              <Eye size={22} />
             </button>
-            {viewed.length > 0 && (
-              <button type="button" aria-label="Recently viewed" className="hidden size-11 items-center justify-center md:flex" onClick={() => setViewedOpen(true)} data-track="recently_viewed">
-                <Eye size={24} weight="bold" />
-              </button>
-            )}
-            <button type="button" onClick={openBag} aria-label="Open bag" className="flex h-11 items-center gap-2 px-1.5">
-              <Handbag size={24} weight="bold" />
-              <span className="label hidden !text-[14px] md:inline">Bag</span>
+            <button type="button" aria-label="Search" aria-expanded={openKey === "search"} className={ICON} onClick={toggleSearch}>
+              <MagnifyingGlass size={22} />
+            </button>
+            <button type="button" onClick={openBag} aria-label="Open bag" className={`${ICON} relative -mr-2.5`}>
+              <Handbag size={22} />
               {bagBadge}
             </button>
           </div>
         </div>
 
-        {/* Desktop flap panels and search fold down from the header on the shared beat. */}
-        <div
-          className={`sheet absolute inset-x-0 top-full origin-top border-b-2 border-ink bg-paper ${openKey ? "visible scale-y-100 opacity-100" : "invisible scale-y-95 opacity-0"}`}
-          onMouseEnter={() => clearTimeout(timer.current)}
-        >
-          {openKey === "search" ? (
-            <div className="py-8">
-              <SearchPanel catalog={catalog} onNavigate={closeAll} />
-            </div>
-          ) : panel ? (
-            <div className="mx-auto grid max-w-[1440px] grid-cols-[repeat(3,minmax(0,1fr))_auto] gap-10 px-6 py-8">
-              {panel.columns.map((c) => (
+        {/* Mobile */}
+        <div className="grid h-[72px] grid-cols-[1fr_auto_1fr] items-center px-1 md:hidden">
+          <div className="flex items-center">
+            <button type="button" className={ICON} aria-label="Open menu" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)}>
+              <List size={22} />
+            </button>
+            <button type="button" aria-label="Search" aria-expanded={openKey === "search"} className={ICON} onClick={toggleSearch}>
+              <MagnifyingGlass size={22} />
+            </button>
+          </div>
+          <Link href="/" aria-label="Shelby home" className="display-mark flex h-11 items-center !text-text">
+            Shelby
+          </Link>
+          <div className="flex items-center justify-end">
+            <button type="button" aria-label="Recently viewed" className={ICON} onClick={() => setViewedOpen(true)} data-track="recently_viewed">
+              <Eye size={22} />
+            </button>
+            <button type="button" onClick={openBag} aria-label="Open bag" className={`${ICON} relative`}>
+              <Handbag size={22} />
+              {bagBadge}
+            </button>
+          </div>
+        </div>
+
+        {openKey === "search" && (
+          <div className="absolute inset-x-0 top-full z-10 max-h-[calc(100dvh-72px)] overflow-y-auto border-b border-border bg-bg">
+            <SearchPanel catalog={catalog} onNavigate={closeAll} onClose={() => setOpenKey(null)} />
+          </div>
+        )}
+      </header>
+
+      {/* Mobile menu (E.6.0.4): a left drawer of 50px rows; parents slide in a sub-level. */}
+      <SideDrawer open={menuOpen} onClose={closeAll} label="Menu" side="left">
+        <DrawerHead onClose={closeAll} closeFirst />
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          {subPanel ? (
+            <div key={subPanel.key} className="menu-sub">
+              <button type="button" className="menu-row w-full justify-start gap-2" onClick={() => setSub(null)}>
+                <ArrowLeft size={18} aria-hidden /> Back
+              </button>
+              {subPanel.columns.map((c) => (
                 <div key={c.heading}>
-                  <p className="label border-b-2 border-ink pb-2">{c.heading}</p>
-                  <ul className="mt-3 flex flex-col gap-2">
+                  <p className="nav-label px-[15px] pt-5 pb-2 text-text-light">{c.heading}</p>
+                  <ul>
                     {c.links.map((l) => (
                       <li key={l.href + l.label}>
-                        <Link href={l.href} data-track={panel.track} onClick={closeAll} className="text-[1.0625rem] hover:underline">
+                        <Link href={l.href} data-track={subPanel.track} className="menu-row">
                           {l.label}
                         </Link>
                       </li>
@@ -157,104 +185,106 @@ export function SiteHeader({ panels, catalog, bagBadge }: { panels: Panel[]; cat
                   </ul>
                 </div>
               ))}
-              <div className="col-start-4 row-start-1 flex gap-4">
-                {panel.cards.map((card) => (
-                  <Link key={card.href + card.label} href={card.href} data-track={panel.track} onClick={closeAll} className="group w-[168px]">
-                    <span className="window block aspect-square">
-                      <Image src={card.image} alt="" fill sizes="168px" className={card.contain ? "object-contain p-3" : "object-cover"} />
-                    </span>
-                    <span className="label mt-2 block group-hover:underline">{card.label}</span>
-                  </Link>
-                ))}
-              </div>
             </div>
-          ) : null}
-        </div>
-      </header>
-
-      {/* Mobile menu: the flap opens to a full board sheet. */}
-      <div
-        className={`sheet fixed inset-x-0 top-0 bottom-0 z-[79] overflow-y-auto bg-paper pt-[124px] lg:hidden ${menuOpen ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-4 opacity-0"}`}
-        aria-hidden={!menuOpen}
-      >
-        <div className="flex flex-col gap-8 px-5 pb-12">
-          {panels.map((p) => (
-            <section key={p.key}>
-              <h2 className="panel-title !text-[2.5rem]">{p.label}</h2>
-              <div className="mt-3 flex flex-col gap-5">
-                {p.columns.map((c) => (
-                  <div key={c.heading}>
-                    <p className="label border-b-2 border-ink pb-1.5">{c.heading}</p>
-                    <ul className="mt-1">
-                      {c.links.map((l) => (
-                        <li key={l.href + l.label}>
-                          <Link href={l.href} data-track={p.track} tabIndex={menuOpen ? 0 : -1} onClick={closeAll} className="flex min-h-11 items-center text-[1.0625rem]">
-                            {l.label}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+          ) : (
+            <>
+              <ul>
+                {panels.map((p) => (
+                  <li key={p.key}>
+                    <button type="button" className="menu-row w-full" data-track={p.track} onClick={() => setSub(p.key)}>
+                      {p.label}
+                      <ArrowRight size={18} aria-hidden />
+                    </button>
+                  </li>
                 ))}
-              </div>
-            </section>
-          ))}
-          <ul className="flex flex-col border-t-2 border-ink pt-2">
-            {LINKS.map((l) => (
-              <li key={l.href}>
-                <Link href={l.href} data-track={l.track} tabIndex={menuOpen ? 0 : -1} onClick={closeAll} className="label flex min-h-11 items-center !text-[15px]">
-                  {l.label}
-                </Link>
-              </li>
-            ))}
-            {viewed.length > 0 && (
-              <li>
-                <button type="button" tabIndex={menuOpen ? 0 : -1} className="label flex min-h-11 items-center !text-[15px]" onClick={() => setViewedOpen(true)} data-track="recently_viewed">
-                  Recently viewed
-                </button>
-              </li>
-            )}
-            <li>
-              <Link href="/help/shipping-returns" tabIndex={menuOpen ? 0 : -1} onClick={closeAll} className="label flex min-h-11 items-center !text-[15px]">
-                Shipping & returns
-              </Link>
-            </li>
-          </ul>
+                {LINKS.map((l) => (
+                  <li key={l.href}>
+                    <Link href={l.href} data-track={l.track} className="menu-row">
+                      {l.label}
+                    </Link>
+                  </li>
+                ))}
+                <li>
+                  <button
+                    type="button"
+                    className="menu-row w-full"
+                    data-track="recently_viewed"
+                    onClick={() => {
+                      setMenuOpen(false)
+                      setViewedOpen(true)
+                    }}
+                  >
+                    Recently viewed
+                  </button>
+                </li>
+              </ul>
+              <ul className="rail px-[14px] py-5 [grid-auto-columns:79px]" aria-label="Shop by color">
+                {strip.map((t) => (
+                  <li key={t.label}>
+                    <Link href={t.href} data-track={t.track} className="flex flex-col items-center">
+                      <span className="tile relative block size-[79px]">
+                        <Image src={t.image} alt="" fill sizes="79px" className="tile-photo object-contain" />
+                      </span>
+                      <span className="mt-[7px] text-center text-[12.25px] leading-[15.93px] uppercase">{t.label}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </div>
-      </div>
+      </SideDrawer>
       <ViewedDrawer open={viewedOpen} onClose={() => setViewedOpen(false)} items={viewed} />
     </>
   )
 }
 
-function NavButton({
-  panel,
-  openKey,
-  onHover,
-  onToggle,
-}: {
-  panel: Panel
-  openKey: string | null
-  onHover: (key: string | null, delay?: number) => void
-  onToggle: (fn: (k: string | null) => string | null) => void
-}) {
-  const active = openKey === panel.key
+/** A full-width mega-menu panel (E.6.0.3, M5): link columns at the left, feature cards at the right. */
+function Mega({ panel, open, onNavigate }: { panel: Panel; open: boolean; onNavigate: () => void }) {
+  const starts = panel.columns.map((_, i) => panel.columns.slice(0, i).reduce((n, c) => n + c.links.length, 0))
   return (
-    <li>
-      <button
-        type="button"
-        aria-expanded={active}
-        data-track={panel.track}
-        onMouseEnter={() => onHover(panel.key)}
-        onFocus={() => onHover(panel.key, 0)}
-        onClick={() => onToggle((k) => (k === panel.key ? null : panel.key))}
-        className={`label flex items-center gap-1 !text-[14px] decoration-2 underline-offset-[6px] ${active ? "underline" : "hover:underline"}`}
-      >
-        {panel.label}
-        {panel.dot && <span aria-label="(a hole is live)" className="size-2 bg-stripe" />}
-        <CaretDown size={12} weight="bold" aria-hidden className={`transition-transform duration-200 ${active ? "rotate-180" : ""}`} />
-      </button>
-    </li>
+    <div id={`mega-${panel.key}`} className="mega" data-open={open} aria-hidden={!open}>
+      <div className="flex justify-between gap-10 px-[72px] py-8">
+        <div className="flex gap-16">
+          {panel.columns.map((c, ci) => (
+            <div key={c.heading} className="min-w-[160px] py-[30px]">
+              <p className="nav-label leading-[25px] text-text">{c.heading}</p>
+              <ul>
+                {c.links.map((l, li) => {
+                  const row = starts[ci] + li + 1
+                  return (
+                    <li key={l.href + l.label}>
+                      <Link
+                        href={l.href}
+                        data-track={panel.track}
+                        onClick={onNavigate}
+                        tabIndex={open ? undefined : -1}
+                        className="mega-link nav-sub leading-[25px]"
+                        style={open ? { transitionDelay: `${row * 0.02}s, ${row * 0.02}s, 0s` } : undefined}
+                      >
+                        {l.label}
+                      </Link>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+          ))}
+        </div>
+        {panel.cards.length > 0 && (
+          <div className="flex gap-4 py-[30px]">
+            {panel.cards.map((card) => (
+              <Link key={card.href + card.label} href={card.href} data-track={panel.track} onClick={onNavigate} tabIndex={open ? undefined : -1} className="block w-[244px]">
+                <span className={`relative block h-[176px] w-[244px] overflow-hidden ${card.contain ? "bg-tile" : ""}`}>
+                  <Image src={card.image} alt="" fill sizes="244px" className={`mega-img ${card.contain ? "tile-photo object-contain" : "object-cover"}`} />
+                </span>
+                <span className="nav-label mt-2.5 block">{card.label}</span>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   )
 }
 

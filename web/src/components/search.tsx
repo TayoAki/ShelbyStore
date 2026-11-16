@@ -1,13 +1,9 @@
 "use client"
 
-import { MagnifyingGlass } from "@phosphor-icons/react"
-import Image from "next/image"
-import Link from "next/link"
-import { useEffect, useMemo, useState } from "react"
+import { MagnifyingGlass, X } from "@phosphor-icons/react"
+import { useMemo, useState } from "react"
 import type { CatalogItem } from "@/lib/catalog-items"
-import { formatMoney } from "@/lib/format"
-
-const PLACEHOLDERS = ["Search", 'Search "navy"', 'Search "pine"', 'Search "pair"', 'Search "azalea"']
+import { MiniCard } from "./recently-viewed"
 
 export function searchCatalog(catalog: CatalogItem[], term: string): CatalogItem[] {
   const q = term.trim().toLowerCase()
@@ -17,57 +13,52 @@ export function searchCatalog(catalog: CatalogItem[], term: string): CatalogItem
 }
 
 /**
- * The search body that folds down from the top flap: a keylined field with a
- * rotating placeholder, an inline Search button, up to 6 results.
+ * Eastside's search popdown (SITE_SPEC v8 E.6.0.5): a 47px borderless input
+ * with a leading magnifier (the submit) and a trailing "Clear", then the
+ * results as product cards in a 4-column grid (2 on mobile).
  */
-export function SearchPanel({ catalog, onNavigate }: { catalog: CatalogItem[]; onNavigate: () => void }) {
+export function SearchPanel({ catalog, onNavigate, onClose }: { catalog: CatalogItem[]; onNavigate: () => void; onClose?: () => void }) {
   const [term, setTerm] = useState("")
-  const [ph, setPh] = useState(0)
-  useEffect(() => {
-    const id = setInterval(() => setPh((n) => (n + 1) % PLACEHOLDERS.length), 2000)
-    return () => clearInterval(id)
-  }, [])
-  const results = useMemo(() => searchCatalog(catalog, term).slice(0, 6), [catalog, term])
+  const results = useMemo(() => searchCatalog(catalog, term).slice(0, 8), [catalog, term])
 
   return (
-    <div className="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-5">
-      <form role="search" onSubmit={(e) => e.preventDefault()} className="relative">
-        <MagnifyingGlass size={20} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2" aria-hidden />
+    <div className="flex w-full flex-col">
+      <form role="search" onSubmit={(e) => e.preventDefault()} className="wrap flex h-[47px] items-center gap-2 border-b border-border">
+        <button type="submit" aria-label="Search" className="-ml-3 flex size-11 shrink-0 items-center justify-center" data-track="search_submit">
+          <MagnifyingGlass size={20} />
+        </button>
         <input
           autoFocus
+          type="search"
           value={term}
           onChange={(e) => setTerm(e.target.value)}
-          placeholder={PLACEHOLDERS[ph]}
+          placeholder="Search"
           aria-label="Search The Rope Cap"
-          className="field !pr-28 !pl-10"
+          className="h-full min-w-0 flex-1 bg-transparent text-[16px] font-medium tracking-[0.025em] outline-none placeholder:text-text-light md:text-[14.4px] [&::-webkit-search-cancel-button]:hidden"
         />
-        <button type="submit" className="btn btn-outline-black btn-small absolute top-1/2 right-1 -translate-y-1/2" data-track="search_submit">
-          Search
-        </button>
+        {term && (
+          <button type="button" className="micro min-h-11 px-2" onClick={() => setTerm("")}>
+            Clear
+          </button>
+        )}
+        {onClose && (
+          <button type="button" aria-label="Close search" className="drawer-close -mr-3" onClick={onClose}>
+            <X size={20} />
+          </button>
+        )}
       </form>
       {term.trim() && (
-        <div className="flex flex-col">
+        <div className="wrap py-6">
           {results.length ? (
-            results.map((r) => (
-              <Link key={r.key} href={r.href} onClick={onNavigate} data-track="search_result" className="flex min-h-16 items-center gap-4 border-b-2 border-dashed border-ink/25 py-2 last:border-b-0 hover:bg-board">
-                <span className="relative size-14 shrink-0 overflow-hidden rounded-[4px] border-2 border-ink bg-paper">
-                  {r.image && <Image src={r.image} alt="" fill sizes="56px" className="object-contain" />}
-                </span>
-                <span className="flex flex-col">
-                  <span className="label">{r.title}</span>
-                  <span className="text-[0.9375rem] leading-5 text-ink-2">
-                    {[r.meta, formatMoney(r.price, r.currency)].filter(Boolean).join(" · ")}
-                  </span>
-                </span>
-              </Link>
-            ))
+            <ul className="grid grid-cols-2 gap-x-[10px] gap-y-6 md:grid-cols-4">
+              {results.map((r) => (
+                <li key={r.key}>
+                  <MiniCard item={r} track="search_result" onClick={onNavigate} />
+                </li>
+              ))}
+            </ul>
           ) : (
-            <p className="text-[1rem]">No caps match &ldquo;{term}&rdquo;</p>
-          )}
-          {results.length > 0 && (
-            <Link href="/shop" onClick={onNavigate} className="link mt-3 min-h-11 text-[1rem]">
-              View all results
-            </Link>
+            <p className="text-[14.4px]">No caps match &ldquo;{term}&rdquo;.</p>
           )}
         </div>
       )}
