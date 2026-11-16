@@ -1,133 +1,112 @@
-import Image from "next/image"
 import Link from "next/link"
 import { formatMoney } from "@/lib/format"
 import {
+  colorOption,
   colorThumbs,
   imagesFor,
   imageUrl,
   isLowStock,
   isOneSize,
   price,
+  productTypeOf,
   sizeGroupOf,
-  valueAvailability,
+  variantOptions,
 } from "@/lib/product"
-import { swatchBackground } from "@/lib/swatches"
 import type { Product, VariantStock } from "@/lib/types"
+import { CardImages } from "./card-images"
+import { QuickAdd, type QuickAddData } from "./quick-add"
 import { Badge } from "./ui/badge"
 
-export type CardStatus = "core" | "live" | "past" | null
+/** One badge, in priority order (SITE_SPEC §6.2). */
+export type CardStatus = "limited" | "core" | "soon" | null
 
-const MAX_DOTS = 4
+/** Card status from the release index and the core collection. */
+export function cardStatus(product: Product, live: Record<string, unknown>, upcomingIds?: Set<string>): CardStatus {
+  if (live[product.id]) return "limited"
+  if (product.collection?.handle === "core") return "core"
+  if (upcomingIds?.has(product.id)) return "soon"
+  return null
+}
 
 /**
- * Product card (SITE_SPEC §6.2): 4:5 photo on the canvas, a status badge, title
- * and price, a colour row (dots + first colour name + "+N"), and a size strip
- * only for sized hats. No quick add.
+ * Melin's product card (SITE_SPEC §6.2): a 1:1 image on white with an 8px
+ * bottom pad and 1px #e5e7eb line, an in-card carousel of the first colour,
+ * hover image 2 and quick add, then title + price, colour, type and "+N Colors".
  */
 export function ProductCard({
   product,
   stock,
   status,
-  releaseTitle,
+  releaseId,
   preload = false,
+  quickAdd = true,
+  track,
 }: {
   product: Product
   stock?: VariantStock
   status: CardStatus
-  releaseTitle?: string
+  releaseId?: string
   preload?: boolean
+  quickAdd?: boolean
+  track?: string
 }) {
   const colors = colorThumbs(product).map((c) => c.color)
-  // Lead with the first colour's photos; the hover image is that colour's second shot.
   const gallery = imagesFor(product, colors[0])
-  const first = gallery[0] ?? imageUrl(product.thumbnail)
-  const second = gallery.find((u) => u !== first)
+  const images = gallery.length ? gallery : [imageUrl(product.thumbnail)].filter((x): x is string => !!x)
   const p = price(product)
-  const sizeGroup = sizeGroupOf(product)
   const low = isLowStock(product, stock)
+  const badge = status === "limited" ? "Limited" : status === "core" ? "Core" : low ? "Low Stock" : status === "soon" ? "Coming Soon" : null
 
   return (
-    <Link href={`/products/${product.handle}`} className="group flex flex-col gap-3">
-      <div className="relative aspect-[4/5] overflow-hidden bg-page">
-        {first ? (
-          <>
-            <Image src={first} alt={product.title} fill sizes="(min-width: 1024px) 25vw, 50vw" className="object-cover" preload={preload} />
-            {second && (
-              <Image
-                src={second}
-                alt=""
-                fill
-                sizes="(min-width: 1024px) 25vw, 50vw"
-                className="hidden object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100 lg:block"
-              />
-            )}
-          </>
-        ) : (
-          <div className="text-eyebrow flex h-full items-center justify-center bg-surface p-4 text-center text-ink-muted">{product.title}</div>
-        )}
-        <div className="absolute left-2 top-2 flex flex-col items-start gap-1">
-          {status === "core" && <Badge tone="core">Core</Badge>}
-          {status === "live" && (
-            <Badge tone="live" dot>
-              Limited
-            </Badge>
+    <div className="group relative">
+      <Link href={`/products/${product.handle}`} className="block" data-track={track}>
+        <span className="relative block border-b border-line-header bg-white pb-2">
+          <CardImages images={images} title={product.title} preload={preload} />
+          {badge && (
+            <span className="absolute left-[14.08px] top-[14.08px]">
+              <Badge>{badge}</Badge>
+            </span>
           )}
-          {status === "past" && <Badge tone="past">{releaseTitle ? `From ${releaseTitle}` : "Last drop"}</Badge>}
-          {low && <Badge tone="low">Low stock</Badge>}
-        </div>
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <div className="flex items-baseline justify-between gap-3">
-          <h3 className="text-sm font-medium leading-snug group-hover:underline lg:text-[15px]">{product.title}</h3>
-          <span className="shrink-0 font-mono text-[13px]">{formatMoney(p.amount, p.currency)}</span>
-        </div>
-        {colors.length > 0 && (
-          <p className="flex items-center gap-2 text-[12px] text-ink-muted">
-            <span className="flex gap-1" aria-hidden>
-              {colors.slice(0, MAX_DOTS).map((c) => (
-                <span key={c} className="h-2.5 w-2.5 rounded-full ring-1 ring-ink/20" style={{ background: swatchBackground(c) }} />
-              ))}
-            </span>
-            <span aria-label={`${colors.length} ${colors.length === 1 ? "colour" : "colours"}: ${colors.join(", ")}`}>
-              {colors[0]}
-              {colors.length > 1 && ` +${colors.length - 1}`}
-            </span>
-          </p>
+        </span>
+        <span className="mt-[7px] flex items-baseline justify-between gap-2">
+          <span className="line-clamp-2 type-item">{product.title}</span>
+          <span className="shrink-0 font-body text-[14px] leading-[21px] tracking-[0.4px]">{formatMoney(p.amount, p.currency)}</span>
+        </span>
+        {colors[0] && <span className="block font-body text-[12px] capitalize leading-[18px] tracking-[0.4px] text-muted-card">{colors[0]}</span>}
+        <span className="block font-body text-[12px] capitalize leading-[18px] tracking-[0.4px] text-muted-card">{productTypeOf(product)}</span>
+        {colors.length > 1 && (
+          <span className="block font-body text-[12px] capitalize leading-[18px] tracking-[0.4px] text-muted-card">+{colors.length - 1} Colors</span>
         )}
-        {sizeGroup && !isOneSize(product) && stock && (
-          <SizeStrip product={product} stock={stock} sizeTitle={sizeGroup.title} sizes={sizeGroup.values} />
-        )}
-      </div>
-    </Link>
+      </Link>
+      {quickAdd && status !== "soon" && (
+        <span className="pointer-events-none absolute inset-x-0 top-0 aspect-square">
+          <QuickAdd data={quickAddData(product, stock, releaseId)} />
+        </span>
+      )}
+    </div>
   )
 }
 
-function SizeStrip({
-  product,
-  stock,
-  sizeTitle,
-  sizes,
-}: {
-  product: Product
-  stock: VariantStock
-  sizeTitle: string
-  sizes: string[]
-}) {
-  // Availability per size across colours: a size is available if any colour has it.
-  const availability = valueAvailability(product, stock, sizeTitle, {})
-  const label = sizes
-    .map((s) => `${s} ${availability[s] === "sold_out" ? "sold out" : availability[s] === "low" ? "low stock" : "available"}`)
-    .join(", ")
-  return (
-    <p className="flex flex-wrap gap-x-2 font-mono text-[11px] tracking-[0.04em]" aria-label={`Sizes: ${label}`}>
-      {sizes.map((s) => {
-        const state = availability[s]
-        return (
-          <span key={s} className={state === "sold_out" ? "text-ink-faint line-through" : state === "low" ? "text-low" : "text-ink-muted"}>
-            {s}
-          </span>
-        )
-      })}
-    </p>
+/** First in-stock variant per size (sized) or overall (one size), in colour order. */
+export function quickAddData(product: Product, stock: VariantStock | undefined, releaseId?: string): QuickAddData {
+  const p = price(product)
+  const colorTitle = colorOption(product)
+  const colors = colorThumbs(product).map((c) => c.color)
+  const inStock = (id: string) => !stock || stock[id] === null || (stock[id] ?? 0) > 0
+  const ordered = [...(product.variants ?? [])].sort(
+    (a, b) => colors.indexOf(colorTitle ? (variantOptions(a)[colorTitle] ?? "") : "") - colors.indexOf(colorTitle ? (variantOptions(b)[colorTitle] ?? "") : "")
   )
+  const base = { productId: product.id, price: p.amount, currency: p.currency, releaseId }
+  if (isOneSize(product)) {
+    return { ...base, oneSize: ordered.find((v) => inStock(v.id))?.id ?? null, sizes: null }
+  }
+  const group = sizeGroupOf(product)!
+  return {
+    ...base,
+    oneSize: null,
+    sizes: group.values.map((label) => ({
+      label,
+      variantId: ordered.find((v) => variantOptions(v)[group.title] === label && inStock(v.id))?.id ?? null,
+    })),
+  }
 }

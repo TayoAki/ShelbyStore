@@ -1,86 +1,105 @@
 "use client"
 
+import { Play, X } from "@phosphor-icons/react"
 import Image from "next/image"
 import { useEffect, useRef, useState } from "react"
+import { Badge } from "../ui/badge"
 import { useSelection } from "./selection"
 
 /**
- * Mobile: full-width 4:5 swipe gallery with dots (11/11 studied sites).
- * Desktop: two-column image grid. Optional try-on video in slot 2
- * (+14.5% apparel sales in a field experiment; SITE_SPEC §6.4.1).
+ * Melin's PDP gallery (SITE_SPEC §6.4.2), driven by the selected colour.
+ * Desktop: a 2-column grid of 362px squares (contain on white). Mobile: a
+ * full-width swipe of squares with 21×4 dashes 12px below. A badge sits on
+ * image 1; a video plays under the grid (desktop) or from a PLAY pill (mobile).
  */
 export function Gallery({
   images,
   imagesByColor,
   title,
   videoUrl,
+  badge,
 }: {
   images: string[]
-  /** Per-colour galleries; the colour picked in the buy box selects one. */
   imagesByColor?: Record<string, string[]>
   title: string
   videoUrl?: string | null
+  badge?: string | null
 }) {
   const { color } = useSelection()
   const shown = color && imagesByColor?.[color]?.length ? imagesByColor[color] : images
-  const slides: { kind: "image" | "video"; src: string }[] = shown.map((src) => ({ kind: "image", src }))
-  if (videoUrl) slides.splice(Math.min(1, slides.length), 0, { kind: "video", src: videoUrl })
-  const [index, setIndex] = useState(0)
+  // The dash index belongs to the colour it was measured on; a new colour starts at photo 1.
+  const [pos, setPos] = useState<{ color: string | null; index: number }>({ color, index: 0 })
+  const index = pos.color === color ? pos.index : 0
+  const setIndex = (i: number) => setPos({ color, index: i })
+  const [video, setVideo] = useState(false)
   const scroller = useRef<HTMLDivElement>(null)
-  // A new colour starts its gallery from the first photo.
   useEffect(() => {
-    setIndex(0)
     scroller.current?.scrollTo({ left: 0 })
   }, [color])
 
-  if (!slides.length) {
-    return <div className="aspect-[4/5] w-full bg-surface" />
-  }
+  if (!shown.length) return <div className="aspect-square w-full bg-tile" />
 
-  const media = (s: (typeof slides)[number], i: number, sizes: string) =>
-    s.kind === "video" ? (
-      <video src={s.src} muted loop playsInline autoPlay className="h-full w-full object-cover" aria-label={`${title} try-on video`} />
-    ) : (
-      <Image src={s.src} alt={`${title}, image ${i + 1} of ${slides.length}`} fill sizes={sizes} preload={i === 0} className="object-cover" />
-    )
+  const badgeEl = badge ? (
+    <span className="absolute left-[14.08px] top-[14.08px] z-10">
+      <Badge>{badge}</Badge>
+    </span>
+  ) : null
 
   return (
     <>
-      {/* Mobile swipe gallery */}
-      <div className="relative -mx-4 md:-mx-6 lg:hidden">
-        <div
-          ref={scroller}
-          className="scrollbar-none flex snap-x snap-mandatory overflow-x-auto"
-          onScroll={(e) => {
-            const el = e.currentTarget
-            setIndex(Math.round(el.scrollLeft / el.clientWidth))
-          }}
-        >
-          {slides.map((s, i) => (
-            <div key={`${s.src}-${i}`} className="relative aspect-[4/5] w-full shrink-0 snap-center bg-surface">
-              {media(s, i, "100vw")}
-            </div>
-          ))}
+      {/* Mobile */}
+      <div className="lg:hidden">
+        <div className="relative">
+          <div
+            ref={scroller}
+            className="scrollbar-none flex snap-x snap-mandatory overflow-x-auto"
+            onScroll={(e) => setIndex(Math.round(e.currentTarget.scrollLeft / e.currentTarget.clientWidth))}
+          >
+            {shown.map((src, i) => (
+              <div key={`${src}-${i}`} className="relative aspect-square w-full shrink-0 snap-center bg-white">
+                <Image src={src} alt={`${title}, image ${i + 1} of ${shown.length}`} fill sizes="100vw" preload={i === 0} className="object-contain" />
+              </div>
+            ))}
+          </div>
+          {badgeEl}
+          {videoUrl && (
+            <button
+              type="button"
+              onClick={() => setVideo(true)}
+              className="absolute bottom-3 right-3 rounded-full bg-white/90 px-[10px] py-1 font-heading text-[11px] uppercase tracking-[1.3px]"
+            >
+              Play <Play size={10} weight="fill" className="inline" aria-hidden />
+            </button>
+          )}
         </div>
-        {slides.length > 1 && (
-          <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5" aria-hidden>
-            {slides.map((s, i) => (
-              <span
-                key={`${s.src}-dot-${i}`}
-                className={`h-1.5 rounded-full transition-all duration-150 ${i === index ? "w-5 bg-ink" : "w-1.5 bg-ink/25"}`}
-              />
+        {shown.length > 1 && (
+          <div className="mt-3 flex justify-center gap-2" aria-hidden>
+            {shown.map((src, i) => (
+              <span key={`${src}-d${i}`} className={`h-1 w-[21px] transition-colors duration-200 ${i === index ? "bg-black" : "bg-tertiary"}`} />
             ))}
           </div>
         )}
       </div>
-      {/* Desktop grid */}
-      <div className="hidden grid-cols-2 gap-2 lg:grid">
-        {slides.map((s, i) => (
-          <div key={`${s.src}-${i}`} className={`relative aspect-[4/5] bg-surface ${slides.length % 2 === 1 && i === 0 ? "col-span-2" : ""}`}>
-            {media(s, i, "(min-width: 1024px) 30vw, 100vw")}
-          </div>
-        ))}
+      {/* Desktop */}
+      <div className="hidden lg:block">
+        <div className="grid grid-cols-2 gap-4">
+          {shown.map((src, i) => (
+            <div key={`${src}-${i}`} className="relative aspect-square bg-white">
+              {i === 0 && badgeEl}
+              <Image src={src} alt={`${title}, image ${i + 1} of ${shown.length}`} fill sizes="362px" preload={i === 0} className="object-contain" />
+            </div>
+          ))}
+        </div>
+        {videoUrl && <video src={videoUrl} muted loop playsInline autoPlay controls className="mt-4 aspect-video w-full bg-black object-cover" aria-label={`${title} video`} />}
       </div>
+      {video && videoUrl && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black lg:hidden" role="dialog" aria-label={`${title} video`}>
+          <button type="button" aria-label="Close video" onClick={() => setVideo(false)} className="absolute right-4 top-4 text-white">
+            <X size={24} />
+          </button>
+          <video src={videoUrl} autoPlay playsInline controls className="w-full" />
+        </div>
+      )}
     </>
   )
 }

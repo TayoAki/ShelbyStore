@@ -1,34 +1,39 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { Suspense } from "react"
-import { Container } from "@/components/container"
-import { ProductCard, type CardStatus } from "@/components/product-card"
-import { ShopFilters } from "@/components/shop-filters"
+import { FilterSidebar, MobileFilterBar } from "@/components/collection-filters"
+import { cardStatus, ProductCard } from "@/components/product-card"
+import { ButtonLink } from "@/components/ui/button"
+import { catalogItems } from "@/lib/catalog-items"
 import { getRegion, listCategories, liveReleaseIndex, listProducts, listReleases } from "@/lib/data/catalog"
 import { getStock } from "@/lib/data/stock"
-import { optionGroups, shapeOf, stockState, variantOptions } from "@/lib/product"
+import { optionGroups, price, shapeOf, stockState, variantOptions } from "@/lib/product"
 import { SHAPE_COPY, shapesFrom } from "@/lib/shapes"
 import type { Product, VariantStock } from "@/lib/types"
 
 export const metadata: Metadata = { title: "Shop all hats" }
 
+/** Melin's collection page (SITE_SPEC §6.3). */
 export default function ShopPage(props: PageProps<"/shop">) {
   return (
-    <Container className="flex flex-col gap-6 py-8 lg:py-12">
-      <Suspense fallback={<ShopSkeleton />}>
-        <ShopContent searchParams={props.searchParams} />
-      </Suspense>
-    </Container>
+    <Suspense fallback={<ShopSkeleton />}>
+      <ShopContent searchParams={props.searchParams} />
+    </Suspense>
   )
 }
 
+const list = (v: string | string[] | undefined) =>
+  ([] as string[])
+    .concat(v ?? [])
+    .flatMap((x) => x.split(","))
+    .map((x) => x.trim())
+    .filter(Boolean)
+
 async function ShopContent({ searchParams }: { searchParams: PageProps<"/shop">["searchParams"] }) {
   const query = await searchParams
-  const want = {
-    size: ([] as string[]).concat(query.size ?? []),
-    color: ([] as string[]).concat(query.color ?? []),
-  }
-  const shapeParam = typeof query.shape === "string" ? query.shape : null
+  const want = { size: list(query.size), color: list(query.color), shape: list(query.shape) }
+  const q = typeof query.q === "string" ? query.q.trim() : ""
+  const sort = typeof query.sort === "string" ? query.sort : "featured"
   const region = await getRegion()
   const [products, live, releases, categories] = await Promise.all([
     region ? listProducts(region.id) : Promise.resolve([] as Product[]),
@@ -37,69 +42,94 @@ async function ShopContent({ searchParams }: { searchParams: PageProps<"/shop">[
     listCategories(),
   ])
   const shapes = shapesFrom(categories, products)
-  const shape = shapes.find((s) => s.handle === shapeParam) ?? null
-  const inShape = shape ? products.filter((p) => shapeOf(p)?.handle === shape.handle) : products
-  const stock = await getStock(inShape.map((p) => p.id))
-  const pastIds = new Set(releases.filter((r) => r.phase === "past").flatMap((r) => r.products.map((p) => p.id)))
+  const pill = want.shape.length === 1 ? (shapes.find((s) => s.handle === want.shape[0]) ?? null) : null
+  const upcoming = new Set(releases.filter((r) => r.phase === "upcoming").flatMap((r) => r.products.map((p) => p.id)))
+  const stock = await getStock(products.map((p) => p.id))
 
-  const status = (p: Product): CardStatus =>
-    p.collection?.handle === "core" ? "core" : live[p.id] ? "live" : pastIds.has(p.id) ? "past" : null
-  const rank = (p: Product) => ({ core: 0, live: 1, past: 2 } as Record<string, number>)[status(p) ?? ""] ?? 3
+  const items = catalogItems(products)
+  const matchesQuery = (p: Product) => {
+    if (!q) return true
+    const item = items.find((i) => i.handle === p.handle)!
+    const t = q.toLowerCase()
+    return [item.title, item.shape ?? "", item.type, ...item.colors].some((f) => f.toLowerCase().includes(t))
+  }
+  const rank = (p: Product) => (p.collection?.handle === "core" ? 0 : live[p.id] ? 1 : 2)
+  const visible = products
+    .filter((p) => !want.shape.length || want.shape.includes(shapeOf(p)?.handle ?? ""))
+    .filter(matchesQuery)
+    .filter((p) => matches(p, stock, want))
+    .sort((a, b) => {
+      if (sort === "price-asc") return (price(a).amount ?? 0) - (price(b).amount ?? 0)
+      if (sort === "price-desc") return (price(b).amount ?? 0) - (price(a).amount ?? 0)
+      if (sort === "newest") return String(b.created_at).localeCompare(String(a.created_at))
+      return rank(a) - rank(b)
+    })
 
-  const sizes = unique(inShape.flatMap((p) => optionGroups(p).filter((g) => /size/i.test(g.title)).flatMap((g) => g.values)))
-  const colors = unique(inShape.flatMap((p) => optionGroups(p).filter((g) => /colou?r/i.test(g.title)).flatMap((g) => g.values)))
+  const title = q ? `Search: "${q}"` : (pill?.name ?? "Hats")
+  const subtitle = q ? `${visible.length} Results` : pill ? (pill.description ?? SHAPE_COPY[pill.handle] ?? null) : "Shop Our Full Range Of Hats"
+  const scoped = want.shape.length ? products.filter((p) => want.shape.includes(shapeOf(p)?.handle ?? "")) : products
+  const facets = {
+    sizes: unique(scoped.flatMap((p) => optionGroups(p).filter((g) => /size/i.test(g.title)).flatMap((g) => g.values))),
+    colors: unique(scoped.flatMap((p) => optionGroups(p).filter((g) => /colou?r/i.test(g.title)).flatMap((g) => g.values))),
+    shapes: shapes.map((s) => ({ handle: s.handle, name: s.name })),
+  }
 
-  const visible = inShape.filter((p) => matches(p, stock, want)).sort((a, b) => rank(a) - rank(b))
-  const title = shape?.name ?? "All hats"
-  const description = shape ? (shape.description ?? SHAPE_COPY[shape.handle] ?? null) : "Every shape we make, core first."
+  const grid = visible.length ? (
+    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-[28.432px]">
+      {visible.map((p, i) => (
+        <ProductCard key={p.id} product={p} stock={stock} status={cardStatus(p, live, upcoming)} releaseId={live[p.id]?.id} preload={i < 2} />
+      ))}
+    </div>
+  ) : (
+    <div className="flex flex-col items-center gap-4 py-20 text-center">
+      <p className="font-body text-[15px]">No hats match those filters.</p>
+      <ButtonLink href="/shop" variant="light">
+        View all
+      </ButtonLink>
+    </div>
+  )
 
   return (
-    <>
-      <div className="flex flex-col gap-2">
-        <h1 className="font-display text-section">{title}</h1>
-        {description && <p className="max-w-xl text-[15px] text-ink-muted lg:text-base">{description}</p>}
-        <p className="font-mono text-[13px] text-ink-muted">
-          {visible.length} {visible.length === 1 ? "style" : "styles"}
-          {want.size.length ? ` with ${want.size.join(", ")} in stock` : ""}
-        </p>
+    <div className="pb-[28.432px] lg:pb-[50.512px]">
+      <div className="container-shop pt-[37.904px] text-center">
+        <h1 className="font-heading text-[26px] uppercase leading-[39px]">{title}</h1>
+        {subtitle && <p className="mt-1 font-body text-[13px] capitalize leading-[15px] tracking-[-0.1px] text-muted-sub">{subtitle}</p>}
       </div>
-      <nav aria-label="Shapes" className="scrollbar-none -mx-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:px-0">
-        <ShapeChip href="/shop" active={!shape}>
-          All
-        </ShapeChip>
+      <nav aria-label="Styles" className="scrollbar-none mt-[28.432px] flex gap-[9px] overflow-x-auto px-4 lg:flex-wrap lg:justify-center">
+        <Pill href="/shop" active={!want.shape.length && !q}>
+          View All
+        </Pill>
         {shapes.map((s) => (
-          <ShapeChip key={s.handle} href={`/shop?shape=${s.handle}`} active={shape?.handle === s.handle}>
+          <Pill key={s.handle} href={`/shop?shape=${s.handle}`} active={want.shape.length === 1 && want.shape[0] === s.handle}>
             {s.name}
-          </ShapeChip>
+          </Pill>
         ))}
       </nav>
-      <ShopFilters sizes={sizes} colors={colors} />
-      {visible.length ? (
-        <div className="grid grid-cols-2 gap-x-3 gap-y-8 lg:grid-cols-4 lg:gap-y-10">
-          {visible.map((p, i) => (
-            <ProductCard key={p.id} product={p} stock={stock} status={status(p)} preload={i < 2} />
-          ))}
+      {/* 1220px with no side padding at desktop: 263 + 78 + 4 × 197.47 + 3 × 28.432 (SITE_SPEC §6.3). */}
+      <div className="container-shop lg:px-0">
+        <hr className="mt-[28.432px] border-tertiary" />
+        <div className="py-4 lg:hidden">
+          <MobileFilterBar facets={facets} count={visible.length} />
         </div>
-      ) : (
-        <div className="flex flex-col items-start gap-3 py-16">
-          <p className="text-ink-muted">Nothing matches those filters right now.</p>
-          <Link href="/shop" className="text-[14px] underline underline-offset-4">
-            See all hats
-          </Link>
+        <div className="lg:grid lg:grid-cols-[263px_1fr] lg:gap-[78px] lg:pt-[28.432px]">
+          <div className="hidden lg:block">
+            <FilterSidebar facets={facets} />
+          </div>
+          {grid}
         </div>
-      )}
-    </>
+      </div>
+    </div>
   )
 }
 
-function ShapeChip({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
+function Pill({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
   return (
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
-      data-track="nav_shape"
-      className={`inline-flex h-10 shrink-0 items-center rounded-[2px] border px-4 text-[14px] font-medium transition-colors duration-150 ${
-        active ? "border-ink bg-ink text-page" : "border-line hover:border-ink"
+      data-track="shape_pill"
+      className={`inline-flex h-[35px] min-w-[85px] shrink-0 items-center justify-center rounded-tile border px-4 font-body text-[13px] capitalize tracking-[1.3px] ${
+        active ? "border-black bg-black text-white" : "border-line-soft text-black hover:border-black"
       }`}
     >
       {children}
@@ -124,23 +154,23 @@ function matches(p: Product, stock: VariantStock, want: { size: string[]; color:
 }
 
 const unique = (xs: string[]) => {
-  const order = ["One Size", "S/M", "L/XL", "XXS", "XS", "S", "M", "L", "XL", "XXL", "3XL"]
+  const order = ["One Size", "S/M", "L/XL"]
   return [...new Set(xs)].sort((a, b) => {
     const ia = order.indexOf(a)
     const ib = order.indexOf(b)
-    return ia !== -1 && ib !== -1 ? ia - ib : a.localeCompare(b)
+    return ia !== -1 && ib !== -1 ? ia - ib : ia !== -1 ? -1 : ib !== -1 ? 1 : a.localeCompare(b)
   })
 }
 
 function ShopSkeleton() {
   return (
-    <div className="grid grid-cols-2 gap-x-3 gap-y-8 lg:grid-cols-4" aria-busy>
-      {Array.from({ length: 8 }).map((_, i) => (
-        <div key={i} className="flex flex-col gap-3">
-          <div className="aspect-[4/5] animate-pulse bg-surface" />
-          <div className="h-4 w-2/3 animate-pulse bg-surface" />
-        </div>
-      ))}
+    <div className="container-shop pt-[37.904px]" aria-busy>
+      <div className="mx-auto h-[39px] w-40 animate-pulse bg-tile" />
+      <div className="mt-16 grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-[28.432px]">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="aspect-square animate-pulse bg-tile" />
+        ))}
+      </div>
     </div>
   )
 }

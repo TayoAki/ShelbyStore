@@ -30,7 +30,7 @@ export function SelectionProvider({
 export function SelectedImage({ byColor, fallback, alt, sizes }: { byColor: Record<string, string>; fallback: string | null; alt: string; sizes: string }) {
   const { color } = useSelection()
   const src = (color && byColor[color]) || fallback
-  return src ? <Image src={src} alt={alt} fill sizes={sizes} className="object-cover" /> : null
+  return src ? <Image src={src} alt={alt} fill sizes={sizes} className="object-contain" /> : null
 }
 
 export const useSelection = () => useContext(SelectionContext)

@@ -5,71 +5,51 @@ import { useRef } from "react"
 
 export type SizeChart = { unit?: string; columns: string[]; rows: Record<string, string | number>[] }
 
-/** Size chart dialog, opened from the size row (10/11 studied sites; SITE_SPEC §6.4.6). */
-export function SizeGuide({ fitNotes, modelInfo, chart }: { fitNotes: string | null; modelInfo: string | null; chart: SizeChart | null }) {
+/** Melin's size dialog (SITE_SPEC §6.4.17), opened by a "Size Guide" micro link. */
+export function SizeGuide({ fitNotes, chart, label = "Size Guide" }: { fitNotes: string | null; chart: SizeChart | null; label?: string }) {
   const dialog = useRef<HTMLDialogElement>(null)
   return (
     <>
-      <button type="button" onClick={() => dialog.current?.showModal()} className="text-[13px] underline underline-offset-4 hover:text-ink-muted">
-        Size chart
+      <button type="button" onClick={() => dialog.current?.showModal()} className="btn btn--micro">
+        <span>{label}</span>
       </button>
       <dialog
         ref={dialog}
-        className="m-auto w-[min(560px,calc(100vw-32px))] rounded-[2px] bg-paper p-0 text-ink shadow-[var(--shadow-overlay)] backdrop:bg-ink/40"
-        onClick={(e) => {
-          if (e.target === dialog.current) dialog.current?.close()
-        }}
+        className="m-auto w-[min(560px,calc(100vw-32px))] rounded-addon bg-white p-6 text-black backdrop:bg-black/80"
+        onClick={(e) => e.target === dialog.current && dialog.current?.close()}
       >
-        <div className="flex items-center justify-between border-b border-line px-5 py-4">
-          <h2 className="font-display text-[22px]">Size chart</h2>
-          <button type="button" aria-label="Close" onClick={() => dialog.current?.close()} className="-mr-2 p-2">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="font-heading text-[18px]">Size Guide</h2>
+          <button type="button" aria-label="Close" onClick={() => dialog.current?.close()}>
             <X size={20} />
           </button>
         </div>
-        <div className="flex flex-col gap-5 px-5 py-5 text-[15px]">
-          {fitNotes && (
-            <div className="flex flex-col gap-1">
-              <p className="text-eyebrow text-ink-muted">Fit</p>
-              <p>{fitNotes}</p>
-            </div>
-          )}
-          {modelInfo && (
-            <div className="flex flex-col gap-1">
-              <p className="text-eyebrow text-ink-muted">On the model</p>
-              <p>{modelInfo}</p>
-            </div>
-          )}
-          {chart && chart.rows.length > 0 && (
-            <div className="flex flex-col gap-2">
-              <p className="text-eyebrow text-ink-muted">Measurements{chart.unit ? ` (${chart.unit})` : ""}</p>
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse font-mono text-[13px]">
-                  <thead>
-                    <tr>
-                      {chart.columns.map((c) => (
-                        <th key={c} scope="col" className="border-b border-line py-2 pr-3 text-left font-medium text-ink-muted">
-                          {c}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {chart.rows.map((row, i) => (
-                      <tr key={i} className="border-b border-line">
-                        {chart.columns.map((c) => (
-                          <td key={c} className="py-2 pr-3">
-                            {row[c]}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-          {!fitNotes && !modelInfo && !chart && <p className="text-ink-muted">Size details are coming soon.</p>}
-        </div>
+        {chart && chart.rows.length > 0 && (
+          <table className="w-full border-collapse">
+            <thead>
+              <tr>
+                {chart.columns.map((c) => (
+                  <th key={c} scope="col" className="border-b border-line py-[10px] pr-3 text-left font-heading text-[12px] uppercase tracking-[1.3px]">
+                    {c}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {chart.rows.map((row, i) => (
+                <tr key={i}>
+                  {chart.columns.map((c) => (
+                    <td key={c} className="border-b border-line py-[10px] pr-3 font-body text-[14px]">
+                      {row[c]}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        {fitNotes && <p className="mt-4 font-body text-[13px] leading-[19.5px]">{fitNotes}</p>}
+        {!chart && !fitNotes && <p className="font-body text-[13px]">Size details are coming soon.</p>}
       </dialog>
     </>
   )
