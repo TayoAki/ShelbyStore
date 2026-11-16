@@ -4,6 +4,7 @@ import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
 import { Suspense } from "react"
 import { Sleeves } from "@/components/box/back-panel"
+import { RangeRow } from "@/components/box/range-row"
 import { SelectedBoxRope } from "@/components/box/selected-rope"
 import { SidePanel } from "@/components/box/side-panel"
 import { ContinuityBanner } from "@/components/continuity-banner"
@@ -118,7 +119,8 @@ async function ProductContent({ params, searchParams }: { params: PageProps<"/pr
             <Suspense fallback={<BuyCard {...buyProps} stock={null} />}>
               <LiveBuyCard {...buyProps} />
             </Suspense>
-            <SidePanel product={product} fallbackColor={initial ?? colors[0]} />
+            <SelectedBoxRope fallback={initial ?? colors[0]} run="phone" />
+            <SidePanel product={product} fallbackColor={initial ?? colors[0]} rope />
           </div>
           <SelectedBoxRope fallback={initial ?? colors[0]} />
         </SelectionProvider>
@@ -151,6 +153,7 @@ async function ProductContent({ params, searchParams }: { params: PageProps<"/pr
         </section>
 
         {!isEdition && <Sleeves pair={c.pair} foursome={c.foursome} tracks={{ pair: "pdp_offer", foursome: "pdp_foursome" }} />}
+        <RangeRow core={c.core} editions={c.editions} holes={c.holes} exclude={product} active={initial} />
         <Suspense fallback={null}>
           <SeriesBand />
         </Suspense>
