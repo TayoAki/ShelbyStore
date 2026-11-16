@@ -182,8 +182,11 @@
     .box-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
     .box-row > * + *, .box-row > * + .panel { border-top: 0; border-left: 1.5px dashed var(--color-crease); }
   }
-  /* The one rope: a braided cord laid across the fold from the front and side panels into the back. */
+  /* The one rope: a braided cord laid across the folds, front to side to back. */
   .box-rope { display: block; line-height: 0; }
+  .box-rope-v { display: block; }
+  .box-row > .box-rope, .box-row > .box-rope + *, .box-row > .box-rope + .panel { border-top: 0; }
+  @media (min-width: 64rem) { .box-row > .box-rope { display: none; } .box-row > .box-rope + .panel { border-left: 1.5px dashed var(--color-crease); } }
   .crease { border: 0; border-top: 1.5px dashed var(--inner-crease, var(--color-crease)); margin: 0; }
   .crease-v { border: 0; border-left: 1.5px dashed var(--color-crease); }
   .window {

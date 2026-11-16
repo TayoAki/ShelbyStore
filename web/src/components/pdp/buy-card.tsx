@@ -3,7 +3,7 @@
 import { CaretLeft, CaretRight } from "@phosphor-icons/react"
 import Image from "next/image"
 import Link from "next/link"
-import { useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react"
+import { Fragment, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react"
 import { formatMoney } from "@/lib/format"
 import { POLICY } from "@/lib/policy"
 import { findVariant, LOW_STOCK, price } from "@/lib/product"
@@ -121,7 +121,9 @@ export function BuyCard({
   const ctaVisible = useNotScrolledPast(cta, sticky)
 
   const label = soldOut ? "Sold out" : "Add to bag"
-  const spec = crown ? `${crown.value} crown${crown.note ? ` · ${crown.note.replace(/^about /, "")}` : ""} · One size` : "One size"
+  // Each group (with its trailing dot) is unbreakable, so a line only breaks after a dot,
+  // never inside "11–11.5 cm", and balanced lines never leave No. 01 alone.
+  const specParts = [...(crown ? [`${crown.value} crown`, crown.note?.replace(/^about /, "")] : []), "One size", `No. ${String(modelNumber ?? edition?.hole ?? 1).padStart(2, "0")}`].filter((x): x is string => !!x)
   const stockLine =
     stock === null ? (
       <span className="opacity-80">Checking stock…</span>
@@ -179,8 +181,16 @@ export function BuyCard({
             )}
           </Title>
           <p className="spec-line flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span>
-              {spec} · No. {String(modelNumber ?? edition?.hole ?? 1).padStart(2, "0")}
+            <span className="text-balance">
+              {specParts.map((g, i) => (
+                <Fragment key={g}>
+                  <span className="whitespace-nowrap">
+                    {g}
+                    {i < specParts.length - 1 ? " ·" : ""}
+                  </span>
+                  {i < specParts.length - 1 ? " " : ""}
+                </Fragment>
+              ))}
             </span>
             {tag ?? (edition ? <span className="badge-edition">Hole {edition.hole}{edition.size ? ` · ${edition.size} made` : ""}</span> : null)}
           </p>

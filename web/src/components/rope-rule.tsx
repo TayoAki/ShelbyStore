@@ -24,23 +24,27 @@ export function RopeRule({ color, className = "", vertical = false }: { color: s
 }
 
 /**
- * The box's one rope: a braided cord laid full width across the fold between
- * the front and side panels and the back panel, in the rope colour of the
- * chosen cap. The twist is a repeating diagonal lay (one per page, so one id).
+ * The box's one rope: a braided cord laid across the folds, in the rope colour
+ * of the chosen cap. Horizontal runs cross a fold full width; the vertical run
+ * rails down a panel's edge so the cord stays one line on a phone. The twist is
+ * a repeating diagonal lay.
  */
-export function BoxRope({ color }: { color: string | null | undefined }) {
+export function BoxRope({ color, id, vertical = false, className = "" }: { color: string | null | undefined; id: string; vertical?: boolean; className?: string }) {
   const rope = colorway(color).rope
+  const lay = (
+    <defs>
+      <pattern id={id} width="10" height="14" patternUnits="userSpaceOnUse" patternTransform={vertical ? "rotate(90)" : undefined}>
+        <path d="M-2 15 L9 -1" stroke="#00000047" strokeWidth="3.2" />
+        <path d="M3 15 L14 -1" stroke="#ffffff38" strokeWidth="1.4" />
+      </pattern>
+    </defs>
+  )
   return (
-    <div className="box-rope" aria-hidden>
-      <svg className="block h-[14px] w-full" role="presentation">
-        <defs>
-          <pattern id="box-rope-lay" width="10" height="14" patternUnits="userSpaceOnUse">
-            <path d="M-2 15 L9 -1" stroke="#00000047" strokeWidth="3.2" />
-            <path d="M3 15 L14 -1" stroke="#ffffff38" strokeWidth="1.4" />
-          </pattern>
-        </defs>
-        <rect width="100%" height="14" fill={rope} style={{ transition: "fill .42s var(--ease-box)" }} />
-        <rect width="100%" height="14" fill="url(#box-rope-lay)" />
+    <div className={`box-rope ${vertical ? "box-rope-v" : ""} ${className}`} aria-hidden>
+      <svg className={vertical ? "block h-full w-[14px]" : "block h-[14px] w-full"} role="presentation">
+        {lay}
+        <rect width="100%" height="100%" fill={rope} style={{ transition: "fill .42s var(--ease-box)" }} />
+        <rect width="100%" height="100%" fill={`url(#${id})`} />
       </svg>
     </div>
   )

@@ -39,7 +39,8 @@ export default async function HomePage() {
               <Suspense fallback={<HomeFront c={c} core={core} stock={null} />}>
                 <LiveHomeFront c={c} core={core} />
               </Suspense>
-              <SidePanel product={core} fallbackColor={CORE_COLORS[0]} />
+              <SelectedBoxRope fallback={CORE_COLORS[0]} run="phone" />
+              <SidePanel product={core} fallbackColor={CORE_COLORS[0]} rope />
             </div>
             <SelectedBoxRope fallback={CORE_COLORS[0]} />
           </SelectionProvider>

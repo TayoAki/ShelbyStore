@@ -2,6 +2,7 @@ import { POLICY } from "@/lib/policy"
 import { crownCm } from "@/lib/rope"
 import type { Product } from "@/lib/types"
 import { CrownProfiles } from "./crown-profiles"
+import { SelectedBoxRope } from "./selected-rope"
 
 const ORDER = ["Crown", "Panels", "Rope", "Brim", "Closure", "Fabric", "Sweatband", "Care"]
 
@@ -19,7 +20,20 @@ function range(cm: string | null): [number, number] | null {
  * the printed spec plate. On scroll the box turns from its front to this panel
  * (the page's one authored scroll moment).
  */
-export function SidePanel({ product, id = "spec", headingLevel = "h2", fallbackColor = "Tour White" }: { product: Product; id?: string; headingLevel?: "h2" | "h3"; fallbackColor?: string }) {
+export function SidePanel({
+  product,
+  id = "spec",
+  headingLevel = "h2",
+  fallbackColor = "Tour White",
+  rope = false,
+}: {
+  product: Product
+  id?: string
+  headingLevel?: "h2" | "h3"
+  fallbackColor?: string
+  /** Rail the box's rope down this panel's left edge on a phone (home and product page). */
+  rope?: boolean
+}) {
   const H = headingLevel
   const cm = range(crownCm(product))
   const details = ((product.metadata as { details?: Record<string, string> } | null)?.details ?? {}) as Record<string, string>
@@ -27,7 +41,8 @@ export function SidePanel({ product, id = "spec", headingLevel = "h2", fallbackC
 
   return (
     <section id={id} aria-labelledby={`${id}-title`} className="panel panel-turn">
-      <div className="relative flex flex-col gap-8 p-[var(--panel-pad)]">
+      {rope && <SelectedBoxRope fallback={fallbackColor} run="rail" />}
+      <div className={`relative flex flex-col gap-8 p-[var(--panel-pad)] ${rope ? "pl-[calc(var(--panel-pad)+14px)] lg:pl-[var(--panel-pad)]" : ""}`}>
         <div className="flex flex-col gap-4">
           <H id={`${id}-title`} className="panel-title max-w-[14ch]">
             The crown sits lower.
