@@ -150,8 +150,8 @@ function Step({ n, title, active, done, summary, onEdit, children }: {
     <section className="border-b-2 border-dashed border-ink/30 p-5 last:border-b-0 md:p-7" aria-current={active ? "step" : undefined}>
       <div className="flex items-center justify-between gap-3">
         <h2 className={`flex items-center gap-3 ${active || done ? "" : "text-ink-3"}`}>
-          <span className="digits digits-cells text-[1.5rem]" aria-hidden>
-            <span>{n}</span>
+          <span className="figure text-[1.75rem]" aria-hidden>
+            {String(n).padStart(2, "0")}
           </span>
           <span className="panel-title !text-[1.75rem]">{title}</span>
         </h2>

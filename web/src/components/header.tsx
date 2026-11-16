@@ -109,15 +109,13 @@ export async function Header() {
   )
 }
 
-/** Bag count in a digit slot; hidden at 0. */
+/** Bag count as a printed tag; hidden at 0. */
 async function BagBadge() {
   const count = itemCount(await retrieveCart())
   if (!count) return null
   return (
-    <span className="digits digits-cells text-[13px]">
-      {[...String(count)].map((d, i) => (
-        <span key={i}>{d}</span>
-      ))}
+    <span className="figure inline-flex h-[1.375rem] min-w-[1.375rem] items-center justify-center rounded-[2px] border-[1.5px] border-current px-1 text-[13px]">
+      {count}
       <span className="sr-only"> items in bag</span>
     </span>
   )

@@ -145,7 +145,10 @@
   .link { color: inherit; text-decoration: underline; text-underline-offset: .22em; text-decoration-thickness: 1px; }
   @media (hover: hover) { .link:hover { text-decoration-thickness: 2px; } }
 
-  /* ---- digit slots: every real number sits in a fixed, engineered cell ---- */
+  /* ---- figures: prices and hole numerals as tight tabular figures ---- */
+  .figure { font-family: var(--font-model); font-weight: 800; font-variant-numeric: tabular-nums lining-nums; line-height: 1; letter-spacing: 0; }
+
+  /* ---- digit slots: kept for the countdown and measured counters only ---- */
   .digits { display: inline-flex; gap: .04em; font-family: var(--font-model); font-weight: 800; font-variant-numeric: tabular-nums lining-nums; line-height: 1; }
   .digits > span { display: inline-flex; justify-content: center; min-width: .54em; }
   .digits-cells > span { padding: .12em .08em .08em; border: 1.5px solid currentColor; border-radius: 2px; min-width: .9em; }
@@ -158,18 +161,37 @@
   /* ---- panels, creases, windows ---- */
   .panel {
     position: relative; background: var(--panel-bg, var(--color-paper)); color: var(--panel-ink, var(--color-ink));
-    border: var(--keyline) solid var(--panel-line, var(--color-ink)); border-radius: 6px;
+    border: var(--keyline) solid var(--panel-line, var(--color-ink)); border-radius: 0;
     transition: background-color var(--beat) var(--ease-box), color var(--beat) var(--ease-box), border-color var(--beat) var(--ease-box);
   }
-  .panel-inner { position: absolute; inset: 7px; border: 1px solid currentColor; border-radius: 3px; opacity: .35; pointer-events: none; }
-  .crease { border: 0; border-top: 1.5px dashed var(--color-crease); margin: 0; }
+  .panel-inner { display: none; }
+
+  /* ---- the flattened box: panels butt edge to edge inside one keyline; each fold is a dashed crease ---- */
+  .box { border: var(--keyline) solid var(--color-ink); background: var(--color-paper); margin-inline: .75rem; }
+  @media (min-width: 48rem) { .box { margin-inline: 1.5rem; } }
+  @media (min-width: 93rem) { .box { margin-inline: auto; max-width: 90rem; } }
+  .box > .panel, .box-row > .panel { border: 0; background-clip: padding-box; }
+  .box > :not(.panel):not(.box-row):not(.box-rope):not(.box-flush) { padding: var(--panel-pad); }
+  .box > * + *, .box > * + .panel { border-top: 1.5px dashed var(--color-crease); }
+  .box > .box-rope, .box > .box-rope + *, .box > .box-rope + .panel { border-top: 0; }
+  .box-flush > .panel { border: 0; background-clip: padding-box; }
+  .box-flush > .panel + .panel, .box-flush > * + .box-row, .box-flush > .box-row + * { border-top: 1.5px dashed var(--color-crease); }
+  .box-row { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .box-row > * + *, .box-row > * + .panel { border-top: 1.5px dashed var(--color-crease); }
+  @media (min-width: 64rem) {
+    .box-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .box-row > * + *, .box-row > * + .panel { border-top: 0; border-left: 1.5px dashed var(--color-crease); }
+  }
+  /* The one rope: a braided cord laid across the fold from the front and side panels into the back. */
+  .box-rope { display: block; line-height: 0; }
+  .crease { border: 0; border-top: 1.5px dashed var(--inner-crease, var(--color-crease)); margin: 0; }
   .crease-v { border: 0; border-left: 1.5px dashed var(--color-crease); }
   .window {
     position: relative; overflow: hidden; background: #fff; border-radius: var(--radius-window);
-    box-shadow: inset 0 0 0 1.5px var(--window-edge, #14213d), inset 0 6px 14px -6px #0000004d;
+    box-shadow: inset 0 0 0 1.5px var(--window-edge, #14213d);
   }
   .window img { transition: opacity var(--beat) var(--ease-box); }
-  .window-shade { position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1.5px var(--window-edge, #14213d), inset 0 8px 16px -8px #00000059; pointer-events: none; z-index: 1; }
+  .window-shade { position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1.5px var(--window-edge, #14213d); pointer-events: none; z-index: 1; }
   .stripe-edition { background: var(--color-stripe); color: #fff; }
 
   /* ---- buttons: printed ink blocks ---- */
@@ -182,7 +204,7 @@
     transition: background-color .18s var(--ease-box), color .18s var(--ease-box), border-color .18s var(--ease-box), transform .12s var(--ease-box), box-shadow .18s var(--ease-box);
   }
   .btn:active:not(:disabled) { transform: translateY(1px); }
-  .btn-secondary { background: var(--color-ink); border-color: var(--color-ink); color: #fff; box-shadow: 0 1px 0 #0000001f, 0 10px 18px -12px #14213d99; }
+  .btn-secondary { background: var(--color-ink); border-color: var(--color-ink); color: #fff; }
   .btn-primary { background: #fff; border-color: var(--color-ink); color: var(--color-ink); }
   .btn-outline-black { border-color: var(--color-ink); color: var(--color-ink); }
   .btn-outline-white { border-color: #fff; color: #fff; }

@@ -30,7 +30,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${sofia.variable} ${sofiaSemi.variable} ${sofiaXc.variable}`}>
-      <body className="flex min-h-dvh flex-col bg-board font-sans text-ink antialiased">
+      <body className="flex min-h-dvh flex-col bg-paper font-sans text-ink antialiased">
         <a
           href="#main"
           className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[90] focus:rounded-[4px] focus:bg-ink focus:px-3 focus:py-2 focus:text-white"

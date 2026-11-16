@@ -105,16 +105,14 @@ export function ViewedDrawer({ open, onClose, items }: { open: boolean; onClose:
   )
 }
 
-/** Count on header icons, printed in digit slots. */
+/** Count on header icons, printed as a small tag. */
 export function CountBadge({ count }: { count: number }) {
   return (
     <span
       aria-hidden
-      className="digits digits-cells ml-1 text-[13px]"
+      className="ml-1 figure inline-flex h-[1.375rem] min-w-[1.375rem] items-center justify-center rounded-[2px] border-[1.5px] border-current px-1 text-[13px]"
     >
-      {String(count).split("").map((d, i) => (
-        <span key={i}>{d}</span>
-      ))}
+      {count}
     </span>
   )
 }

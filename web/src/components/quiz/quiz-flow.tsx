@@ -55,12 +55,11 @@ export function QuizFlow() {
 
   return (
     <div id="quiz" className="panel scroll-mt-28">
-      <span className="panel-inner" aria-hidden />
       <div className="relative flex flex-col gap-6 p-[var(--panel-pad)]">
         <div className="flex items-center justify-between gap-4">
           <span className="label">Question</span>
           <span aria-live="polite" className="text-[2rem] leading-none">
-            <Digits value={`${step + 1}/${QUESTIONS.length}`} cells label={`Question ${step + 1} of ${QUESTIONS.length}`} />
+            <Digits value={`${step + 1}/${QUESTIONS.length}`} label={`Question ${step + 1} of ${QUESTIONS.length}`} />
           </span>
         </div>
         <div className="grid grid-cols-4 gap-1.5" role="progressbar" aria-valuemin={0} aria-valuemax={QUESTIONS.length} aria-valuenow={step + 1} aria-label="Quiz progress">
