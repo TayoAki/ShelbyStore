@@ -1,40 +1,36 @@
 import type { Metadata, Viewport } from "next"
-import { Sofia_Sans, Sofia_Sans_Extra_Condensed, Sofia_Sans_Semi_Condensed } from "next/font/google"
+import { Monomakh, Montserrat, Roboto } from "next/font/google"
 import { Suspense } from "react"
 import { AnalyticsProvider } from "@/components/analytics-provider"
 import { AnnouncementBar } from "@/components/announcement-bar"
-import { BagContents, DRAWER_POLICY } from "@/components/cart/bag-contents"
-import { CartDrawer } from "@/components/cart/cart-drawer"
+import { BagContents } from "@/components/cart/bag-contents"
+import { CartDrawer, CartHead } from "@/components/cart/cart-drawer"
 import { CartDrawerProvider } from "@/components/cart/drawer-context"
-import { Footer } from "@/components/footer"
+import { Footer, Prefooter } from "@/components/footer"
 import { Header } from "@/components/header"
 import "./globals.css"
 
-// One superfamily, the way a box's print is set: Sofia Sans for running copy,
-// Semi Condensed for printed labels and controls, Extra Condensed for model
-// names and every numeral (The Ball Box direction contract).
-const sofia = Sofia_Sans({ subsets: ["latin"], variable: "--font-sofia", display: "swap" })
-const sofiaSemi = Sofia_Sans_Semi_Condensed({ subsets: ["latin"], variable: "--font-sofia-semi", display: "swap" })
-const sofiaXc = Sofia_Sans_Extra_Condensed({ subsets: ["latin"], variable: "--font-sofia-xc", display: "swap" })
+// SITE_SPEC v8 E.2.3: Monomakh for section titles and the wordmark, Montserrat
+// for product and page titles, Roboto for everything else.
+const display = Monomakh({ weight: "400", subsets: ["latin"], variable: "--font-monomakh", display: "swap", adjustFontFallback: false })
+const heading = Montserrat({ weight: ["500", "600", "700"], subsets: ["latin"], variable: "--font-montserrat", display: "swap" })
+const body = Roboto({ weight: ["400", "500", "700"], style: ["normal", "italic"], subsets: ["latin"], variable: "--font-roboto", display: "swap" })
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
-  title: { default: "Shelby | One Rope Cap, Made Properly", template: "%s | Shelby" },
-  description: "Shelby makes one rope cap: washed cotton, a mid crown that sits right, a rope worth looking at, and a new numbered color when the golf season turns.",
+  title: { default: "Shelby | The Rope Cap", template: "%s | Shelby" },
+  description: "Shelby makes one rope cap: washed cotton, a mid crown that sits right the first time, and a new numbered color when the golf season turns.",
 }
 
 export const viewport: Viewport = {
-  themeColor: "#14213D",
+  themeColor: "#000000",
 }
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${sofia.variable} ${sofiaSemi.variable} ${sofiaXc.variable}`}>
-      <body className="flex min-h-dvh flex-col bg-paper font-sans text-ink antialiased">
-        <a
-          href="#main"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[90] focus:rounded-[4px] focus:bg-ink focus:px-3 focus:py-2 focus:text-white"
-        >
+    <html lang="en" className={`${display.variable} ${heading.variable} ${body.variable}`}>
+      <body className="flex min-h-dvh flex-col bg-bg font-body text-text antialiased">
+        <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[7000] focus:rounded-sm focus:bg-ink focus:px-3 focus:py-2 focus:text-on-ink">
           Skip to content
         </a>
         <CartDrawerProvider>
@@ -43,9 +39,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <main id="main" className="flex-1">
             {children}
           </main>
+          <Prefooter />
           <Footer />
-          <CartDrawer policy={DRAWER_POLICY}>
-            <Suspense fallback={<div className="flex-1" aria-busy />}>
+          <CartDrawer>
+            <Suspense
+              fallback={
+                <div className="flex min-h-0 flex-1 flex-col" aria-busy>
+                  <CartHead count={null} />
+                </div>
+              }
+            >
               <BagContents mode="drawer" />
             </Suspense>
           </CartDrawer>

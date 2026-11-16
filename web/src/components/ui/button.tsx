@@ -1,24 +1,36 @@
-import { CircleNotch } from "@phosphor-icons/react/dist/ssr"
+import { ArrowRight, CircleNotch } from "@phosphor-icons/react/dist/ssr"
 import Link from "next/link"
 import type { ComponentProps, ReactNode } from "react"
 
 /**
- * Printed ink-block buttons (classes in globals.css: .btn, .btn-secondary…).
- * `secondary` is the navy main CTA; `primary` is the white one with a keyline.
+ * Eastside-style buttons (SITE_SPEC v8 E.5.1): the classes live in globals.css
+ * (.btn plus a fill and a size). Hover runs the skewed sweep (M1); arrows nudge
+ * (M2). `primary` is the green add-to-bag.
  */
-export type Variant = "primary" | "secondary" | "outline-black" | "outline-white" | "icon-black" | "icon-white" | "link"
-export type Size = "default" | "small" | "large" | "atc"
+export type Variant = "primary" | "secondary" | "black" | "white" | "outline" | "outline-black" | "outline-white" | "outline-green" | "kit" | "link"
+export type Size = "default" | "small" | "large" | "atc" | "sticky" | "checkout"
 
-const sizeClass: Record<Size, string> = { default: "", small: "btn-small", large: "btn-large", atc: "btn-atc w-full" }
+const variantClass: Record<Exclude<Variant, "link">, string> = {
+  primary: "btn-green",
+  secondary: "btn-charcoal",
+  black: "btn-black",
+  white: "btn-white",
+  outline: "btn-outline",
+  "outline-black": "btn-outline-black",
+  "outline-white": "btn-outline-white",
+  "outline-green": "btn-outline-green",
+  kit: "btn-kit",
+}
+const sizeClass: Record<Size, string> = { default: "", small: "btn-sm", large: "btn-lg", atc: "btn-atc", sticky: "btn-sticky", checkout: "btn-checkout" }
 
 export function buttonClass({
-  variant = "secondary",
+  variant = "primary",
   size = "default",
   block = false,
   className = "",
 }: { variant?: Variant; size?: Size; block?: boolean; className?: string } = {}) {
-  if (variant === "link") return ["link text-sm", className].filter(Boolean).join(" ")
-  return ["btn", `btn-${variant}`, sizeClass[size], block ? "w-full" : "", className].filter(Boolean).join(" ")
+  if (variant === "link") return ["link", className].filter(Boolean).join(" ")
+  return ["btn", variantClass[variant], sizeClass[size], block ? "btn-block" : "", className].filter(Boolean).join(" ")
 }
 
 type ButtonProps = ComponentProps<"button"> & {
@@ -26,11 +38,12 @@ type ButtonProps = ComponentProps<"button"> & {
   size?: Size
   block?: boolean
   loading?: boolean
+  arrow?: boolean
   /** Label for first-party `cta_click` autocapture (data-track). */
   track?: string
 }
 
-export function Button({ variant, size, block, loading, track, className, children, disabled, ...rest }: ButtonProps) {
+export function Button({ variant, size, block, loading, arrow, track, className, children, disabled, ...rest }: ButtonProps) {
   return (
     <button
       {...rest}
@@ -39,7 +52,9 @@ export function Button({ variant, size, block, loading, track, className, childr
       aria-busy={loading || undefined}
       className={buttonClass({ variant, size, block, className })}
     >
-      {loading ? <CircleNotch size={16} className="animate-[spin_1s_linear_infinite]" aria-label="Loading" /> : children}
+      {children}
+      {loading && <CircleNotch size={16} className="spin" aria-hidden />}
+      {arrow && !loading && <ArrowRight size={16} className="icon-arrow" aria-hidden />}
     </button>
   )
 }
@@ -49,6 +64,7 @@ export function ButtonLink({
   variant,
   size,
   block,
+  arrow,
   className,
   track,
   children,
@@ -58,6 +74,7 @@ export function ButtonLink({
   variant?: Variant
   size?: Size
   block?: boolean
+  arrow?: boolean
   className?: string
   track?: string
   children: ReactNode
@@ -65,6 +82,7 @@ export function ButtonLink({
   return (
     <Link href={href} data-track={track} className={buttonClass({ variant, size, block, className })} {...rest}>
       {children}
+      {arrow && <ArrowRight size={16} className="icon-arrow" aria-hidden />}
     </Link>
   )
 }

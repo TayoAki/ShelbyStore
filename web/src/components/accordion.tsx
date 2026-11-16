@@ -1,41 +1,53 @@
-"use client"
+import { Plus } from "@phosphor-icons/react/dist/ssr"
+import type { ReactNode } from "react"
 
-import { Plus } from "@phosphor-icons/react"
-import { useState, type ReactNode } from "react"
-
-/** One FAQ row: a printed question, a plus that turns to a cross, the answer folding open on the shared beat. */
-export function Accordion({ title, children, open = false, id }: { title: string; children: ReactNode; open?: boolean; id?: string }) {
-  const [isOpen, setOpen] = useState(open)
+/**
+ * Eastside's accordion row (SITE_SPEC v8 E.5.6): a native details/summary,
+ * 18px/500 capitalised summary, a #F0F0F0 rule under each row, a plus that
+ * turns 45° when open (M15). `tone="ink"` is the mobile footer version.
+ */
+export function Accordion({ title, children, open = false, id, tone = "light", className = "" }: { title: string; children: ReactNode; open?: boolean; id?: string; tone?: "light" | "ink"; className?: string }) {
+  if (tone === "ink")
+    return (
+      <details id={id} open={open} className={`accordion !border-white/15 ${className}`}>
+        <summary className="!min-h-11 !py-3 !text-[12.6px] !font-bold !uppercase !text-white">
+          {title}
+          <Plus size={16} className="icon-plus text-on-ink" aria-hidden />
+        </summary>
+        <div className="accordion-body">{children}</div>
+      </details>
+    )
   return (
-    <div id={id} className="border-ink [&+&]:border-t-2">
-      <button type="button" aria-expanded={isOpen} onClick={() => setOpen((o) => !o)} className="flex min-h-14 w-full items-center justify-between gap-4 px-4 py-3 text-left font-label text-[1.0625rem] font-[700] tracking-[.03em] uppercase">
+    <details id={id} open={open} className={`accordion ${className}`}>
+      <summary>
         {title}
-        <Plus size={20} weight="bold" className={`shrink-0 transition-transform duration-[420ms] ease-[var(--ease-box)] ${isOpen ? "rotate-45" : ""}`} aria-hidden />
-      </button>
-      <div className={`grid transition-[grid-template-rows] duration-[420ms] ease-[var(--ease-box)] ${isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
-        <div className="overflow-hidden">
-          <div className="px-4 pb-4 text-[1.0625rem] leading-7 text-ink-2">{children}</div>
-        </div>
-      </div>
-    </div>
+        <Plus size={16} className="icon-plus" aria-hidden />
+      </summary>
+      <div className="accordion-body text-[14.4px] leading-[19.73px]">{children}</div>
+    </details>
   )
 }
 
-/** The FAQ as one keylined block on a panel. */
-export function Faq({ items, title = "Questions" }: { items: { q: string; a: ReactNode }[]; title?: string }) {
+/**
+ * Eastside's collection FAQ block (E.6.2 §5): a Montserrat 26px heading over
+ * accordion rows with Montserrat 16px questions.
+ */
+export function Faq({ items, title = "Frequently asked questions" }: { items: { q: string; a: ReactNode }[]; title?: string }) {
   return (
-    <section aria-labelledby="faq-title" className="panel">
-      <div className="relative flex flex-col gap-5 p-[var(--panel-pad)]">
-        <h2 id="faq-title" className="panel-title">
-          {title}
-        </h2>
-        <div className="border-2 border-ink">
-          {items.map((i) => (
-            <Accordion key={i.q} title={i.q}>
-              {i.a}
-            </Accordion>
-          ))}
-        </div>
+    <section aria-labelledby="faq-title" className="wrap mx-auto max-w-[1116px] py-12 md:py-16">
+      <h2 id="faq-title" className="font-heading text-[26px] leading-[31.2px] font-bold">
+        {title}
+      </h2>
+      <div className="mt-6 border-t border-border">
+        {items.map((i) => (
+          <details key={i.q} className="accordion">
+            <summary className="faq-q !text-[16px] !normal-case">
+              {i.q}
+              <Plus size={16} className="icon-plus" aria-hidden />
+            </summary>
+            <div className="accordion-body text-[14.4px] leading-[19.73px]">{i.a}</div>
+          </details>
+        ))}
       </div>
     </section>
   )
