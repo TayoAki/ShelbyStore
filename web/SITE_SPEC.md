@@ -412,3 +412,176 @@ funnel, no verdict before 100 exposures per variant.
 5. **Reviews with a fit slider** (Melin) once there are real reviews. Never seeded or invented.
 6. **Accessories** ($5–49 patches, pins, cases [MG 2/2]) to raise order value without a second hat.
 7. **Photography** to the full angle set (§7).
+8. **The two-pack price.** $68 for two ($8 under two singles) is a demo price set to give the offer
+   page (§12.1) a real deal. Confirm it against margin before launch; the page reads the live price.
+
+## 12. Landing page types
+
+Source: the user's essay outline on Shopify DTC landing pages ("From Customer Insight to
+Conversion", reviewed 2026-11-13) [ES]. Its page-type table maps each page to one job and one kind of
+visitor [ES Body 2]. Shelby builds all six; the homepage (§6.1) and PDP (§6.4) already existed and
+get only gap fixes (§12.6). The traffic map, brief and requirement-by-requirement check live in
+`docs/landing-pages/` (`page-map.md`, `brief.md`, `essay-compliance.md`).
+
+### 12.0 Rules every landing page follows
+
+- **Evidence** [ES Body 5 D, Body 4 D, Body 6 D]: no generated testimonials, reviews, ratings,
+  customer counts or "people are switching" claims. Proof is live data (stock, price), product facts
+  (`metadata.details`, `fit_profile`), store policy (`policy.ts`) or the content-series record
+  (demo data, flagged in the admin). When a proof source is empty, its block is omitted, never
+  filled. No fake deadlines, timers or discounts: urgency only from real drop dates and real stock.
+  Price anchors must be true at render time (the offer's anchor is computed from the single's live
+  price).
+- **Voice:** Shelby's brand voice ("we", "you"). Never a fictional customer or editor.
+- **Structure** [ES Body 5, Body 7]: pages are assembled from shared blocks in
+  `src/components/lp/` (AdLabel, Hook, ReasonBlock, ProofList, StockList, Faq, ClosingCta, StickyCta,
+  ProductOffer, OfferCard). Same tokens, 4:5 media, `Container` widths and section rhythm
+  (`py-12 lg:py-20`) as the rest of the site.
+- **SEO and semantics** [ES Body 7 S15]: one H1 per page, `generateMetadata` title and
+  description, readable URLs.
+- **Continuity** [ES Body 3]: every page renders `<ContinuityBanner />` in `<Suspense>`, so an
+  episode link (`?asset=`) can land on any of them (content episodes' `landing_path` accepts any path).
+- **Measurement** [ES Body 9]: every event carries `page_type` (home, collection, pdp, offer,
+  listicle, advertorial, quiz, quiz_result, story, drops, fit_guide, cart, checkout, order, other),
+  derived from the path in `src/lib/analytics.ts`, so funnels split by page type. Every CTA has a
+  `data-track` label. Each page fires one `<Track>` view event.
+- **Purchase actions** [ES Body 8]: every page's buy action adds the exact variant shown, with its
+  live price; offer pages add the kit variant.
+- **Mobile:** a sticky bottom CTA (`StickyCta`) once the page's main CTA has scrolled away.
+
+### 12.1 Offer landing page `/offer/[handle]` (first: `/offer/everyday-two-pack`)
+
+Job: present one focused deal [ES Body 2 table, Body 4]. Typical traffic: warm and hot (retargeting,
+email, the PDP and bag links); the essay's sources disagree on cold use, so Shelby treats cold use
+as a test [ES Body 2 B].
+
+Data: product `everyday-two-pack` (metadata `offer: true`, `offer_path`, `single_handle`,
+`compare_at`). 16 variants = First cap × Second cap over the Everyday Cap colours; each variant is
+an **inventory kit** on the single cap's inventory items (required quantity 1 + 1, or 2 for the same
+colour), so its stock is the real core stock. $68 is a DEMO price (§11). Offer products are left out
+of `/shop`, shape tiles, the fit guide, the home page and complete-the-look; `/products/<offer>`
+redirects to the offer page.
+
+1. Continuity banner.
+2. **Offer hero** (`#offer`, above the fold): left, the two chosen caps' photos side by side (4:5
+   each); right, eyebrow "The Two-Pack · Core", H1 (experiment `offer-headline`: control "Two Everyday
+   Caps. $68." / variant `saving` "Save $8 on two Everyday Caps."), the price row (`$68` + struck
+   `$76` + "Save $8 against two singles at $38", all computed from live prices; hidden if the saving
+   isn't positive), the promise, then the **pair picker**: "First cap" and "Second cap" image swatches
+   (the single's colour photos) with sold-out swatches dimmed from the kit availability, a live stock
+   line, CTA "Add the pair · $68" (`offer_add`), and reassurance directly under it (shipping,
+   "30-day returns on the pair") [ES Body 4: product, price, terms, reassurance in one place].
+3. **What's included:** two caps in your colours; one size each with the adjustable range; the
+   shared specs (`metadata.details`); "One order, one shipping charge".
+4. **Why two** (use cases only, no outcome claims): a dark one and a light one; one for the car or
+   bag; you already know the fit.
+5. **Proof:** live core stock per colour (StockList), the crush-test stance linked to its story
+   (`offer_story`), the fit scales.
+6. **FAQ** (`<details>`): Will it fit? · Can I pick the same colour twice? · Returns · Shipping · Is
+   this a sale? ("No. Two cost $68; singles stay $38.").
+7. **Closing CTA** "Pick your two" → `#offer` (`offer_close_cta`).
+8. **StickyCta** (mobile): "Add the pair · $68" (`offer_sticky_add`).
+
+Events: `offer_viewed` {offer}, `add_to_cart` with `source: "offer"`. Entry points: the Everyday
+Cap PDP ("Get two for $68 →", `pdp_offer`), the bag when an Everyday Cap is in it (`cart_offer`),
+the listicle, advertorial and quiz result.
+
+### 12.2 Listicle `/reasons/[handle]` (first: `/reasons/everyday-cap`)
+
+Job: educate through a sequence of reasons for curiosity-driven, less-informed visitors [ES Body 2
+table]; numbered reason headings, a matching image per reason, scanability, a simple onward action
+[ES Body 6 S18]. Content lives in `src/lib/landing/listicles.ts` (typed, reusable for the next
+listicle).
+
+1. Continuity banner.
+2. **Hook:** eyebrow "6 reasons", H1 "6 things that make the Everyday Cap different", dek, the
+   numbered **jump list** (anchors `#reason-1…6`).
+3. **Reasons** (ReasonBlock: number, heading, 2–3 sentences, image left/right alternating on desktop,
+   stacked on mobile), each tied to a verifiable fact:
+   1. Broken in on day one: garment-washed cotton twill (`details.Fabric`). Image: side profile.
+   2. A low crown that sits close: the crown/structure scales (`fit_profile`). Image: side profile.
+   3. One size that actually adjusts: the range from `fit_notes` (21.5–23.75 in / 55–60 cm). Image:
+      the strap and buckle.
+   → CTA "Shop the Everyday Cap" (`listicle_mid_cta`) → `#buy`.
+   4. Built for the back pocket: the content series stance, linked to its story (`listicle_story`).
+      Image: `story-crush.jpg`. Omitted if no series is active.
+   5. Every colour, in stock: live StockList per colour. Image: the four colours' lead photos.
+   6. 30 days to change your mind: `POLICY.returns` + shipping. Image: lifestyle.
+   → CTA (`listicle_end_cta`) → `#buy`.
+4. **Buy block** (`#buy`, ProductOffer with the BuyBox) + "Or get two for $68 →"
+   (`listicle_offer`).
+5. **StickyCta** (mobile): "Shop the Everyday Cap · $38" → `#buy` (`listicle_sticky`).
+
+Event: `listicle_viewed` {listicle}.
+
+### 12.3 Advertorial / presell `/read/[slug]` (first: `/read/one-cap`)
+
+Job: develop a story and build belief for products that need explanation or reassurance [ES Body 2
+table], with sponsored labelling [ES Body 2 S06; Body 6: editorial presentation and an explicit
+advertorial label]. Content in `src/lib/landing/advertorials.ts`.
+
+- **AdLabel** above the kicker on every advertorial: "Advertisement · From Shelby", and a closing
+  disclosure line: "This is an advertisement from Shelby, the company that makes the Everyday Cap."
+- Editorial layout: `max-w-[680px]` measure, kicker, H1 headline, dek, byline "By Shelby · N min
+  read" (computed from word count), the published date.
+- Second-person narrative in five beats: the problem (the cap that goes flat and fades) → why it
+  happens (stated generally, no named competitors) → what we changed (the mechanism: unstructured low
+  crown, garment-washed twill, pre-curved brim, adjustable strap; product facts only) → how we check it
+  (the series stance + live stock line) → the offer → close.
+- Captioned images (`figure`/`figcaption`): the crush photo, the side profile, the strap.
+- Inline onward CTAs after the mechanism and proof beats (`advertorial_inline`), an **OfferCard**
+  at the end (image, title, live price, "Shop the Everyday Cap" `advertorial_offer_pdp`, "Or get two
+  for $68 →" `advertorial_offer_pack`), StickyCta on mobile (`advertorial_sticky`).
+- Presell metric: onward clicks (`cta_click` with `advertorial_*` labels) and, separately, eventual
+  purchases (`order_completed` by visitors whose first page_type was advertorial) [ES Body 9 C].
+- Not linked from the site nav: it is a paid-traffic landing page (page map).
+
+Event: `advertorial_viewed` {slug}.
+
+### 12.4 Quiz `/quiz` and result `/quiz/result`
+
+Job: connect expressed needs to a recommendation (personalised product or bundle) [ES Body 2
+table, S06 "tailored recommendations after quizzes"].
+
+- `/quiz` (client flow): one question per screen, a progress bar ("1 of 4"), Back, answers as
+  full-width 56px buttons. Questions:
+  1. `use`: What will you wear it for most? Everyday · Running & training · Sun & travel · Cold days
+  2. `fit`: How do caps usually fit you? Usually fine · Often too tight · Often too loose · Not sure
+  3. `crown`: How do you like the crown? Low, close to the head · Some structure · No preference
+  4. `colors`: Which colours do you reach for? Dark · Light · Earthy · Anything
+  Events: `quiz_started` (on mount), `quiz_answered` {step, question, answer}. Finishing navigates
+  to the stateless, shareable `/quiz/result?use=&fit=&crown=&colors=`.
+- **Scoring** (`src/lib/quiz.ts`, pure and deterministic) over published, non-offer products with
+  at least one colour in stock: +4 when `metadata.uses` includes the use; crown low → +2 for a Low
+  crown; some structure → +2 Structured / +1 Semi-structured / −1 Unstructured; fit tight → +1 when
+  the hat adjusts above 23.75 in or is sized with L/XL in stock, fit loose → +1 when sized with S/M
+  in stock; colours → +1 when a colour in that family is in stock. Ties: core first, then lower price.
+  The colour is the first in-stock colour of the chosen family (else the first in stock). Sized
+  hats: tight → L/XL, loose → S/M (when in stock), otherwise no size is preselected and the result
+  points to the fit guide.
+- **Result** (H1 "Your match: The X in Y"): "Why it fits you" bullets, each pairing an answer with a
+  product fact; ProductOffer with the BuyBox preselected to the colour (and size), `add_to_cart`
+  carrying `source: "quiz"`; the fit scales; the runner-up card; the two-pack OfferCard when the match
+  is the Everyday Cap; "Retake the quiz". Event `quiz_completed` {match, runner_up, use, fit, crown,
+  colors}. Invalid parameters redirect to `/quiz`.
+- Entry points: home (band after Shop by shape, `home_quiz`), the PDP fit row ("Not sure? Take the
+  30-second fit quiz", `pdp_quiz`), the fit guide (`fit_guide_quiz`), the nav ("Fit quiz",
+  `nav_quiz`) and the footer.
+
+### 12.5 Story page `/stories/[handle]`
+
+Unchanged (§6.9): it is the presell for content-series traffic. It now reuses `ProductOffer` for its
+offer block.
+
+### 12.6 Homepage and PDP gap fixes
+
+- Home: a quiz band after Shop by shape ("Not sure which hat? Four questions, one match.").
+- PDP: the quiz link under the fit row; on a product with an offer (`single_handle`), a line under
+  the reassurance: "Get two for $68 · save $8 →" (`pdp_offer`).
+- Bag: when an Everyday Cap single is in the bag, an offer row above complete-the-look (`cart_offer`).
+
+### 12.7 Experiment
+
+`offer-headline` (seeded running, 50/50, minimum sample 100 per variant): hypothesis, audience and
+change are stored on the experiment record; primary metric `add_to_cart` with `page_type = offer`,
+then `order_completed`. Judge only after the minimum sample [ES Body 9 D].
