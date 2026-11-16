@@ -15,22 +15,16 @@ const secondClock = {
 const pad = (n: number) => String(n).padStart(2, "0")
 
 /**
- * Live DD : HH : MM : SS to a REAL release time from the release module
- * (SITE_SPEC §6.1.4). Never an evergreen or resetting timer. At zero it says the
- * drop is going live, because a release only goes live once it passes its
- * go/no-go checks. Renders a placeholder on the server so hydration matches.
+ * DD : HH : MM : SS to a REAL release time from the release module (SITE_SPEC
+ * §6.6.1): heading digits, black, with small muted labels. Never an evergreen
+ * or resetting timer. At zero it says the drop is going live, because a
+ * release only goes live once it passes its go/no-go checks.
  */
-export function Countdown({ iso, tone = "dark" }: { iso: string; tone?: "dark" | "light" }) {
+export function Countdown({ iso, size = "small", tone = "dark" }: { iso: string; size?: "small" | "large"; tone?: "dark" | "light" }) {
   const now = useSyncExternalStore(secondClock.subscribe, secondClock.now, secondClock.server)
   const diff = now === null ? null : new Date(iso).getTime() - now
-
-  const digit = tone === "dark" ? "text-accent" : "text-ink"
-  const label = tone === "dark" ? "text-ink-inverse-muted" : "text-ink-muted"
-
-  if (diff !== null && diff <= 0) {
-    return <p className={`font-mono text-[15px] ${digit}`}>Going live shortly</p>
-  }
-
+  const ink = tone === "dark" ? "text-black" : "text-white"
+  if (diff !== null && diff <= 0) return <p className={`font-heading text-[14px] ${ink}`}>Going live shortly</p>
   const total = diff === null ? null : Math.floor(diff / 1000)
   const parts: [string, number | null][] = [
     ["Days", total === null ? null : Math.floor(total / 86400)],
@@ -38,19 +32,19 @@ export function Countdown({ iso, tone = "dark" }: { iso: string; tone?: "dark" |
     ["Min", total === null ? null : Math.floor((total % 3600) / 60)],
     ["Sec", total === null ? null : total % 60],
   ]
-
+  const digits = size === "large" ? "text-[34px]" : "text-[22px]"
   return (
-    <div className="flex items-start gap-3 lg:gap-5" role="timer" aria-label="Time until this drop">
+    <div className="flex items-start gap-2" role="timer" aria-label="Time until this drop">
       {parts.map(([name, value], i) => (
-        <div key={name} className="flex items-start gap-3 lg:gap-5">
+        <div key={name} className="flex items-start gap-2">
           <div className="flex flex-col items-center gap-1">
-            <span className={`tabular font-mono text-[34px] leading-none lg:text-[52px] ${digit}`} aria-hidden>
+            <span className={`font-heading tabular leading-none ${digits} ${ink}`} aria-hidden>
               {value === null ? "--" : pad(value)}
             </span>
-            <span className={`text-eyebrow ${label}`}>{name}</span>
+            <span className={`font-body text-[10px] uppercase tracking-[1px] ${tone === "dark" ? "text-muted" : "text-white/70"}`}>{name}</span>
           </div>
           {i < parts.length - 1 && (
-            <span className={`font-mono text-[34px] leading-none lg:text-[52px] ${label}`} aria-hidden>
+            <span className={`font-heading leading-none ${digits} ${ink}`} aria-hidden>
               :
             </span>
           )}

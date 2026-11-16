@@ -1,36 +1,41 @@
 import Link from "next/link"
 import type { ComponentProps, ReactNode } from "react"
 
-type Variant = "primary" | "secondary" | "inverse" | "ghost"
-type Size = "lg" | "md" | "sm"
+/**
+ * Melin's button system (SITE_SPEC §5): the classes live in globals.css (.btn,
+ * .btn--*). Primary has no hover change; outline variants fill with ink from
+ * the centre on hover.
+ */
+export type Variant = "primary" | "light" | "dark" | "highlight" | "link" | "micro" | "action" | "icon"
+export type Size = "default" | "atc" | "checkout" | "large" | "hero" | "small"
 
-const base =
-  "inline-flex items-center justify-center gap-2 rounded-[2px] font-sans text-[13px] font-semibold uppercase tracking-[0.08em] transition-colors duration-150 disabled:cursor-not-allowed select-none whitespace-nowrap"
-
-const variants: Record<Variant, string> = {
-  primary: "bg-ink text-page hover:bg-black active:translate-y-px disabled:bg-surface-2 disabled:text-ink-muted",
-  secondary:
-    "border border-ink text-ink bg-transparent hover:bg-ink hover:text-page active:translate-y-px disabled:border-line disabled:text-ink-faint disabled:hover:bg-transparent",
-  // For dark (ink) bands.
-  inverse: "bg-page text-ink hover:bg-paper active:translate-y-px",
-  ghost: "text-ink underline underline-offset-4 hover:text-ink-muted disabled:text-ink-faint normal-case tracking-normal font-medium",
+const variantClass: Record<Variant, string> = {
+  primary: "btn--primary",
+  light: "btn--light",
+  dark: "btn--dark",
+  highlight: "btn--highlight",
+  link: "btn--link",
+  micro: "btn--micro",
+  action: "btn--action",
+  icon: "btn--w-icon",
 }
 
-const sizes: Record<Size, string> = {
-  lg: "h-[52px] px-6",
-  md: "h-12 px-6",
-  sm: "h-10 px-4",
+const sizeClass: Record<Size, string> = {
+  default: "",
+  atc: "btn--atc",
+  checkout: "btn--checkout",
+  large: "btn--large",
+  hero: "btn--hero",
+  small: "btn--small",
 }
 
 export function buttonClass({
   variant = "primary",
-  size = "md",
+  size = "default",
   block = false,
   className = "",
 }: { variant?: Variant; size?: Size; block?: boolean; className?: string } = {}) {
-  return [base, variants[variant], variant === "ghost" ? "" : sizes[size], block ? "w-full" : "", className]
-    .filter(Boolean)
-    .join(" ")
+  return ["btn", variantClass[variant], sizeClass[size], block ? "w-full" : "", className].filter(Boolean).join(" ")
 }
 
 type ButtonProps = ComponentProps<"button"> & {
@@ -38,17 +43,31 @@ type ButtonProps = ComponentProps<"button"> & {
   size?: Size
   block?: boolean
   loading?: boolean
+  /** Label for first-party `cta_click` autocapture (data-track). */
+  track?: string
+  icon?: ReactNode
 }
 
-export function Button({ variant, size, block, loading, className, children, disabled, ...rest }: ButtonProps) {
+export function Button({ variant, size, block, loading, track, icon, className, children, disabled, ...rest }: ButtonProps) {
+  const dark = variant === "primary" || variant === "icon" || variant === undefined
   return (
     <button
       {...rest}
+      {...(track ? { "data-track": track } : {})}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       className={buttonClass({ variant, size, block, className })}
     >
-      {loading ? <Dots /> : children}
+      {loading ? (
+        <span className="inline-flex items-center justify-center" aria-label="Loading">
+          <Spinner light={dark} />
+        </span>
+      ) : (
+        <span className="inline-flex items-center gap-3">
+          {icon}
+          {children}
+        </span>
+      )}
     </button>
   )
 }
@@ -60,34 +79,36 @@ export function ButtonLink({
   block,
   className,
   track,
+  icon,
   children,
-}: {
+  ...rest
+}: Omit<ComponentProps<typeof Link>, "className"> & {
   href: string
   variant?: Variant
   size?: Size
   block?: boolean
   className?: string
-  /** Label for first-party `cta_click` autocapture (data-track). */
   track?: string
+  icon?: ReactNode
   children: ReactNode
 }) {
   return (
-    <Link href={href} data-track={track} className={buttonClass({ variant, size, block, className })}>
-      {children}
+    <Link href={href} data-track={track} className={buttonClass({ variant, size, block, className })} {...rest}>
+      <span className="inline-flex items-center gap-3">
+        {icon}
+        {children}
+      </span>
     </Link>
   )
 }
 
-function Dots() {
+/** 14px spinner, 2px border (SITE_SPEC §5 `loading`). */
+export function Spinner({ light = true }: { light?: boolean }) {
   return (
-    <span className="inline-flex gap-1" aria-label="Loading">
-      {[0, 1, 2].map((i) => (
-        <span
-          key={i}
-          className="h-1.5 w-1.5 animate-pulse rounded-full bg-current"
-          style={{ animationDelay: `${i * 150}ms` }}
-        />
-      ))}
-    </span>
+    <span
+      aria-hidden
+      className={`inline-block h-[14px] w-[14px] rounded-full border-2 ${light ? "border-white border-t-transparent" : "border-black border-t-transparent"}`}
+      style={{ animation: "btn-spin .7s linear infinite" }}
+    />
   )
 }

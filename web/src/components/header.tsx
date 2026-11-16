@@ -1,97 +1,98 @@
-import { Handbag } from "@phosphor-icons/react/dist/ssr"
-import Link from "next/link"
 import { Suspense } from "react"
-import { getRegion, listCategories, listProducts, listReleases } from "@/lib/data/catalog"
+import { catalogItems } from "@/lib/catalog-items"
 import { itemCount, retrieveCart } from "@/lib/data/cart"
+import { getRegion, listCategories, listOffers, listProducts, listReleases } from "@/lib/data/catalog"
 import { listSeries } from "@/lib/data/content"
+import { colorThumbs, imagesFor, imageUrl, offerOf } from "@/lib/product"
 import { shapesFrom } from "@/lib/shapes"
-import { Container } from "./container"
-import { ShapeMenu } from "./shape-menu"
-import { Wordmark } from "./wordmark"
+import { SiteHeader, type Panel } from "./site-header"
 
 /**
- * Sticky header (SITE_SPEC §6.0). Desktop: Shop ▾ (shape tiles) · Drops · Fit
- * guide · Fit quiz · Stories. Mobile: a visible, scrollable row of shapes and links instead
- * of a hamburger (NN/g: hidden navigation costs discoverability).
+ * Builds the header's menus and search list from the cached catalog (SITE_SPEC
+ * §6.0.2–§6.0.5); the client header does the interaction.
  */
 export async function Header() {
   const region = await getRegion()
-  const [releases, categories, products, series] = await Promise.all([
+  const [releases, categories, products, offers, series] = await Promise.all([
     listReleases(),
     listCategories(),
     region ? listProducts(region.id) : Promise.resolve([]),
+    region ? listOffers(region.id) : Promise.resolve([]),
     listSeries(),
   ])
-  const live = releases.some((r) => r.phase === "live")
   const shapes = shapesFrom(categories, products)
+  const core = products.find((p) => p.collection?.handle === "core") ?? null
+  const live = releases.find((r) => r.phase === "live") ?? null
+  const liveProduct = live ? products.find((p) => live.products.some((lp) => lp.id === p.id)) : null
+  const twoPack = offers[0] ?? null
+  const lead = (p: (typeof products)[number]) => imagesFor(p, colorThumbs(p)[0]?.color)[0] ?? imageUrl(p.thumbnail)
+  const dropTiles = [...releases.filter((r) => r.phase === "live"), ...releases.filter((r) => r.phase === "upcoming")].slice(0, 6)
   const story = series[0] ?? null
 
-  const liveDot = live && (
-    <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-accent align-middle" aria-label="A drop is live" />
-  )
+  const panels: Panel[] = [
+    {
+      key: "featured",
+      label: "Featured",
+      track: "nav_featured",
+      href: "/shop",
+      tiles: [
+        ...(core ? [{ label: core.title.replace(/^The /, ""), href: `/products/${core.handle}`, image: lead(core) }] : []),
+        ...(liveProduct ? [{ label: liveProduct.title.replace(/^The /, ""), href: `/products/${liveProduct.handle}`, image: lead(liveProduct) }] : []),
+        ...(twoPack ? [{ label: "The Two-Pack", href: offerOf(twoPack)!.path, image: "/hats/everyday-cap-black-1.jpg" }] : []),
+        { label: "Fit Quiz", href: "/quiz", image: "/hats/everyday-cap-black-3.jpg" },
+      ],
+      button: { label: "Shop Featured", href: "/shop" },
+    },
+    {
+      key: "shop",
+      label: "Shop",
+      track: "nav_shape",
+      href: "/shop",
+      tiles: shapes.map((s) => ({ label: s.name, href: `/shop?shape=${s.handle}`, image: s.image })),
+      button: { label: "Shop All", href: "/shop" },
+    },
+    {
+      key: "drops",
+      label: "Drops",
+      track: "nav_drops",
+      href: "/drops",
+      tiles: dropTiles.map((r) => ({ label: r.title, href: `/drops/${r.handle}`, image: r.hero_image ?? r.products[0]?.thumbnail ?? null })),
+      button: dropTiles.length ? { label: "All Drops", href: "/drops" } : null,
+    },
+    {
+      key: "explore",
+      label: "Explore",
+      track: "nav_explore",
+      href: "/fit-guide",
+      tiles: [
+        ...(story ? [{ label: story.title.replace(/^The /, ""), href: `/stories/${story.handle}`, image: "/hats/story-crush.jpg" }] : []),
+        { label: "Fit Guide", href: "/fit-guide", image: "/hats/everyday-cap-black-3.jpg" },
+        { label: "Why The Everyday Cap", href: "/reasons/everyday-cap", image: "/hats/everyday-cap-black-1.jpg" },
+        { label: "Shipping & Returns", href: "/help/shipping-returns", image: "/hats/everyday-cap-black-2.jpg" },
+      ],
+      button: null,
+    },
+  ]
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-page">
-      <Container>
-        <div className="grid h-14 grid-cols-[1fr_auto_1fr] items-center lg:h-16">
-          <nav aria-label="Main" className="hidden items-center gap-7 lg:flex">
-            <ShapeMenu shapes={shapes} />
-            <NavLink href="/drops">
-              Drops
-              {liveDot}
-            </NavLink>
-            <NavLink href="/fit-guide">Fit guide</NavLink>
-            <NavLink href="/quiz" track="nav_quiz">
-              Fit quiz
-            </NavLink>
-            {story && <NavLink href={`/stories/${story.handle}`}>Stories</NavLink>}
-          </nav>
-          <span className="lg:hidden" />
-          <Wordmark />
-          <div className="flex justify-end">
-            <Link href="/cart" className="relative -mr-2 inline-flex h-11 items-center gap-2 px-2 text-sm font-medium">
-              <Handbag size={22} weight="regular" aria-hidden />
-              <span className="sr-only lg:not-sr-only">Bag</span>
-              <Suspense fallback={null}>
-                <BagCount />
-              </Suspense>
-            </Link>
-          </div>
-        </div>
-      </Container>
-      <nav aria-label="Shapes" className="scrollbar-none flex h-10 items-center gap-6 overflow-x-auto border-t border-line px-4 lg:hidden">
-        <NavLink href="/shop">All hats</NavLink>
-        {shapes.map((s) => (
-          <NavLink key={s.handle} href={`/shop?shape=${s.handle}`} track="nav_shape">
-            {s.name}
-          </NavLink>
-        ))}
-        <NavLink href="/drops">
-          Drops
-          {liveDot}
-        </NavLink>
-        <NavLink href="/fit-guide">Fit guide</NavLink>
-        <NavLink href="/quiz" track="nav_quiz">
-          Fit quiz
-        </NavLink>
-      </nav>
-    </header>
+    <SiteHeader
+      panels={panels}
+      catalog={catalogItems(products)}
+      bagBadge={
+        <Suspense fallback={null}>
+          <BagBadge />
+        </Suspense>
+      }
+    />
   )
 }
 
-function NavLink({ href, children, track }: { href: string; children: React.ReactNode; track?: string }) {
-  return (
-    <Link href={href} data-track={track} className="text-eyebrow inline-flex h-10 shrink-0 items-center text-ink hover:text-ink-muted">
-      {children}
-    </Link>
-  )
-}
-
-async function BagCount() {
+/** 16px black count badge on the bag icon; hidden at 0 (SITE_SPEC §6.0.2). */
+async function BagBadge() {
   const count = itemCount(await retrieveCart())
   if (!count) return null
   return (
-    <span className="absolute right-0 top-1.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-ink px-1 font-mono text-[10px] text-page lg:static">
+    <span className="absolute -right-[6px] -top-[6px] flex h-4 min-w-4 items-center justify-center rounded-full bg-black px-[3px] font-heading text-[10px] leading-4 text-white">
       {count}
       <span className="sr-only"> items in bag</span>
     </span>

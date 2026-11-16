@@ -1,62 +1,94 @@
+import { Minus, Plus } from "@phosphor-icons/react/dist/ssr"
 import Link from "next/link"
-import { getRegion, listCategories, listProducts } from "@/lib/data/catalog"
+import { getRegion, listCategories, listOffers, listProducts } from "@/lib/data/catalog"
 import { listSeries } from "@/lib/data/content"
-import { POLICY } from "@/lib/policy"
+import { offerOf } from "@/lib/product"
 import { shapesFrom } from "@/lib/shapes"
-import { Container } from "./container"
-import { Wordmark } from "./wordmark"
 
-/** Ink footer: shapes, help (with the fit guide) and the active story (SITE_SPEC §6.0). */
+/**
+ * Black footer (SITE_SPEC §6.0.8): three link groups (two-column sub-grid past
+ * four links) and the legal row. Mobile: the groups become accordions.
+ */
 export async function Footer() {
   const region = await getRegion()
-  const [categories, products, series] = await Promise.all([
+  const [categories, products, offers, series] = await Promise.all([
     listCategories(),
     region ? listProducts(region.id) : Promise.resolve([]),
+    region ? listOffers(region.id) : Promise.resolve([]),
     listSeries(),
   ])
   const shapes = shapesFrom(categories, products)
-  const columns: { title: string; links: [string, string][] }[] = [
+  const twoPack = offers[0]
+  const groups: { title: string; links: [string, string][] }[] = [
     {
-      title: "Shop",
-      links: [["All hats", "/shop"], ...shapes.map((s) => [s.name, `/shop?shape=${s.handle}`] as [string, string]), ["Drops", "/drops"]],
-    },
-    {
-      title: "Help",
-      links: [["Fit guide", "/fit-guide"], ["Fit quiz", "/quiz"], ["Shipping & returns", "/help/shipping-returns"], ["Your bag", "/cart"]],
-    },
-    {
-      title: "Shelby",
+      title: "Get Shelby",
       links: [
-        ...series.slice(0, 2).map((s) => [s.title, `/stories/${s.handle}`] as [string, string]),
-        ["Why the Everyday Cap", "/reasons/everyday-cap"],
+        ["Shop All", "/shop"],
+        ...shapes.map((s) => [s.name, `/shop?shape=${s.handle}`] as [string, string]),
+        ["Drops", "/drops"],
+        ...(twoPack ? [["The Two-Pack", offerOf(twoPack)!.path] as [string, string]] : []),
       ],
+    },
+    {
+      title: "Customer Service",
+      links: [
+        ["Shipping & Returns", "/help/shipping-returns"],
+        ["Fit Guide", "/fit-guide"],
+        ["Fit Quiz", "/quiz"],
+        ["Your Bag", "/cart"],
+      ],
+    },
+    {
+      title: "Our Company",
+      links: [...series.slice(0, 1).map((s) => [s.title, `/stories/${s.handle}`] as [string, string]), ["Why The Everyday Cap", "/reasons/everyday-cap"]],
     },
   ]
   return (
-    <footer className="mt-20 bg-ink py-16 text-page">
-      <Container className="grid gap-10 lg:grid-cols-[2fr_1fr_1fr_1fr]">
-        <div className="flex flex-col gap-3">
-          <Wordmark />
-          <p className="text-[14px] text-ink-inverse-muted">Hats. The core, always. Drops, often.</p>
-          <p className="text-eyebrow text-ink-inverse-muted">{POLICY.announcement}</p>
-        </div>
-        {columns
-          .filter((c) => c.links.length)
-          .map((col) => (
-            <div key={col.title} className="flex flex-col gap-3">
-              <p className="text-eyebrow text-ink-inverse-muted">{col.title}</p>
-              {col.links.map(([label, href]) => (
-                <Link key={href} href={href} className="text-[15px] hover:text-ink-inverse-muted">
-                  {label}
-                </Link>
+    <footer className="bg-primary px-[28.432px] pb-[28.432px] pt-[28.432px] text-white lg:px-24 lg:pt-[52px]">
+      {/* Desktop */}
+      <div className="hidden gap-20 lg:flex">
+        {groups.map((g) => (
+          <div key={g.title}>
+            <h2 className="mb-[18px] font-subheading text-[22px] leading-6">{g.title}</h2>
+            <ul className={g.links.length > 4 ? "grid grid-cols-[167px_167px]" : "flex flex-col"}>
+              {g.links.map(([label, href]) => (
+                <li key={href} className="pr-[11.6px] pt-[10px]">
+                  <Link href={href} className="font-body text-[13px] leading-6 hover:underline">
+                    {label}
+                  </Link>
+                </li>
               ))}
-            </div>
-          ))}
-      </Container>
-      <Container className="mt-14 flex items-end justify-between gap-6 border-t border-white/15 pt-6">
-        <p className="text-[12px] text-ink-inverse-muted">© Shelby</p>
-        <p className="font-mono text-[12px] text-ink-inverse-muted">{POLICY.dispatch}</p>
-      </Container>
+            </ul>
+          </div>
+        ))}
+      </div>
+      {/* Mobile */}
+      <div className="lg:hidden">
+        {groups.map((g) => (
+          <details key={g.title} className="group border-b border-white/20 py-[18px]">
+            <summary className="flex cursor-pointer items-center justify-between font-subheading text-[22px] leading-6">
+              {g.title}
+              <Plus size={16} className="group-open:hidden" aria-hidden />
+              <Minus size={16} className="hidden group-open:block" aria-hidden />
+            </summary>
+            <ul className="mt-2 flex flex-col">
+              {g.links.map(([label, href]) => (
+                <li key={href} className="pt-[10px]">
+                  <Link href={href} className="font-body text-[13px] leading-6">
+                    {label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </details>
+        ))}
+      </div>
+      <p className="mt-16 text-center font-body text-[11px] leading-[16.5px] lg:text-right">
+        © 2026 Shelby. All Rights Reserved. <span aria-hidden>|</span>{" "}
+        <Link href="/help/shipping-returns" className="hover:underline">
+          Shipping &amp; Returns
+        </Link>
+      </p>
     </footer>
   )
 }

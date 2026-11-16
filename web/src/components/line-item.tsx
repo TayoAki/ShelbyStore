@@ -1,11 +1,12 @@
 "use client"
 
-import { Minus, Plus } from "@phosphor-icons/react"
+import { Minus, Plus, X } from "@phosphor-icons/react"
 import Image from "next/image"
 import Link from "next/link"
 import { useTransition } from "react"
 import { updateLineItem } from "@/lib/actions/cart"
 import { formatMoney } from "@/lib/format"
+import { Badge } from "./ui/badge"
 
 export type Line = {
   id: string
@@ -16,49 +17,83 @@ export type Line = {
   quantity: number
   unitPrice: number
   currency: string
+  productId?: string | null
+  /** "Limited" for a product from a live drop. */
+  badge?: string | null
 }
 
+/**
+ * A bag line in Melin's slider-cart style (SITE_SPEC §6.7): white row, 128px
+ * image, title, "Color / Size", a pill quantity stepper and a remove ×.
+ */
 export function LineItem({ line, editable = true }: { line: Line; editable?: boolean }) {
   const [pending, startTransition] = useTransition()
   const set = (q: number) => startTransition(async () => void (await updateLineItem(line.id, q)))
+  const href = line.handle ? `/products/${line.handle}` : null
+  const image = (
+    <span className="relative block h-32 w-32 shrink-0 overflow-hidden rounded-addon bg-white">
+      {line.thumbnail && <Image src={line.thumbnail} alt="" fill sizes="128px" className="object-contain" />}
+    </span>
+  )
   return (
-    <li className={`grid grid-cols-[88px_1fr] gap-4 border-b border-line py-5 ${pending ? "opacity-60" : ""}`}>
-      <div className="relative aspect-[4/5] overflow-hidden bg-surface">
-        {line.thumbnail && <Image src={line.thumbnail} alt="" fill sizes="88px" className="object-cover" />}
-      </div>
-      <div className="flex flex-col gap-1">
-        <div className="flex justify-between gap-3">
-          {line.handle ? (
-            <Link href={`/products/${line.handle}`} className="text-[15px] font-medium hover:underline">
-              {line.title}
-            </Link>
-          ) : (
-            <span className="text-[15px] font-medium">{line.title}</span>
-          )}
-          <span className="font-mono text-[14px]">{formatMoney(line.unitPrice * line.quantity, line.currency)}</span>
-        </div>
-        {line.variant && <p className="text-[13px] text-ink-muted">{line.variant}</p>}
-        {editable ? (
-          <div className="mt-2 flex items-center justify-between">
-            <div className="inline-flex items-center rounded-[2px] border border-line">
-              <button type="button" aria-label="Decrease quantity" className="flex h-11 w-11 items-center justify-center" onClick={() => set(line.quantity - 1)} disabled={pending}>
-                <Minus size={14} />
+    <li className={`relative flex gap-4 border-b border-line bg-white px-4 py-3 ${pending ? "opacity-60" : ""}`}>
+      {href ? <Link href={href}>{image}</Link> : image}
+      <div className="flex min-w-0 flex-1 flex-col justify-center gap-[3px] pr-6">
+        {href ? (
+          <Link href={href} className="font-subheading text-[14.08px] leading-[21px] hover:underline">
+            {line.title}
+          </Link>
+        ) : (
+          <span className="font-subheading text-[14.08px] leading-[21px]">{line.title}</span>
+        )}
+        {line.variant && <p className="font-body text-[13px] leading-[19.5px] text-muted">{line.variant}</p>}
+        {line.badge && (
+          <span>
+            <Badge small>{line.badge}</Badge>
+          </span>
+        )}
+        <div className="mt-2 flex items-center justify-between gap-3">
+          {editable ? (
+            <div className="flex h-[34px] w-[114px] items-center justify-between rounded-[50px] border border-line bg-white px-1">
+              <button
+                type="button"
+                aria-label="Decrease quantity"
+                className="-my-[5px] flex h-11 w-11 items-center justify-center"
+                onClick={() => set(line.quantity - 1)}
+                disabled={pending}
+              >
+                <Minus size={12} />
               </button>
-              <span className="w-8 text-center font-mono text-[14px]" aria-live="polite">
+              <span className="font-body text-[16px]" aria-live="polite">
                 {line.quantity}
               </span>
-              <button type="button" aria-label="Increase quantity" className="flex h-11 w-11 items-center justify-center" onClick={() => set(line.quantity + 1)} disabled={pending || line.quantity >= 10}>
-                <Plus size={14} />
+              <button
+                type="button"
+                aria-label="Increase quantity"
+                className="-my-[5px] flex h-11 w-11 items-center justify-center"
+                onClick={() => set(line.quantity + 1)}
+                disabled={pending || line.quantity >= 10}
+              >
+                <Plus size={12} />
               </button>
             </div>
-            <button type="button" className="text-[13px] underline underline-offset-4 hover:text-ink-muted" onClick={() => set(0)} disabled={pending}>
-              Remove
-            </button>
-          </div>
-        ) : (
-          <p className="text-[13px] text-ink-muted">Qty {line.quantity}</p>
-        )}
+          ) : (
+            <span className="font-body text-[13px] text-muted">Qty {line.quantity}</span>
+          )}
+          <span className="font-body text-[14px]">{formatMoney(line.unitPrice * line.quantity, line.currency)}</span>
+        </div>
       </div>
+      {editable && (
+        <button
+          type="button"
+          aria-label={`Remove ${line.title}`}
+          className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center"
+          onClick={() => set(0)}
+          disabled={pending}
+        >
+          <X size={16} />
+        </button>
+      )}
     </li>
   )
 }

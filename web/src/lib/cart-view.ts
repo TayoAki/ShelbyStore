@@ -13,6 +13,7 @@ export function cartLines(cart: Cart, thumbs: Record<string, string> = {}): Line
     .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)))
     .map((i) => ({
       id: i.id,
+      productId: i.product_id ?? null,
       title: i.product_title ?? i.title,
       variant: i.variant_title ?? i.subtitle ?? null,
       handle: i.product_handle ?? i.product?.handle ?? null,

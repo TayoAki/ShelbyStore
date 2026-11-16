@@ -250,3 +250,21 @@ export function oneSizeRange(product: Product, fallback: string): string {
   const cm = (inches: string) => Math.round(Number(inches) * 2.54)
   return `fits ${m[1]}–${m[2]} in (${cm(m[1])}–${cm(m[2])} cm)`
 }
+
+/**
+ * Melin-style product type line (SITE_SPEC §6.2 row 3), from shape, structure
+ * and closure: "Unstructured Strapback Cap", "Structured Snapback Trucker",
+ * "Knit Beanie", "Sized Bucket Hat".
+ */
+export function productTypeOf(product: Product): string {
+  const shape = shapeOf(product)?.handle ?? ""
+  const noun: Record<string, string> = { caps: "Cap", truckers: "Trucker", beanies: "Beanie", "bucket-hats": "Bucket Hat" }
+  const base = noun[shape] ?? shapeOf(product)?.name ?? "Hat"
+  if (shape === "beanies") return "Knit Beanie"
+  const profile = fitProfileOf(product)
+  const closure = (Object.fromEntries(detailsOf(product)).Closure ?? "").toLowerCase()
+  const structure = profile ? profile.structure.replace("Semi-structured", "Semi-Structured") : null
+  const fit = closure.includes("snap") ? "Snapback" : closure.includes("strap") ? "Strapback" : !isOneSize(product) ? "Sized" : null
+  if (shape === "bucket-hats") return isOneSize(product) ? base : `Sized ${base}`
+  return [structure, fit, base].filter(Boolean).join(" ")
+}
