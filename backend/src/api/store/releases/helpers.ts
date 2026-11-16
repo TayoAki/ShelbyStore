@@ -35,7 +35,15 @@ const STORE_FIELDS = [
   "products.handle",
   "products.title",
   "products.thumbnail",
+  "products.metadata",
 ]
+
+/** The numbered-edition facts customers may see (web SITE_SPEC G.1.5). */
+function editionOf(metadata: unknown): { hole: number; size: number | null } | null {
+  const e = (metadata as { edition?: { hole?: unknown; size?: unknown } } | null)?.edition
+  if (!e || typeof e.hole !== "number") return null
+  return { hole: e.hole, size: typeof e.size === "number" ? e.size : null }
+}
 
 const phaseOf = (status: string): StorePhase =>
   status === "live" ? "live" : status === "reviewed" ? "past" : "upcoming"
@@ -60,6 +68,9 @@ export function toStoreRelease(r: any) {
       handle: p.handle,
       title: p.title,
       thumbnail: p.thumbnail ?? null,
+      // Only the public edition facts (hole, size): editions are drafts until
+      // their release goes live, so the store product API can't return them.
+      edition: editionOf(p.metadata),
     })),
   }
 }
