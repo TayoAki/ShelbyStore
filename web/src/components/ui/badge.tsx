@@ -1,11 +1,11 @@
 import type { ReactNode } from "react"
 
-/** Allbirds badge (SITE_SPEC §2.2 "Badge"): natural-white pill, Inter 500 uppercase. */
+/** A printed tag: keylined, square-cornered, label type. */
 export function Badge({ children, className = "" }: { children: ReactNode; className?: string }) {
   return <span className={`badge ${className}`}>{children}</span>
 }
 
-/** The numbered-edition badge (G.5.5): white pill with a midnight border, mono edition line. */
+/** The numbered-edition tag: printed in the sleeve-red stripe ink, editions only. */
 export function EditionBadge({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <span className={`badge-edition edition ${className}`}>{children}</span>
+  return <span className={`badge-edition ${className}`}>{children}</span>
 }

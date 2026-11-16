@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next"
-import { IBM_Plex_Mono, Inter, Libre_Caslon_Text, Plus_Jakarta_Sans } from "next/font/google"
+import { Sofia_Sans, Sofia_Sans_Extra_Condensed, Sofia_Sans_Semi_Condensed } from "next/font/google"
 import { Suspense } from "react"
 import { AnalyticsProvider } from "@/components/analytics-provider"
 import { AnnouncementBar } from "@/components/announcement-bar"
@@ -10,13 +10,12 @@ import { Footer } from "@/components/footer"
 import { Header } from "@/components/header"
 import "./globals.css"
 
-// Allbirds' proprietary families are substituted per the site-clone rule
-// (SITE_SPEC §2.2): Plus Jakarta Sans for headings, Inter for body, IBM Plex
-// Mono for mono roles. The serif role is Libre Caslon Text (G.2.3).
-const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "700"], variable: "--font-inter", display: "swap" })
-const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-jakarta", display: "swap" })
-const plexMono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-plex-mono", display: "swap" })
-const caslon = Libre_Caslon_Text({ subsets: ["latin"], weight: ["400"], style: ["normal", "italic"], variable: "--font-caslon", display: "swap" })
+// One superfamily, the way a box's print is set: Sofia Sans for running copy,
+// Semi Condensed for printed labels and controls, Extra Condensed for model
+// names and every numeral (The Ball Box direction contract).
+const sofia = Sofia_Sans({ subsets: ["latin"], variable: "--font-sofia", display: "swap" })
+const sofiaSemi = Sofia_Sans_Semi_Condensed({ subsets: ["latin"], variable: "--font-sofia-semi", display: "swap" })
+const sofiaXc = Sofia_Sans_Extra_Condensed({ subsets: ["latin"], variable: "--font-sofia-xc", display: "swap" })
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
@@ -25,19 +24,16 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: "#212121",
+  themeColor: "#14213D",
 }
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${inter.variable} ${jakarta.variable} ${plexMono.variable} ${caslon.variable}`}>
-      <body className="flex min-h-dvh flex-col bg-natural-white-60 font-sans text-black antialiased">
-        <noscript>
-          <style>{"[data-reveal],[data-reveal-child]{opacity:1!important}"}</style>
-        </noscript>
+    <html lang="en" className={`${sofia.variable} ${sofiaSemi.variable} ${sofiaXc.variable}`}>
+      <body className="flex min-h-dvh flex-col bg-board font-sans text-ink antialiased">
         <a
           href="#main"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[90] focus:rounded-full focus:bg-black focus:px-3 focus:py-2 focus:text-white"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[90] focus:rounded-[4px] focus:bg-ink focus:px-3 focus:py-2 focus:text-white"
         >
           Skip to content
         </a>

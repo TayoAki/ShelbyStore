@@ -3,9 +3,8 @@ import Link from "next/link"
 import type { ComponentProps, ReactNode } from "react"
 
 /**
- * Allbirds' button system (SITE_SPEC §5, colours G.2.2): pill, Inter 500
- * uppercase, classes in globals.css (.btn, .btn-primary…). `secondary` is the
- * dark main CTA; `primary` is the light (white) one.
+ * Printed ink-block buttons (classes in globals.css: .btn, .btn-secondary…).
+ * `secondary` is the navy main CTA; `primary` is the white one with a keyline.
  */
 export type Variant = "primary" | "secondary" | "outline-black" | "outline-white" | "icon-black" | "icon-white" | "link"
 export type Size = "default" | "small" | "large" | "atc"
