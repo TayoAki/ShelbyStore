@@ -20,10 +20,10 @@ export function CompleteAfterRedirect() {
       if (r && !r.ok) setError(r.error)
     })
   }, [])
-  if (!error) return <p className="text-ink-muted">Confirming your payment with Stripe.</p>
+  if (!error) return <p className="font-body text-[15px] text-muted">Confirming your payment with Stripe.</p>
   return (
-    <div className="flex flex-col items-start gap-3">
-      <p className="text-danger" role="alert">{error}</p>
+    <div className="flex flex-col items-center gap-3">
+      <p className="font-body text-[13px] text-error" role="alert">{error}</p>
       <ButtonLink href="/checkout">Back to checkout</ButtonLink>
     </div>
   )

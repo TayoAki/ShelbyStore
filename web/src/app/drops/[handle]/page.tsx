@@ -2,13 +2,11 @@ import type { Metadata } from "next"
 import Image from "next/image"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
-import { Container } from "@/components/container"
 import { Countdown } from "@/components/countdown"
 import { NotifyForm } from "@/components/notify-form"
-import { ProductCard } from "@/components/product-card"
-import { RelativeTime } from "@/components/relative-time"
+import { cardStatus, ProductCard } from "@/components/product-card"
 import { Track } from "@/components/track"
-import { Badge } from "@/components/ui/badge"
+import { ButtonLink } from "@/components/ui/button"
 import { getRegion, getRelease, listProducts } from "@/lib/data/catalog"
 import { getStock } from "@/lib/data/stock"
 import { formatDropDate } from "@/lib/format"
@@ -22,12 +20,13 @@ export async function generateMetadata({ params }: PageProps<"/drops/[handle]">)
 
 export default function DropPage(props: PageProps<"/drops/[handle]">) {
   return (
-    <Suspense fallback={<div className="aspect-[4/5] w-full animate-pulse bg-surface lg:aspect-[16/7]" />}>
+    <Suspense fallback={<div className="aspect-[390/260] w-full animate-pulse bg-tile lg:aspect-[1440/412]" />}>
       <DropContent params={props.params} />
     </Suspense>
   )
 }
 
+/** A drop, derived from Melin's article page (SITE_SPEC §6.6). */
 async function DropContent({ params }: { params: PageProps<"/drops/[handle]">["params"] }) {
   const { handle } = await params
   const [release, region] = await Promise.all([getRelease(handle), getRegion()])
@@ -35,109 +34,77 @@ async function DropContent({ params }: { params: PageProps<"/drops/[handle]">["p
   const all = region ? await listProducts(region.id) : []
   const ids = new Set(release.products.map((p) => p.id))
   const purchasable = all.filter((p) => ids.has(p.id))
+  const meta =
+    release.phase === "live"
+      ? ["Limited release", "Live now"]
+      : release.phase === "upcoming"
+        ? ["Next drop", formatDropDate(release.release_at)]
+        : ["Ended", release.published_at ? new Date(release.published_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : ""]
 
   return (
     <>
       <Track event="drop_viewed" props={{ release_id: release.id, handle: release.handle, phase: release.phase }} />
-      <section className="bg-surface">
-        <Container className="grid gap-6 py-6 lg:grid-cols-2 lg:items-center lg:gap-12 lg:py-12">
-          <div className="relative aspect-[4/5] overflow-hidden bg-page lg:order-2">
-            {release.hero_image && (
-              <Image src={release.hero_image} alt={release.title} fill preload sizes="(min-width:1024px) 50vw, 100vw" className="object-cover" />
-            )}
-          </div>
-          <div className="flex flex-col items-start gap-5 lg:order-1">
-            <PhaseBadge release={release} />
-            <h1 className="font-display text-hero">{release.title}</h1>
-            {release.story && <p className="max-w-lg text-[16px] leading-relaxed lg:text-[17px]">{release.story}</p>}
-            {release.product_promise && <p className="max-w-lg text-[17px] italic text-ink-muted">“{release.product_promise}”</p>}
-            {release.proof && (
-              <div className="flex max-w-lg flex-col gap-1 border-l-2 border-accent bg-paper px-4 py-3">
-                <p className="text-eyebrow text-accent-ink">What to look for</p>
-                <p className="text-[15px]">{release.proof}</p>
-              </div>
-            )}
-            {release.phase === "upcoming" && release.release_at && <Countdown iso={release.release_at} tone="light" />}
-            {release.phase === "upcoming" && (
-              <div className="flex w-full flex-col gap-2">
-                <p className="text-[13px] text-ink-muted">Get an email the moment it drops.</p>
-                <NotifyForm releaseId={release.id} />
-              </div>
-            )}
-          </div>
-        </Container>
-      </section>
-
-      <Container className="flex flex-col gap-6 py-12 lg:py-16">
-        {release.phase === "live" && <h2 className="font-display text-section">Shop the drop</h2>}
-        {release.phase === "upcoming" && <h2 className="font-display text-section">First look</h2>}
-        {release.phase === "past" && (
-          <div className="flex flex-col gap-2">
-            <h2 className="font-display text-section">This drop has ended</h2>
-            {purchasable.length > 0 && <p className="text-[15px] text-ink-muted">A few pieces are still available.</p>}
+      <div className="relative aspect-[390/260] w-full bg-tile lg:aspect-[1440/412]">
+        {release.hero_image && <Image src={release.hero_image} alt={release.title} fill preload sizes="100vw" className="object-cover" />}
+      </div>
+      <article className="container-article bg-white pt-[27px]">
+        <p className="article-meta opacity-60">
+          {meta.map((m, i) => (
+            <span key={m} className={i ? "pl-3" : "pr-3"}>
+              {i ? "| " : ""}
+              {m}
+            </span>
+          ))}
+        </p>
+        <h1 className="mt-3 article-h1">{release.title}</h1>
+        <div className="mt-4">
+          {release.story && <p className="article-p">{release.story}</p>}
+          {release.product_promise && <p className="article-p italic">“{release.product_promise}”</p>}
+        </div>
+        {release.proof && (
+          <>
+            <h2 className="article-h2">What To Look For</h2>
+            <p className="article-p">{release.proof}</p>
+          </>
+        )}
+        {release.phase === "upcoming" && (
+          <div id="notify" className="mt-8 flex scroll-mt-[120px] flex-col gap-4">
+            {release.release_at && <Countdown iso={release.release_at} size="large" />}
+            <p className="font-body text-[13px] text-muted">Get an email the moment it drops.</p>
+            <NotifyForm releaseId={release.id} />
           </div>
         )}
-
-        {release.phase === "upcoming" ? (
-          <div className="grid grid-cols-2 gap-x-3 gap-y-8 lg:grid-cols-4">
-            {release.products.map((p) => (
-              <div key={p.id} className="flex flex-col gap-3">
-                <div className="relative aspect-[4/5] overflow-hidden bg-page">
-                  {p.thumbnail && <Image src={p.thumbnail} alt={p.title} fill sizes="(min-width:1024px) 25vw, 50vw" className="object-cover" />}
-                </div>
-                <p className="text-sm font-medium">{p.title}</p>
-                <p className="text-eyebrow text-accent-ink">Available {release.release_at ? formatDropDate(release.release_at) : "soon"}</p>
-              </div>
-            ))}
-          </div>
-        ) : (
+        {release.phase === "past" && <p className="mt-8 font-heading text-[18px]">This drop has ended.</p>}
+      </article>
+      {release.phase !== "upcoming" && purchasable.length > 0 && (
+        <div className="container-article mt-8">
           <Suspense fallback={<Products products={purchasable} release={release} />}>
             <ProductsWithStock products={purchasable} release={release} />
           </Suspense>
-        )}
-      </Container>
+        </div>
+      )}
+      <div className="container-article pb-[50.512px]">
+        <hr className="mb-6 mt-12 border-0 border-t-4 border-black" />
+        <div className="flex justify-center">
+          <ButtonLink href="/drops" variant="link" className="h-14 w-[144px]">
+            ← Back to drops
+          </ButtonLink>
+        </div>
+      </div>
     </>
   )
 }
 
-function PhaseBadge({ release }: { release: StoreRelease }) {
-  if (release.phase === "live")
-    return (
-      <Badge tone="live" dot>
-        Live now
-      </Badge>
-    )
-  if (release.phase === "past") return <Badge tone="past">Ended</Badge>
-  return (
-    <p className="text-eyebrow text-accent-ink">
-      {release.release_at ? `Drops ${formatDropDate(release.release_at)}` : "Date coming soon"}
-      {release.release_at && (
-        <span className="text-ink-muted">
-          {" · "}
-          <RelativeTime iso={release.release_at} />
-        </span>
-      )}
-    </p>
-  )
-}
-
 async function ProductsWithStock({ products, release }: { products: Product[]; release: StoreRelease }) {
-  const stock = await getStock(products.map((p) => p.id))
-  return <Products products={products} release={release} stock={stock} />
+  return <Products products={products} release={release} stock={await getStock(products.map((p) => p.id))} />
 }
 
 function Products({ products, release, stock }: { products: Product[]; release: StoreRelease; stock?: Record<string, number | null> }) {
+  const live = release.phase === "live" ? Object.fromEntries(products.map((p) => [p.id, release])) : {}
   return (
-    <div className="grid grid-cols-2 gap-x-3 gap-y-8 lg:grid-cols-4">
-      {products.map((p, i) => (
-        <ProductCard
-          key={p.id}
-          product={p}
-          stock={stock}
-          status={release.phase === "live" ? "live" : "past"}
-          releaseTitle={release.title}
-          preload={i < 2}
-        />
+    <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+      {products.map((p) => (
+        <ProductCard key={p.id} product={p} stock={stock} status={cardStatus(p, live)} releaseId={release.phase === "live" ? release.id : undefined} />
       ))}
     </div>
   )

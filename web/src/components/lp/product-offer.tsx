@@ -1,33 +1,32 @@
 import { Suspense } from "react"
 import { getStock } from "@/lib/data/stock"
 import { formatMoney } from "@/lib/format"
-import { colorThumbs, imagesFor, imageUrl, meta, modelInfoOf, price, sizeChartOf } from "@/lib/product"
+import { colorThumbs, imagesFor, imageUrl, meta, price, sizeChartOf } from "@/lib/product"
 import type { Product } from "@/lib/types"
-import { Container } from "../container"
 import { BuyBox } from "../pdp/buy-box"
 import { SelectedImage, SelectionProvider } from "../pdp/selection"
+import { RETURNS_PERK, SHIPPING_PERK } from "../perks"
 
 /**
- * The offer block every landing page ends its argument with (SITE_SPEC §12.0):
- * the product photo for the picked colour, title, live price, promise, and a
- * working buy box with live stock, so the decision happens on the page.
+ * The offer block at the end of a landing page's argument (SITE_SPEC §6.9 #4,
+ * §12.0): a #f8f8f9 block with the product photo (following the picked colour)
+ * and the PDP buy box at small scale, so the decision happens on the page.
  */
 export function ProductOffer({
   product,
   id = "offer",
-  eyebrow = "The core · always in stock",
   initialSelection,
   source,
-  showQuizLink = true,
+  ctaTrack = "add_to_cart",
+  showQuizLink = false,
   footer,
 }: {
   product: Product
   id?: string
-  eyebrow?: string
   initialSelection?: Record<string, string>
   source?: string
+  ctaTrack?: string
   showQuizLink?: boolean
-  /** Extra line under the buy box, e.g. the two-pack link. */
   footer?: React.ReactNode
 }) {
   const p = price(product)
@@ -39,32 +38,31 @@ export function ProductOffer({
     product,
     release: null,
     fitNotes: meta(product, "fit_notes"),
-    modelInfo: modelInfoOf(product),
     sizeChart: sizeChartOf(product),
     initialSelection,
     source,
     showQuizLink,
+    ctaTrack,
+    perks: [SHIPPING_PERK, RETURNS_PERK],
   }
   return (
     <SelectionProvider initialColor={initialColor} syncUrl={false}>
-      <section id={id} className="scroll-mt-28 bg-surface py-12 lg:py-20">
-        <Container className="grid gap-8 lg:grid-cols-2 lg:gap-16">
-          <div className="relative aspect-[4/5] overflow-hidden bg-page">
-            <SelectedImage byColor={byColor} fallback={lead} alt={product.title} sizes="(min-width:1024px) 45vw, 100vw" />
+      <section id={id} className="scroll-mt-[130px] bg-band p-6">
+        <div className="grid gap-6 lg:grid-cols-2">
+          <div className="relative aspect-square bg-white">
+            <SelectedImage byColor={byColor} fallback={lead} alt={product.title} sizes="(min-width:1024px) 312px, 100vw" />
           </div>
-          <div className="flex flex-col gap-6 lg:pt-6">
-            <div className="flex flex-col gap-2">
-              <p className="text-eyebrow text-ink-muted">{eyebrow}</p>
-              <h2 className="font-display text-[32px] leading-[0.95] lg:text-[44px]">{product.title}</h2>
-              <p className="font-mono text-[15px]">{formatMoney(p.amount, p.currency)}</p>
-              {meta(product, "promise") && <p className="text-[16px] italic text-ink-muted">“{meta(product, "promise")}”</p>}
+          <div className="flex flex-col">
+            <div className="mb-5 flex items-baseline justify-between">
+              <h2 className="pr-[10px] font-body text-[20px] uppercase leading-[25px]">{product.title}</h2>
+              <span className="font-body text-[18px] leading-[25px]">{formatMoney(p.amount, p.currency)}</span>
             </div>
             <Suspense fallback={<BuyBox {...props} stock={null} />}>
               <LiveBuyBox {...props} />
             </Suspense>
             {footer}
           </div>
-        </Container>
+        </div>
       </section>
     </SelectionProvider>
   )

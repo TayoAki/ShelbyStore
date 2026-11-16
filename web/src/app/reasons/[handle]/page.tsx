@@ -1,15 +1,13 @@
 import type { Metadata } from "next"
 import Image from "next/image"
-import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
-import { Container } from "@/components/container"
 import { ContinuityBanner } from "@/components/continuity-banner"
 import { FitScales } from "@/components/fit-scale"
+import { StockRow } from "@/components/home/in-stock-today"
 import { ProductOffer } from "@/components/lp/product-offer"
 import { ReasonBlock } from "@/components/lp/reason-block"
 import { StickyCta } from "@/components/lp/sticky-cta"
-import { StockList } from "@/components/lp/stock-list"
 import { Track } from "@/components/track"
 import { ButtonLink } from "@/components/ui/button"
 import { getProduct, getRegion, listOffers } from "@/lib/data/catalog"
@@ -17,7 +15,7 @@ import { listSeries } from "@/lib/data/content"
 import { formatMoney } from "@/lib/format"
 import { getListicle, type ListicleReason } from "@/lib/landing/listicles"
 import { POLICY } from "@/lib/policy"
-import { colorThumbs, detailsOf, fitProfileOf, offerOf, oneSizeRange, price } from "@/lib/product"
+import { colorThumbs, detailsOf, fitProfileOf, imagesFor, offerOf, oneSizeRange, price } from "@/lib/product"
 
 export async function generateMetadata({ params }: PageProps<"/reasons/[handle]">): Promise<Metadata> {
   const listicle = getListicle((await params).handle)
@@ -27,12 +25,12 @@ export async function generateMetadata({ params }: PageProps<"/reasons/[handle]"
 
 /**
  * Listicle (SITE_SPEC §12.2; the essay's "educate through a sequence of
- * reasons" for curiosity-driven, less-informed visitors): numbered reasons,
- * an image per reason, a fact behind each, and one simple onward action.
+ * reasons"), derived from Melin's article page: numbered reasons, an image
+ * per reason, the fact behind each, and one simple onward action.
  */
 export default function ListiclePage(props: PageProps<"/reasons/[handle]">) {
   return (
-    <Suspense fallback={<div className="h-[80vh] animate-pulse bg-surface" />}>
+    <Suspense fallback={<div className="h-[80vh] animate-pulse bg-tile" />}>
       <ListicleContent params={props.params} />
     </Suspense>
   )
@@ -54,62 +52,42 @@ async function ListicleContent({ params }: { params: PageProps<"/reasons/[handle
   const offerPrice = offer ? price(offer).amount : null
 
   // Drop reasons whose source is missing; never fill them in.
-  const reasons = listicle.reasons.filter(
-    (r) => (r.needs !== "story" || story) && (r.needs !== "fit_profile" || fit)
-  )
+  const reasons = listicle.reasons.filter((r) => (r.needs !== "story" || story) && (r.needs !== "fit_profile" || fit))
   const fill = (text: string) =>
     text
       .replace("{range}", oneSizeRange(product, POLICY.oneSize))
       .replace("{fabric}", (details.Fabric ?? "").toLowerCase())
+      .replace("{Fabric}", details.Fabric ?? "")
       .replace("{crown}", details.Crown ?? "Low and unstructured")
       .replace("{returns}", POLICY.returns)
       .replace("{shipping}", POLICY.shipping)
       .replace("{dispatch}", POLICY.dispatch)
+      .replace("{story}", story?.title ?? "")
   const title = listicle.title.replace("{count}", String(reasons.length))
   const name = product.title.replace(/^The /, "")
+  const money = (n: number | null) => formatMoney(n, p.currency)
 
   const live = (r: ListicleReason) => {
-    if (r.live === "fit_scales" && fit) return <FitScales profile={fit} />
-    if (r.live === "stock") return <StockList product={product} track="listicle_stock" />
+    if (r.live === "fit_scales" && fit) return <div className="mb-4"><FitScales profile={fit} /></div>
+    if (r.live === "stock") return <div className="mb-4 bg-tile px-4 py-6"><StockRow product={product} track="listicle_stock" /></div>
     if (r.live === "story" && story) {
       return (
-        <figure className="flex flex-col gap-3 border-l-2 border-accent pl-4">
-          <blockquote className="text-[18px] leading-snug text-ink">“{story.stance}”</blockquote>
-          <figcaption className="text-[13px]">
-            {story.title} ·{" "}
-            <Link href={`/stories/${story.handle}`} className="underline underline-offset-4 hover:text-ink-muted" data-track="listicle_story">
-              Watch the test
-            </Link>
-          </figcaption>
-        </figure>
+        <blockquote className="mb-4 border-l-4 border-black pl-5 font-heading text-[22px] leading-[28.6px]">“{story.stance}”</blockquote>
       )
     }
     return null
   }
 
   const colourGrid = (
-    <div className="grid grid-cols-2 gap-2">
+    <div className="mb-4 grid grid-cols-2 gap-4">
       {colorThumbs(product).map((c) => (
-        <figure key={c.color} className="flex flex-col gap-1">
-          <div className="relative aspect-[4/5] overflow-hidden bg-paper">
-            {c.image && <Image src={c.image} alt={`${product.title} in ${c.color}`} fill sizes="(min-width:1024px) 22vw, 50vw" className="object-cover" />}
-          </div>
-          <figcaption className="font-mono text-[11px] text-ink-muted">{c.color}</figcaption>
+        <figure key={c.color}>
+          <span className="relative block aspect-square bg-white">
+            {imagesFor(product, c.color)[0] && <Image src={imagesFor(product, c.color)[0]} alt={`${product.title} in ${c.color}`} fill sizes="(min-width:1024px) 328px, 50vw" className="object-contain" />}
+          </span>
+          <figcaption className="mt-2 font-body text-[12px] leading-[18px] text-muted">{c.color}</figcaption>
         </figure>
       ))}
-    </div>
-  )
-
-  const cta = (track: string) => (
-    <div className="flex flex-col items-start gap-3 border-t border-line py-8 sm:flex-row sm:items-center sm:gap-6">
-      <ButtonLink href="#buy" track={track}>
-        Shop the {name} · {formatMoney(p.amount, p.currency)}
-      </ButtonLink>
-      {offer && offerPrice !== null && (
-        <Link href={offerOf(offer)!.path} className="text-[14px] underline underline-offset-4 hover:text-ink-muted" data-track="listicle_offer">
-          Or get two for {formatMoney(offerPrice, p.currency)}
-        </Link>
-      )}
     </div>
   )
 
@@ -119,72 +97,66 @@ async function ListicleContent({ params }: { params: PageProps<"/reasons/[handle
       <Suspense fallback={null}>
         <ContinuityBanner />
       </Suspense>
+      <div id="listicle-hook" className="relative aspect-[390/260] w-full bg-tile lg:aspect-[1440/412]">
+        <Image src={listicle.heroImage.src} alt={listicle.heroImage.alt} fill preload sizes="100vw" className="cutout object-contain" />
+      </div>
+      <article className="container-article pt-[27px]">
+        <p className="article-meta opacity-60">
+          {reasons.length} Reasons <span className="pl-3">| {name}</span>
+        </p>
+        <h1 className="mt-3 article-h1">{title}</h1>
+        <p className="mt-4 article-p">{listicle.dek}</p>
+        <ol className="border-y border-tertiary">
+          {reasons.map((r, i) => (
+            <li key={r.title} className="flex h-10 items-center gap-3">
+              <span className="font-heading text-[14px]">{i + 1}</span>
+              <a href={`#reason-${i + 1}`} className="btn btn--micro" data-track="listicle_jump">
+                <span>{r.title}</span>
+              </a>
+            </li>
+          ))}
+        </ol>
 
-      {/* Hook + numbered jump list */}
-      <section id="listicle-hook" className="bg-surface">
-        <Container className="grid gap-8 py-8 lg:grid-cols-2 lg:items-center lg:gap-14 lg:py-16">
-          <div className="relative aspect-[16/9] overflow-hidden bg-paper lg:order-2 lg:aspect-[4/3]">
-            <Image src={listicle.heroImage.src} alt={listicle.heroImage.alt} fill preload sizes="(min-width:1024px) 50vw, 100vw" className="object-cover" />
-          </div>
-          <div className="flex flex-col gap-5">
-            <p className="text-eyebrow text-ink-muted">
-              {reasons.length} reasons · {listicle.eyebrow}
-            </p>
-            <h1 className="font-display text-[40px] leading-[0.92] lg:text-[64px]">{title}</h1>
-            <p className="max-w-lg text-[17px] leading-relaxed text-ink-muted">{listicle.dek}</p>
-            <ol className="flex flex-col border-t border-line">
-              {reasons.map((r, i) => (
-                <li key={r.title} className="border-b border-line">
-                  <a href={`#reason-${i + 1}`} className="flex items-baseline gap-4 py-2.5 text-[15px] hover:underline" data-track="listicle_jump">
-                    <span className="font-mono text-[12px] text-accent-ink">{String(i + 1).padStart(2, "0")}</span>
-                    {r.title}
-                  </a>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </Container>
-      </section>
-
-      {/* The reasons */}
-      <Container>
         {reasons.map((r, i) => (
           <div key={r.title}>
-            <ReasonBlock n={i + 1} title={r.title} image={r.image} media={r.media === "colour_grid" ? colourGrid : undefined} flip={i % 2 === 1}>
+            <ReasonBlock n={i + 1} title={r.title} image={r.image} media={r.media === "color_grid" ? colourGrid : undefined} fact={fill(r.fact)}>
               {r.body.map((b) => (
                 <p key={b}>{fill(b)}</p>
               ))}
               {live(r)}
             </ReasonBlock>
-            {listicle.ctaAfter.includes(i + 1) && cta(i + 1 === reasons.length ? "listicle_end_cta" : "listicle_mid_cta")}
+            {listicle.ctaAfter.includes(i + 1) && (
+              <ButtonLink href="#buy" size="atc" block className="mt-8" track={i + 1 === reasons.length ? "listicle_end_cta" : "listicle_mid_cta"}>
+                Shop the {name}
+              </ButtonLink>
+            )}
           </div>
         ))}
-      </Container>
 
-      {/* The buy block */}
-      <ProductOffer
-        product={product}
-        id="buy"
-        source="listicle"
-        footer={
-          offer && offerPrice !== null ? (
-            <Link href={offerOf(offer)!.path} className="text-[14px] underline underline-offset-4 hover:text-ink-muted" data-track="listicle_offer">
-              Or get two for {formatMoney(offerPrice, p.currency)} →
-            </Link>
-          ) : null
-        }
-      />
-
+        <div className="mt-12">
+          <ProductOffer
+            product={product}
+            id="buy"
+            source="listicle"
+            footer={
+              offer && offerPrice !== null ? (
+                <ButtonLink href={offerOf(offer)!.path} variant="link" className="mt-4 self-center" track="listicle_offer">
+                  Or get two for {money(offerPrice)}
+                </ButtonLink>
+              ) : null
+            }
+          />
+        </div>
+        <hr className="mb-[50.512px] mt-12 border-0 border-t-4 border-black" />
+      </article>
       <StickyCta
-        label={`Shop · ${formatMoney(p.amount, p.currency)}`}
-        detail={product.title}
+        label={`Shop the ${name} - ${money(p.amount)}`}
+        thumb={imagesFor(product, colorThumbs(product)[0]?.color)[0] ?? null}
         href="#buy"
         track="listicle_sticky"
         afterId="listicle-hook"
         hideWhileId="buy"
       />
-      <div className="h-16 lg:hidden" aria-hidden />
     </>
   )
 }
-

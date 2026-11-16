@@ -3,7 +3,7 @@ import Image from "next/image"
 import { cookies } from "next/headers"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
-import { Container } from "@/components/container"
+import { Play } from "@phosphor-icons/react/dist/ssr"
 import { Exposure } from "@/components/exposure"
 import { ProductOffer } from "@/components/lp/product-offer"
 import { Track } from "@/components/track"
@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: PageProps<"/stories/[handle]"
  */
 export default function StoryPage(props: PageProps<"/stories/[handle]">) {
   return (
-    <Suspense fallback={<div className="aspect-[4/5] w-full animate-pulse bg-surface lg:aspect-[16/7]" />}>
+    <Suspense fallback={<div className="aspect-[390/260] w-full animate-pulse bg-tile lg:aspect-[1440/412]" />}>
       <StoryContent params={props.params} />
     </Suspense>
   )
@@ -56,111 +56,93 @@ async function StoryContent({ params }: { params: PageProps<"/stories/[handle]">
   const headline = leadWithStance ? series.stance : question
   const subhead = leadWithStance ? question : series.stance
 
+  const name = product?.title.replace(/^The /, "") ?? "Everyday Cap"
+  const episodeNo = fromEpisode ? [...series.episodes].sort((a, b) => Date.parse(a.published_at) - Date.parse(b.published_at)).findIndex((e) => e.asset_key === fromEpisode.asset_key) + 1 : 0
+
   return (
     <>
       <Exposure experiment={HEADLINE_EXPERIMENT} variant={variant} />
       <Track event="story_viewed" props={{ series: series.handle, from_episode: fromEpisode?.asset_key }} />
-
-      {/* 1. Hook: continue the video's promise */}
-      <section className="bg-surface">
-        <Container className="grid gap-6 py-6 lg:grid-cols-2 lg:items-center lg:gap-12 lg:py-14">
-          <div className="relative aspect-[4/5] overflow-hidden bg-surface-2 lg:order-2">
-            <Image
-              src="/hats/story-crush.jpg"
-              alt="A cap folded in half and slid into a back pocket"
-              fill
-              preload
-              sizes="(min-width:1024px) 50vw, 100vw"
-              className="object-cover"
-            />
-          </div>
-          <div className="flex flex-col items-start gap-5 lg:order-1">
-            <p className="text-eyebrow text-accent-ink">
-              {series.title}
-              {fromEpisode && <span className="text-ink-muted"> · You just watched: {fromEpisode.title}</span>}
-            </p>
-            <h1 className={`font-display leading-[0.95] ${headline.length > 80 ? "text-[34px] lg:text-[56px]" : "text-[44px] lg:text-[76px]"}`}>{headline}</h1>
-            {subhead && <p className="max-w-lg text-[17px] leading-relaxed text-ink-muted lg:text-[19px]">{subhead}</p>}
-            <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-              <ButtonLink href="#offer" block track="story_shop">
-                Shop the {product?.title.replace(/^The /, "") ?? "Everyday Cap"}
-              </ButtonLink>
-              <ButtonLink href="#proof" variant="secondary" block track="story_see_proof">
-                See the proof
-              </ButtonLink>
-            </div>
-          </div>
-        </Container>
-      </section>
-
-      {/* 2. Problem: the audience's own frustration */}
-      {series.audience && (
-        <section className="py-12 lg:py-20">
-          <Container className="flex max-w-3xl flex-col gap-4">
-            <p className="text-eyebrow text-ink-muted">Sound familiar?</p>
-            <p className="text-[24px] leading-snug lg:text-[32px]">{series.audience}</p>
-          </Container>
-        </section>
-      )}
-
-      {/* 3. Stance: the rule, stated plainly */}
-      <section className="bg-ink py-12 text-page lg:py-20">
-        <Container className="flex flex-col gap-4">
-          <p className="text-eyebrow text-ink-inverse-muted">Our rule</p>
-          <blockquote className="max-w-5xl font-display text-[34px] leading-[0.95] lg:text-[64px]">“{series.stance}”</blockquote>
-        </Container>
-      </section>
-
-      {/* 4. Proof: what the camera shows, episode by episode */}
-      <section id="proof" className="scroll-mt-28 py-12 lg:py-20">
-        <Container className="grid gap-10 lg:grid-cols-[5fr_7fr] lg:gap-16">
-          <div className="flex flex-col gap-4">
-            <p className="text-eyebrow text-ink-muted">The proof</p>
-            <h2 className="font-display text-section">Watch the test</h2>
-            {series.proof && <p className="text-[16px] leading-relaxed text-ink-muted">{series.proof}</p>}
-          </div>
-          <ol className="flex flex-col border-t border-line">
-            {series.episodes.map((e, i) => (
-              <li key={e.asset_key} className={`flex gap-4 border-b border-line py-5 ${e.asset_key === fromEpisode?.asset_key ? "bg-surface px-3" : ""}`}>
-                <span className="font-mono text-[12px] text-ink-muted">{String(series.episodes.length - i).padStart(2, "0")}</span>
-                <div className="flex flex-col gap-1">
-                  {e.post_url ? (
-                    <a href={e.post_url} target="_blank" rel="noreferrer" className="text-[16px] font-medium underline-offset-4 hover:underline" data-track="story_episode">
-                      {e.title}
-                    </a>
-                  ) : (
-                    <span className="text-[16px] font-medium">{e.title}</span>
-                  )}
-                  {e.subject && <span className="text-[14px] text-ink-muted">{e.subject}</span>}
-                  {e.asset_key === fromEpisode?.asset_key && <span className="text-eyebrow text-accent-ink">The one you watched</span>}
-                </div>
-              </li>
-            ))}
-          </ol>
-        </Container>
-      </section>
-
-      {/* 5. Offer: a working buy box, so the decision happens here */}
-      {product && <ProductOffer product={product} source="story" />}
-
-      {/* 6. Participation + 7. closing action */}
-      <section className="py-12 lg:py-20">
-        <Container className="flex flex-col items-start gap-6">
-          {series.participation_prompt && (
-            <div className="flex w-full flex-col gap-2 border border-line p-6 lg:max-w-2xl">
-              <p className="text-eyebrow text-accent-ink">Your turn</p>
-              <p className="text-[20px] leading-snug">{series.participation_prompt}</p>
-              <p className="text-[13px] text-ink-muted">
-                Reply on {series.channel === "tiktok" ? "TikTok" : series.channel}. Your answers shape the next episode.
-              </p>
-            </div>
-          )}
-          <h2 className="font-display text-section">{question}</h2>
-          <ButtonLink href="#offer" track="story_close_cta">
-            Get the {product?.title.replace(/^The /, "") ?? "Everyday Cap"}
+      <div className="relative aspect-[390/260] w-full bg-tile lg:aspect-[1440/412]">
+        <Image src="/hats/story-crush.jpg" alt="A cap folded in half and slid into a back pocket" fill preload sizes="100vw" className="object-cover" />
+      </div>
+      <article className="container-article pt-[27px]">
+        <p className="article-meta opacity-60">
+          {series.title}
+          {episodeNo > 0 && <span className="pl-3">| Episode {episodeNo}</span>}
+        </p>
+        <h1 className={`mt-3 ${headline.length > 80 ? "font-subheading text-[28px] leading-[36.4px]" : "article-h1"}`}>{headline}</h1>
+        {fromEpisode && (
+          <p className="mt-3 flex items-center gap-2 font-body text-[13px] text-muted">
+            <Play size={12} weight="fill" aria-hidden /> You just watched: {fromEpisode.title}
+          </p>
+        )}
+        {subhead && <p className="mt-4 article-p">{subhead}</p>}
+        <div className="mt-2 flex flex-wrap gap-3">
+          <ButtonLink href="#offer" track="story_shop">
+            Shop the {name}
           </ButtonLink>
-        </Container>
-      </section>
+          <ButtonLink href="#proof" variant="light" track="story_see_proof">
+            See the proof
+          </ButtonLink>
+        </div>
+
+        {series.audience && (
+          <>
+            <h2 className="article-h2">The Problem</h2>
+            <p className="article-p">{series.audience}</p>
+          </>
+        )}
+
+        <h2 className="article-h2">The Stance</h2>
+        <blockquote className="border-l-4 border-black pl-5 font-heading text-[22px] leading-[28.6px]">“{series.stance}”</blockquote>
+
+        <section id="proof" className="scroll-mt-[130px]">
+          <h2 className="article-h2">The Proof</h2>
+          {series.proof && <p className="article-p">{series.proof}</p>}
+          <ol className="border-t border-tertiary">
+            {[...series.episodes]
+              .sort((a, b) => Date.parse(a.published_at) - Date.parse(b.published_at))
+              .map((e, i) => (
+                <li key={e.asset_key} className={`flex items-start gap-4 border-b border-tertiary py-[14px] ${e.asset_key === fromEpisode?.asset_key ? "bg-band px-3" : ""}`}>
+                  <span className="font-heading text-[14px]">{i + 1}</span>
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    <span className="font-subheading text-[15px]">{e.title}</span>
+                    {e.subject && <span className="font-body text-[13px] text-muted">{e.subject}</span>}
+                  </div>
+                  {e.post_url && (
+                    <a href={e.post_url} target="_blank" rel="noreferrer" className="btn btn--link shrink-0" data-track="story_episode">
+                      <span>Watch</span>
+                    </a>
+                  )}
+                </li>
+              ))}
+          </ol>
+        </section>
+
+        {product && (
+          <div className="mt-12">
+            <ProductOffer product={product} source="story" ctaTrack="story_shop" />
+          </div>
+        )}
+
+        {series.participation_prompt && (
+          <div className="mt-12 bg-primary p-6 text-white">
+            <p className="font-heading text-[18px] uppercase">Your Turn</p>
+            <p className="mt-2 font-body text-[15px] leading-[22.5px]">{series.participation_prompt}</p>
+            <p className="mt-2 font-body text-[13px] text-white/70">
+              Reply on {series.channel === "tiktok" ? "TikTok" : series.channel}. Your answers shape the next episode.
+            </p>
+          </div>
+        )}
+
+        <hr className="mb-6 mt-12 border-0 border-t-4 border-black" />
+        <div className="pb-[50.512px]">
+          <ButtonLink href="#offer" size="atc" block track="story_close_cta">
+            Get the {name}
+          </ButtonLink>
+        </div>
+      </article>
     </>
   )
 }

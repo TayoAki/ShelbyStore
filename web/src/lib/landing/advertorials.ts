@@ -2,7 +2,7 @@
  * Advertorial content (SITE_SPEC §12.3). Written in Shelby's voice to the
  * reader ("you"), never as a fictional customer or editor. Claims about caps
  * in general are hedged; claims about the Everyday Cap are product facts.
- * `{tokens}` are filled from live data: {range} {price} {offer_price} {colours} {returns}.
+ * `{tokens}` are filled from live data: {range} {price} {offer_price} {colors} {returns}.
  */
 export type ArticleBlock =
   | { kind: "p"; text: string }
@@ -29,7 +29,7 @@ export const ADVERTORIALS: Advertorial[] = [
     product: "everyday-cap",
     kicker: "Field notes",
     headline: "Most caps are made to be replaced. We made one that isn't.",
-    dek: "Why a favourite cap goes flat, fades in patches and loses its curve by the end of summer, and what we changed in the Everyday Cap.",
+    dek: "Why a favorite cap goes flat, fades in patches and loses its curve by the end of summer, and what we changed in the Everyday Cap.",
     published: "2026-11-16",
     lead: {
       src: "/hats/lifestyle-hero.jpg",
@@ -39,7 +39,7 @@ export const ADVERTORIALS: Advertorial[] = [
     blocks: [
       {
         kind: "p",
-        text: "You know the one. The cap you wore everywhere for a summer. Then the front started to fold in, the brim flattened into a duck bill, and the colour faded in patches where the sun hit it. So you bought another one, and it went the same way.",
+        text: "You know the one. The cap you wore everywhere for a summer. Then the front started to fold in, the brim flattened into a duck bill, and the color faded in patches where the sun hit it. So you bought another one, and it went the same way.",
       },
       { kind: "p", text: "That usually isn't bad luck. It's how a lot of caps are built." },
       { kind: "h2", text: "Why caps give up" },
@@ -80,7 +80,7 @@ export const ADVERTORIALS: Advertorial[] = [
       { kind: "h2", text: "How we check it" },
       {
         kind: "p",
-        text: "We'd rather show you than tell you. We film the test, and we post the live count of every colour on the site. If a colour is running low, the page says so.",
+        text: "We'd rather show you than tell you. We film the test, and we post the live count of every color on the site. If a color is running low, the page says so.",
       },
       { kind: "proof" },
       {
@@ -92,7 +92,7 @@ export const ADVERTORIALS: Advertorial[] = [
       { kind: "h2", text: "Try it" },
       {
         kind: "p",
-        text: "The Everyday Cap is {price} in {colours} colours, or two for {offer_price}. {returns}.",
+        text: "The Everyday Cap is {price} in {colors} colors, or two for {offer_price}. {returns}.",
       },
     ],
   },

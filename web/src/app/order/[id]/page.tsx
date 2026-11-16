@@ -1,23 +1,24 @@
+import { CheckCircle } from "@phosphor-icons/react/dist/ssr"
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
-import { Container } from "@/components/container"
 import { LineItem } from "@/components/line-item"
 import { ButtonLink } from "@/components/ui/button"
-import { formatMoney } from "@/lib/format"
 import { getRegion, listCatalog } from "@/lib/data/catalog"
-import { imageUrl, variantThumbs } from "@/lib/product"
+import { formatMoney } from "@/lib/format"
 import { sdk } from "@/lib/medusa"
+import { imageUrl, variantThumbs } from "@/lib/product"
 
 export const metadata: Metadata = { title: "Order confirmed", robots: { index: false } }
 
+/** Order confirmation (SITE_SPEC §6.8). */
 export default function OrderPage(props: PageProps<"/order/[id]">) {
   return (
-    <Container className="py-12 lg:py-16">
-      <Suspense fallback={<div className="h-60 animate-pulse bg-surface" />}>
+    <div className="container-article py-[50.512px]">
+      <Suspense fallback={<div className="h-60 animate-pulse bg-tile" />}>
         <OrderContent params={props.params} />
       </Suspense>
-    </Container>
+    </div>
   )
 }
 
@@ -32,13 +33,13 @@ async function OrderContent({ params }: { params: PageProps<"/order/[id]">["para
   const thumbs = region ? variantThumbs(await listCatalog(region.id)) : {}
   const a = order.shipping_address
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-8">
-      <div className="flex flex-col gap-3">
-        <p className="text-eyebrow text-ok">● Order #{order.display_id} confirmed</p>
-        <h1 className="font-display text-section">Thanks. Your order is in.</h1>
-        <p className="text-[15px] text-ink-muted">A confirmation goes to {order.email}.</p>
-      </div>
-      <ul className="border-t border-line">
+    <div className="flex flex-col items-center gap-6 text-center">
+      <CheckCircle size={48} weight="fill" className="text-instock" aria-hidden />
+      <h1 className="font-heading text-[26px] uppercase leading-[39px]">Thank You</h1>
+      <p className="font-body text-[15px]">
+        Order #{order.display_id} is confirmed. We&apos;ll email tracking to {order.email} when it ships.
+      </p>
+      <ul className="w-full bg-tile text-left">
         {(order.items ?? []).map((i) => (
           <LineItem
             key={i.id}
@@ -56,20 +57,19 @@ async function OrderContent({ params }: { params: PageProps<"/order/[id]">["para
           />
         ))}
       </ul>
-      <div className="flex justify-between text-[16px] font-semibold">
+      <div className="flex w-full justify-between font-heading text-[18px]">
         <span>Total</span>
-        <span className="font-mono">{formatMoney(Number(order.total ?? 0), order.currency_code)}</span>
+        <span>{formatMoney(Number(order.total ?? 0), order.currency_code)}</span>
       </div>
       {a && (
-        <div className="text-[14px] text-ink-muted">
-          <p className="text-eyebrow mb-1">Shipping to</p>
-          <p>
-            {a.first_name} {a.last_name}, {a.address_1}
-            {a.address_2 ? `, ${a.address_2}` : ""}, {a.city} {a.province} {a.postal_code}
-          </p>
-        </div>
+        <p className="w-full text-left font-body text-[13px] text-muted">
+          Shipping to {a.first_name} {a.last_name}, {a.address_1}
+          {a.address_2 ? `, ${a.address_2}` : ""}, {a.city} {a.province} {a.postal_code}
+        </p>
       )}
-      <ButtonLink href="/">Keep shopping</ButtonLink>
+      <ButtonLink href="/" variant="light">
+        Keep shopping
+      </ButtonLink>
     </div>
   )
 }

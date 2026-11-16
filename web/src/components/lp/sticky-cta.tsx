@@ -1,33 +1,33 @@
 "use client"
 
+import Image from "next/image"
 import { useEffect, useState } from "react"
-import { buttonClass } from "../ui/button"
 
 /**
- * Mobile bottom bar with the page's one action (SITE_SPEC §12.0). It appears
- * once the hero has scrolled away and hides while the buy block itself is on
- * screen, so the action is never shown twice.
+ * Melin's sticky buy bar for landing pages (SITE_SPEC §12.0): fixed at the top
+ * under the condensed header on mobile (80px): thumbnail, price and the page's
+ * one action. It appears once `afterId` scrolls away and hides while the buy
+ * block is on screen, so the action is never shown twice.
  */
 export function StickyCta({
   label,
-  detail,
+  price,
+  thumb,
   href,
   track,
   afterId,
   hideWhileId,
 }: {
   label: string
-  detail?: string
+  price?: string
+  thumb?: string | null
   href: string
   track: string
-  /** Show the bar after this element has scrolled above the viewport. */
   afterId: string
-  /** Hide the bar while this element (the buy block) is visible. */
   hideWhileId?: string
 }) {
   const [past, setPast] = useState(false)
   const [buyVisible, setBuyVisible] = useState(false)
-
   useEffect(() => {
     const after = document.getElementById(afterId)
     const buy = hideWhileId ? document.getElementById(hideWhileId) : null
@@ -47,11 +47,16 @@ export function StickyCta({
 
   if (!past || buyVisible) return null
   return (
-    <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-page px-4 py-3 lg:hidden">
-      <div className="flex items-center gap-3">
-        {detail && <p className="min-w-0 flex-1 truncate text-[13px] text-ink-muted">{detail}</p>}
-        <a href={href} className={buttonClass({ size: "sm", block: !detail })} data-track={track}>
-          {label}
+    <div className="fixed inset-x-0 top-[61px] z-30 h-20 bg-white shadow-sticky [html[data-hdr=expanded]_&]:top-[121px] lg:hidden">
+      <div className="flex h-full items-center gap-3 px-4">
+        {thumb && (
+          <span className="relative h-14 w-14 shrink-0">
+            <Image src={thumb} alt="" fill sizes="56px" className="object-contain" />
+          </span>
+        )}
+        {price && <span className="font-body text-[16px]">{price}</span>}
+        <a href={href} className="btn btn--primary ml-auto shrink-0" data-track={track}>
+          <span>{label}</span>
         </a>
       </div>
     </div>

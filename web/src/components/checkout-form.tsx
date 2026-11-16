@@ -61,8 +61,8 @@ export function CheckoutForm({
   const fe = state?.fieldErrors ?? {}
 
   return (
-    <div className="flex flex-col gap-4">
-      <Step n={1} title="Contact & delivery" active={step === 1} done={step > 1} onEdit={() => setEditing(true)}
+    <div className="flex flex-col gap-6">
+      <Step n={1} title="Contact & address" active={step === 1} done={step > 1} onEdit={() => setEditing(true)}
         summary={address ? `${address.email} · ${address.address_1}, ${address.city} ${address.province} ${address.postal_code}` : undefined}>
         <form action={save} className="grid grid-cols-2 gap-3" noValidate>
           <Field className="col-span-2" name="email" label="Email" type="email" autoComplete="email" defaultValue={address?.email} error={fe.email} />
@@ -73,9 +73,9 @@ export function CheckoutForm({
           <Field className="col-span-2" name="city" label="City" autoComplete="address-level2" defaultValue={address?.city} error={fe.city} />
           <Field name="province" label="State" autoComplete="address-level1" defaultValue={address?.province} error={fe.province} maxLength={2} placeholder="CA" />
           <Field name="postal_code" label="ZIP" autoComplete="postal-code" inputMode="numeric" defaultValue={address?.postal_code} error={fe.postal_code} />
-          {state?.error && <p className="col-span-2 text-[14px] text-danger" role="alert">{state.error}</p>}
+          {state?.error && <p className="col-span-2 font-body text-[12px] text-error" role="alert">{state.error}</p>}
           <div className="col-span-2 mt-2">
-            <Button block loading={saving} data-track="checkout_details">Continue to delivery</Button>
+            <Button block size="atc" loading={saving} track="checkout_details">Continue to delivery</Button>
           </div>
         </form>
       </Step>
@@ -84,13 +84,13 @@ export function CheckoutForm({
         summary={options.find((o) => o.id === current)?.name}>
         <fieldset className="flex flex-col gap-2" disabled={shippingPending}>
           <legend className="sr-only">Shipping method</legend>
-          {options.length === 0 && <p className="text-[14px] text-ink-muted">No delivery options for this address.</p>}
+          {options.length === 0 && <p className="font-body text-[13px] text-muted">No delivery options for this address.</p>}
           {options.map((o) => (
-            <label key={o.id} className={`flex cursor-pointer items-center gap-3 rounded-[2px] border bg-paper p-4 ${current === o.id ? "border-ink" : "border-ink-faint"}`}>
+            <label key={o.id} className={`flex cursor-pointer items-center gap-3 rounded-button border bg-white p-[14px] ${current === o.id ? "border-black" : "border-tertiary"}`}>
               <input
                 type="radio"
                 name="shipping"
-                className="accent-ink"
+                className="accent-black"
                 checked={current === o.id}
                 onChange={() => {
                   setChosen(o.id)
@@ -104,10 +104,10 @@ export function CheckoutForm({
                 }}
               />
               <span className="flex-1">
-                <span className="block text-[15px] font-medium">{o.name}</span>
-                {o.description && <span className="block text-[13px] text-ink-muted">{o.description}</span>}
+                <span className="block font-heading text-[14px]">{o.name}</span>
+                {o.description && <span className="block font-body text-[13px] text-muted">{o.description}</span>}
               </span>
-              <span className="font-mono text-[14px]">{formatMoney(o.amount, currency)}</span>
+              <span className="font-body text-[14px]">{formatMoney(o.amount, currency)}</span>
             </label>
           ))}
         </fieldset>
@@ -118,13 +118,14 @@ export function CheckoutForm({
           <StripePayment total={total} currency={currency} cartKey={`${cartId}:${total}:${current ?? ""}`} />
         ) : (
           <div className="flex flex-col gap-4">
-            <div className="rounded-[2px] bg-surface p-4 text-[14px]">
-              <p className="font-medium">Test payment</p>
-              <p className="text-ink-muted">No card provider is configured, so the order is recorded and nothing is charged.</p>
+            <div className="rounded-button bg-tile p-4 font-body text-[14px]">
+              <p className="font-heading">Test payment</p>
+              <p className="text-muted">No card provider is configured, so the order is recorded and nothing is charged.</p>
             </div>
-            {error && <p className="text-[14px] text-danger" role="alert">{error}</p>}
+            {error && <p className="font-body text-[12px] text-error" role="alert">{error}</p>}
             <Button
-              data-track="place_order"
+              track="place_order"
+              size="checkout"
               block
               loading={placing}
               onClick={() => startPlacing(async () => {
@@ -146,19 +147,16 @@ function Step({ n, title, active, done, summary, onEdit, children }: {
   n: number; title: string; active: boolean; done: boolean; summary?: string; onEdit?: () => void; children: React.ReactNode
 }) {
   return (
-    <section className={`border border-line p-4 lg:p-6 ${active ? "bg-paper/50" : ""}`} aria-current={active ? "step" : undefined}>
+    <section className="border-b border-tertiary pb-6" aria-current={active ? "step" : undefined}>
       <div className="flex items-center justify-between gap-3">
-        <h2 className={`flex items-center gap-3 text-[16px] font-semibold ${active || done ? "" : "text-ink-faint"}`}>
-          <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full font-mono text-[12px] ${done ? "bg-ok text-page" : active ? "bg-ink text-page" : "bg-surface-2 text-ink-muted"}`}>
-            {done ? "✓" : n}
-          </span>
-          {title}
+        <h2 className={`font-heading text-[18px] uppercase tracking-[1.3px] ${active || done ? "" : "text-text-disabled"}`}>
+          {n}. {title}
         </h2>
         {done && onEdit && (
-          <button type="button" onClick={onEdit} className="text-[13px] underline underline-offset-4">Edit</button>
+          <button type="button" onClick={onEdit} className="btn btn--micro"><span>Edit</span></button>
         )}
       </div>
-      {done && summary && <p className="mt-2 pl-9 text-[13px] text-ink-muted">{summary}</p>}
+      {done && summary && <p className="mt-2 font-body text-[13px] text-muted">{summary}</p>}
       {active && <div className="mt-5">{children}</div>}
     </section>
   )
@@ -167,16 +165,16 @@ function Step({ n, title, active, done, summary, onEdit, children }: {
 function Field({ label, error, className = "", ...input }: React.ComponentProps<"input"> & { label: string; error?: string; name: string }) {
   const id = `f-${input.name}`
   return (
-    <div className={`flex flex-col gap-1.5 ${className}`}>
-      <label htmlFor={id} className="text-[13px] font-medium">{label}</label>
+    <div className={`flex flex-col ${className}`}>
+      <label htmlFor={id} className="mb-[6px] font-body text-[13px] leading-[19.5px]">{label}</label>
       <input
         id={id}
         {...input}
         aria-invalid={!!error || undefined}
         aria-describedby={error ? `${id}-err` : undefined}
-        className={`h-12 rounded-[2px] border bg-paper px-3 text-[16px] focus:border-ink focus:outline-none ${error ? "border-danger" : "border-ink-faint"}`}
+        className={`h-12 rounded-button border bg-white px-[14px] font-system text-[16px] focus:border-black focus:outline-none ${error ? "border-error" : "border-tertiary"}`}
       />
-      {error && <p id={`${id}-err`} className="text-[12px] text-danger">{error}</p>}
+      {error && <p id={`${id}-err`} className="mt-1 font-body text-[12px] text-error">{error}</p>}
     </div>
   )
 }

@@ -1,26 +1,24 @@
 import { ButtonLink } from "../ui/button"
-import { Container } from "../container"
 
 type Cta = { href: string; label: string; track: string }
 
-/** The closing action: one restated decision and one button (SITE_SPEC §12.0). */
+/**
+ * The closing action (SITE_SPEC §12.0, §12.1.4): a centred heading and one
+ * btn--primary btn--atc, with an optional micro link under it.
+ */
 export function ClosingCta({ title, body, cta, secondary }: { title: string; body?: string; cta: Cta; secondary?: Cta }) {
   return (
-    <section className="bg-ink py-12 text-page lg:py-20">
-      <Container className="flex flex-col items-start gap-5">
-        <h2 className="max-w-3xl font-display text-section">{title}</h2>
-        {body && <p className="max-w-xl text-[16px] leading-relaxed text-ink-inverse-muted">{body}</p>}
-        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-          <ButtonLink href={cta.href} variant="inverse" track={cta.track} block>
-            {cta.label}
-          </ButtonLink>
-          {secondary && (
-            <ButtonLink href={secondary.href} variant="ghost" track={secondary.track} className="text-page hover:text-ink-inverse-muted">
-              {secondary.label}
-            </ButtonLink>
-          )}
-        </div>
-      </Container>
+    <section className="flex flex-col items-center px-4 py-[50.512px] text-center">
+      <h2 className="type-section">{title}</h2>
+      {body && <p className="mt-3 max-w-[480px] type-body">{body}</p>}
+      <ButtonLink href={cta.href} size="atc" className="mt-6 w-full max-w-[370px]" track={cta.track}>
+        {cta.label}
+      </ButtonLink>
+      {secondary && (
+        <ButtonLink href={secondary.href} variant="micro" className="mt-4" track={secondary.track}>
+          {secondary.label}
+        </ButtonLink>
+      )}
     </section>
   )
 }

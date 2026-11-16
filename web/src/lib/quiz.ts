@@ -54,7 +54,7 @@ export const QUESTIONS = [
   },
   {
     key: "colors",
-    title: "Which colours do you reach for?",
+    title: "Which colors do you reach for?",
     answers: [
       { value: "dark", label: "Dark" },
       { value: "light", label: "Light" },

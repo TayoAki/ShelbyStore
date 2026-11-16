@@ -11,15 +11,15 @@ export function ProofList({ items }: { items: (Proof | null | false | undefined 
   const proofs = items.filter((p): p is Proof => !!p && !!p.body)
   if (!proofs.length) return null
   return (
-    <dl className="flex flex-col border-t border-line">
+    <dl className="flex flex-col border-t border-tertiary">
       {proofs.map((p) => (
-        <div key={p.label} className="grid gap-1 border-b border-line py-4 sm:grid-cols-[200px_1fr] sm:gap-6">
-          <dt className="text-eyebrow pt-0.5 text-ink-muted">{p.label}</dt>
-          <dd className="flex flex-col gap-1 text-[15px] leading-relaxed">
+        <div key={p.label} className="grid gap-1 border-b border-tertiary py-[14px] lg:grid-cols-[180px_1fr] lg:gap-6">
+          <dt className="font-heading text-[14px] uppercase tracking-[1.3px]">{p.label}</dt>
+          <dd className="flex flex-col gap-1 font-body text-[15px] leading-[22.5px]">
             <span>{p.body}</span>
             {p.href && (
-              <Link href={p.href} className="w-fit text-[13px] underline underline-offset-4 hover:text-ink-muted" data-track={p.track}>
-                {p.linkText ?? "See the details"}
+              <Link href={p.href} className="btn btn--micro self-start" data-track={p.track}>
+                <span>{p.linkText ?? "See the details"}</span>
               </Link>
             )}
           </dd>
