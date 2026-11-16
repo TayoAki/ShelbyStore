@@ -1,15 +1,17 @@
+import { PlayCircle } from "@phosphor-icons/react/dist/ssr"
 import type { Metadata } from "next"
 import Image from "next/image"
+import Link from "next/link"
 import { cookies } from "next/headers"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
-import { Play } from "@phosphor-icons/react/dist/ssr"
 import { Exposure } from "@/components/exposure"
-import { ProductOffer } from "@/components/lp/product-offer"
+import { AboutPill } from "@/components/home/about-pill"
+import { SeriesCarousel } from "@/components/home/series-carousel"
+import { RopeBuyBlock } from "@/components/rope-buy-block"
+import { SeriesPill } from "@/components/series-pill"
 import { Track } from "@/components/track"
-import { ButtonLink } from "@/components/ui/button"
 import { ATTRIBUTION_COOKIE, parseAttribution } from "@/lib/attribution"
-import { getRegion, listCoreProducts } from "@/lib/data/catalog"
 import { getSeries } from "@/lib/data/content"
 import { getVariant } from "@/lib/experiments"
 
@@ -19,20 +21,17 @@ const HEADLINE_EXPERIMENT = "story-headline"
 export async function generateMetadata({ params }: PageProps<"/stories/[handle]">): Promise<Metadata> {
   const { handle } = await params
   const series = await getSeries(handle)
-  return series
-    ? { title: series.title, description: series.stance ?? series.audience_question ?? undefined }
-    : { title: "Not found" }
+  return series ? { title: series.title, description: series.stance ?? series.audience_question ?? undefined } : { title: "Not found" }
 }
 
 /**
- * Story landing page for cold social traffic (SITE_SPEC §10). Someone who just
- * watched one episode doesn't know the brand yet, so this page continues the
- * video's promise and argues in modules: hook → problem → stance → proof →
- * offer (a working buy box) → participation → closing action.
+ * Story page for cold social traffic (SITE_SPEC G.6.14 on v5 §6.9): hero →
+ * problem → stance (pill window) → proof (episodes) → offer (the Rope Cap buy
+ * card) → your turn (the page's golf-green band) → close (brand pill).
  */
 export default function StoryPage(props: PageProps<"/stories/[handle]">) {
   return (
-    <Suspense fallback={<div className="aspect-[390/260] w-full animate-pulse bg-tile lg:aspect-[1440/412]" />}>
+    <Suspense fallback={<div className="m-2.5 h-[70vh] animate-pulse rounded-[20px] bg-white" />}>
       <StoryContent params={props.params} />
     </Suspense>
   )
@@ -40,9 +39,8 @@ export default function StoryPage(props: PageProps<"/stories/[handle]">) {
 
 async function StoryContent({ params }: { params: PageProps<"/stories/[handle]">["params"] }) {
   const { handle } = await params
-  const [series, region] = await Promise.all([getSeries(handle), getRegion()])
+  const series = await getSeries(handle)
   if (!series || !series.stance) notFound()
-  const product = region ? ((await listCoreProducts(region.id))[0] ?? null) : null
 
   // Which episode brought this visitor (ad-to-page continuity).
   const asset = parseAttribution((await cookies()).get(ATTRIBUTION_COOKIE)?.value)?.asset
@@ -56,93 +54,69 @@ async function StoryContent({ params }: { params: PageProps<"/stories/[handle]">
   const headline = leadWithStance ? series.stance : question
   const subhead = leadWithStance ? question : series.stance
 
-  const name = product?.title.replace(/^The /, "") ?? "Everyday Cap"
-  const episodeNo = fromEpisode ? [...series.episodes].sort((a, b) => Date.parse(a.published_at) - Date.parse(b.published_at)).findIndex((e) => e.asset_key === fromEpisode.asset_key) + 1 : 0
-
   return (
     <>
       <Exposure experiment={HEADLINE_EXPERIMENT} variant={variant} />
       <Track event="story_viewed" props={{ series: series.handle, from_episode: fromEpisode?.asset_key }} />
-      <div className="relative aspect-[390/260] w-full bg-tile lg:aspect-[1440/412]">
-        <Image src="/hats/story-crush.jpg" alt="A cap folded in half and slid into a back pocket" fill preload sizes="100vw" className="object-cover" />
-      </div>
-      <article className="container-article pt-[27px]">
-        <p className="article-meta opacity-60">
-          {series.title}
-          {episodeNo > 0 && <span className="pl-3">| Episode {episodeNo}</span>}
-        </p>
-        <h1 className={`mt-3 ${headline.length > 80 ? "font-subheading text-[28px] leading-[36.4px]" : "article-h1"}`}>{headline}</h1>
-        {fromEpisode && (
-          <p className="mt-3 flex items-center gap-2 font-body text-[13px] text-muted">
-            <Play size={12} weight="fill" aria-hidden /> You just watched: {fromEpisode.title}
-          </p>
-        )}
-        {subhead && <p className="mt-4 article-p">{subhead}</p>}
-        <div className="mt-2 flex flex-wrap gap-3">
-          <ButtonLink href="#offer" track="story_shop">
-            Shop the {name}
-          </ButtonLink>
-          <ButtonLink href="#proof" variant="light" track="story_see_proof">
-            See the proof
-          </ButtonLink>
-        </div>
 
-        {series.audience && (
-          <>
-            <h2 className="article-h2">The Problem</h2>
-            <p className="article-p">{series.audience}</p>
-          </>
-        )}
-
-        <h2 className="article-h2">The Stance</h2>
-        <blockquote className="border-l-4 border-black pl-5 font-heading text-[22px] leading-[28.6px]">“{series.stance}”</blockquote>
-
-        <section id="proof" className="scroll-mt-[130px]">
-          <h2 className="article-h2">The Proof</h2>
-          {series.proof && <p className="article-p">{series.proof}</p>}
-          <ol className="border-t border-tertiary">
-            {[...series.episodes]
-              .sort((a, b) => Date.parse(a.published_at) - Date.parse(b.published_at))
-              .map((e, i) => (
-                <li key={e.asset_key} className={`flex items-start gap-4 border-b border-tertiary py-[14px] ${e.asset_key === fromEpisode?.asset_key ? "bg-band px-3" : ""}`}>
-                  <span className="font-heading text-[14px]">{i + 1}</span>
-                  <div className="flex min-w-0 flex-1 flex-col">
-                    <span className="font-subheading text-[15px]">{e.title}</span>
-                    {e.subject && <span className="font-body text-[13px] text-muted">{e.subject}</span>}
-                  </div>
-                  {e.post_url && (
-                    <a href={e.post_url} target="_blank" rel="noreferrer" className="btn btn--link shrink-0" data-track="story_episode">
-                      <span>Watch</span>
-                    </a>
-                  )}
-                </li>
-              ))}
-          </ol>
-        </section>
-
-        {product && (
-          <div className="mt-12">
-            <ProductOffer product={product} source="story" ctaTrack="story_shop" />
-          </div>
-        )}
-
-        {series.participation_prompt && (
-          <div className="mt-12 bg-primary p-6 text-white">
-            <p className="font-heading text-[18px] uppercase">Your Turn</p>
-            <p className="mt-2 font-body text-[15px] leading-[22.5px]">{series.participation_prompt}</p>
-            <p className="mt-2 font-body text-[13px] text-white/70">
-              Reply on {series.channel === "tiktok" ? "TikTok" : series.channel}. Your answers shape the next episode.
+      <section data-hero="" className="hero-in relative m-2.5 h-[78svh] overflow-hidden rounded-[20px] text-white md:h-[82vh]">
+        <Image src="/hats/rope-brim.jpg" alt="A rope cap brim, close up, with the rope across the front" fill preload sizes="100vw" className="object-cover" />
+        <div className="absolute inset-x-0 bottom-0 h-3/4 bg-[linear-gradient(0deg,rgba(0,0,0,.5),rgba(0,0,0,0))]" aria-hidden />
+        <div className="hero-in-content absolute inset-0 flex flex-col items-start justify-end gap-3 p-8 pt-24 md:max-w-[70%] md:p-16">
+          <p className="font-mono text-xs leading-5 font-medium tracking-[.1em] uppercase">{series.title.toUpperCase()}</p>
+          <h1 className="font-display text-[30px] leading-9 md:text-[40px] md:leading-[48px]">{headline}</h1>
+          {subhead && <p className="kicker text-white">{subhead}</p>}
+          {fromEpisode && (
+            <p className="flex items-center gap-2 text-sm leading-5">
+              <PlayCircle size={18} weight="fill" aria-hidden /> You just watched: {fromEpisode.title}
             </p>
+          )}
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <Link href="#offer" className="btn btn-primary" data-track="story_shop">
+              SHOP THE ROPE CAP
+            </Link>
+            <Link href="#proof" className="btn btn-outline-white" data-track="story_see_proof">
+              SEE THE PROOF
+            </Link>
           </div>
-        )}
-
-        <hr className="mb-6 mt-12 border-0 border-t-4 border-black" />
-        <div className="pb-[50.512px]">
-          <ButtonLink href="#offer" size="atc" block track="story_close_cta">
-            Get the {name}
-          </ButtonLink>
         </div>
-      </article>
+      </section>
+
+      {series.audience && (
+        <section aria-label="The problem" className="mx-2.5 my-10 flex flex-col md:flex-row">
+          <div className="relative aspect-[10/7] overflow-hidden rounded-xl md:min-w-[55vw]">
+            <Image src="/hats/rope-lifestyle-hero.jpg" alt="A golfer in a Pine rope cap on a links course" fill sizes="(min-width: 768px) 55vw, 100vw" className="object-cover" />
+          </div>
+          <div className="flex flex-col items-center justify-center gap-6 rounded-xl px-5 py-6 text-center md:px-10">
+            <h2 className="font-display text-2xl leading-8 capitalize">The problem</h2>
+            <p className="text-sm leading-5">{series.audience}</p>
+            <Link href="/fit-guide" className="link text-sm" data-track="story_fit_guide">
+              How our crown compares
+            </Link>
+          </div>
+        </section>
+      )}
+
+      <AboutPill id="stance" label="The stance" quote={series.stance} cta={null} />
+
+      {series.proof && <p className="mx-auto max-w-[65ch] px-5 text-center text-sm leading-5">{series.proof}</p>}
+      <SeriesCarousel series={series} onStory highlight={fromEpisode?.asset_key ?? null} />
+
+      <section id="offer" aria-label="The Rope Cap" className="mx-2.5 my-10 scroll-mt-28">
+        <div className="mx-auto max-w-[547px]">
+          <RopeBuyBlock source="story" />
+        </div>
+      </section>
+
+      {series.participation_prompt && (
+        <section aria-label="Your turn" className="band-golf mx-2.5 my-10 flex flex-col items-center gap-3 rounded-3xl px-6 py-12 text-center md:px-10">
+          <p className="font-mono text-xs leading-5 tracking-[.1em]">YOUR TURN</p>
+          <p className="max-w-[55ch] text-base leading-6">{series.participation_prompt}</p>
+          <p className="text-xs leading-4 text-golf-tint">Reply on {series.channel === "tiktok" ? "TikTok" : series.channel}. Your answers shape the next episode.</p>
+        </section>
+      )}
+
+      <SeriesPill title={series.title.toUpperCase()} stance={series.stance} href="#offer" episodes={series.episodes.map((e) => e.title)} cta="GET THE ROPE CAP" track="story_close_cta" />
     </>
   )
 }

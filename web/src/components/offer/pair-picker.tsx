@@ -1,179 +1,219 @@
 "use client"
 
 import Image from "next/image"
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
+import { useAddToBag } from "@/components/cart/use-add-to-bag"
+import { RopeRule } from "@/components/rope-rule"
+import { SwatchFace } from "@/components/swatch"
 import { formatMoney } from "@/lib/format"
-import { stockState } from "@/lib/product"
-import type { VariantStock } from "@/lib/types"
-import { useAddToBag } from "../cart/use-add-to-bag"
-import { Perks, type Perk } from "../perks"
-import { SwatchDot } from "../swatch"
-import { Badge } from "../ui/badge"
-import { Button } from "../ui/button"
+import { POLICY } from "@/lib/policy"
+import { findVariant, price } from "@/lib/product"
+import type { Product, VariantStock } from "@/lib/types"
 
-export type PairColor = { color: string; images: string[] }
-/** One kit variant: the two colours and its id. */
-export type PairVariant = { id: string; first: string; second: string }
+const lead = (c: string) => `/hats/rope-cap-${c.toLowerCase().replace(/\s+/g, "-")}-1.jpg`
 
 /**
- * The two-pack's above-the-fold block in Melin's PDP layout (SITE_SPEC
- * §12.1.2): the two chosen caps side by side (front, then side), two swatch
- * groups, the one-size block, ADD THE PAIR, kit stock, perks, and Melin's
- * sticky bar on mobile.
+ * The Pair (G.6.5): two colour pickers over the core colours, the chosen caps
+ * side by side, a rope rule under each picker, live kit stock, the true $96
+ * anchor and "ADD THE PAIR – $88". Sticky bar once the CTA scrolls away.
  */
 export function PairPicker({
-  productId,
+  pair,
   colors,
-  variants,
+  single,
   stock,
-  price,
-  compareAt,
-  saving,
-  currency,
   headline,
-  typeLine,
-  description,
-  oneSizeLine,
-  perks,
+  initial,
+  source = "offer",
+  headingAs: Heading = "h1",
 }: {
-  productId: string
-  colors: PairColor[]
-  variants: PairVariant[]
-  /** null while live stock loads. */
+  pair: Product
+  colors: string[]
+  single: number | null
   stock: VariantStock | null
-  price: number | null
-  compareAt: number | null
-  saving: number | null
-  currency: string
   headline: string
-  typeLine: string
-  description: string
-  oneSizeLine: string
-  perks: Perk[]
+  initial?: [string, string]
+  source?: string
+  headingAs?: "h1" | "h2"
 }) {
-  const [first, setFirst] = useState(colors[0]?.color ?? "")
-  const [second, setSecond] = useState(colors[2]?.color ?? colors[1]?.color ?? colors[0]?.color ?? "")
-  const [added, setAdded] = useState(false)
+  const [first, setFirst] = useState(initial?.[0] ?? colors[0])
+  const [second, setSecond] = useState(initial?.[1] ?? colors[2] ?? colors[1] ?? colors[0])
   const { add, pending, error } = useAddToBag()
-  const find = (a: string, b: string) => variants.find((v) => v.first === a && v.second === b)
-  const variant = find(first, second)
-  const available = variant && stock ? stock[variant.id] : undefined
-  const state = stock === null ? null : variant ? stockState(available) : "sold_out"
-  const soldOut = state === "sold_out"
-  const low = state === "low"
-  const imgs = (c: string) => colors.find((x) => x.color === c)?.images ?? []
-  const money = (n: number | null) => formatMoney(n, currency)
-  const showSaving = saving !== null && saving > 0
+  const variant = findVariant(pair, { "First cap": first, "Second cap": second })
+  const n = variant && stock ? stock[variant.id] : undefined
+  const soldOut = stock !== null && typeof n === "number" && n <= 0
+  const p = price(pair, variant)
+  const anchor = single !== null ? single * 2 : null
+  const saving = anchor !== null && p.amount !== null && anchor > p.amount ? anchor - p.amount : null
+  const onAdd = (track: string) =>
+    variant && !soldOut && add({ productId: pair.id, variantId: variant.id, price: p.amount, currency: p.currency, source, extra: { offer: pair.handle, first, second, cta: track } })
 
-  const onAdd = () => {
-    if (!variant || soldOut) return
-    setAdded(false)
-    add({ productId, variantId: variant.id, price, currency, source: "offer" }, () => setAdded(true))
-  }
-  const label = soldOut ? "Sold out in this pair" : added ? "Added" : `Add the pair - ${money(price)}${low ? " - low inventory" : ""}`
+  const cta = useRef<HTMLDivElement>(null)
+  const [visible, setVisible] = useState(true)
+  useEffect(() => {
+    const el = cta.current
+    if (!el) return
+    const io = new IntersectionObserver(([e]) => setVisible(e.isIntersecting || e.boundingClientRect.top > 0))
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
+
+  const picker = (label: string, value: string, set: (c: string) => void) => (
+    <div className="flex flex-col gap-2">
+      <p className="flex gap-2 text-xs leading-4 font-medium tracking-wider">
+        <span className="font-mono">{label}</span>
+        <span>{value}</span>
+      </p>
+      <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={label}>
+        {colors.map((c) => (
+          <button key={c} type="button" role="radio" aria-checked={c === value} aria-label={c} onClick={() => set(c)} className="p-0.5">
+            <SwatchFace name={c} selected={c === value} />
+          </button>
+        ))}
+      </div>
+      <RopeRule color={value} />
+    </div>
+  )
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,740px)_370px] lg:justify-between lg:gap-[68px]">
-      <div className="grid grid-cols-2 gap-4">
+    <div className="relative md:mx-5 md:grid md:grid-cols-[1fr_45vw] md:items-start md:gap-5 xl:grid-cols-[1fr_38vw]">
+      <div className="mx-2.5 grid grid-cols-2 gap-2 md:mx-0">
         {[first, second].map((c, i) => (
-          <figure key={`f-${i}`}>
-            <span className="relative block aspect-square bg-white">
-              {imgs(c)[0] && <Image src={imgs(c)[0]} alt={`Everyday Cap in ${c}`} fill preload={i === 0} sizes="(min-width:1024px) 362px, 50vw" className="object-contain" />}
-            </span>
-            <figcaption className="mt-2 font-body text-[12px] text-muted">
+          <figure key={`${c}-${i}`} className="relative aspect-square overflow-hidden rounded-2xl bg-white md:aspect-[7/8]">
+            <Image src={lead(c)} alt={`The Rope Cap in ${c}`} fill preload={i === 0} sizes="(min-width: 768px) 25vw, 50vw" className="object-contain" />
+            <figcaption className="absolute bottom-3 left-3 font-mono text-xs tracking-[.05em] text-light-charcoal uppercase">
               Cap {i + 1} · {c}
             </figcaption>
           </figure>
         ))}
-        {[first, second].map((c, i) => (
-          <span key={`s-${i}`} className="relative hidden aspect-square bg-white lg:block">
-            {(imgs(c)[2] ?? imgs(c)[0]) && <Image src={imgs(c)[2] ?? imgs(c)[0]} alt={`Everyday Cap in ${c}, side`} fill sizes="362px" className="object-contain" />}
-          </span>
-        ))}
       </div>
-
-      <div className="flex flex-col">
-        <div className="flex items-start justify-between gap-3">
-          <h1 className="pr-[10px] font-body text-[20px] uppercase leading-[25px]">{headline}</h1>
-          <span className="flex shrink-0 flex-col items-end">
-            <span className="font-body text-[18px] leading-[25px]">{money(price)}</span>
-            {showSaving && (
-              <s className="font-body text-[14px] text-muted" aria-label={`Two singles cost ${money(compareAt)}`}>
-                {money(compareAt)}
-              </s>
+      <aside className="mt-4 grid gap-6 rounded-xl bg-white p-5 max-md:mx-2.5 md:sticky md:top-[120px] md:mt-0 md:shadow-sm lg:p-6 xl:p-8">
+        <div className="flex flex-col gap-2">
+          <Heading className="font-serif text-2xl leading-8 italic md:text-[30px] md:leading-9">{headline}</Heading>
+          <p className="font-mono text-xs leading-4 tracking-[.05em] text-light-charcoal uppercase md:text-sm md:leading-5">THE PAIR · CORE COLORS</p>
+          <div className="flex items-center gap-2">
+            <span className="text-lg leading-7 font-medium tracking-[.05em]">{formatMoney(p.amount, p.currency)}</span>
+            {saving !== null && (
+              <>
+                <span className="text-lg leading-7 line-through opacity-65">{formatMoney(anchor, p.currency)}</span>
+                <span className="rounded-full bg-natural-white px-2 py-1 text-xs leading-4 font-medium tracking-[.05em] italic">SAVE {formatMoney(saving, p.currency)}</span>
+              </>
             )}
-          </span>
+          </div>
+          <p className="text-xs leading-4 text-light-charcoal">Pick any two colors{single !== null ? `. Singles stay ${formatMoney(single)}.` : "."}</p>
         </div>
-        <p className="mt-[2px] font-body text-[15px] leading-[19.5px] text-muted">{typeLine}</p>
-        {showSaving && (
-          <span className="mt-3">
-            <Badge>Save {money(saving)}</Badge>
-          </span>
-        )}
-        <p className="mt-3 font-system text-[16px] leading-6">{description}</p>
-        <hr className="my-5 border-tertiary" />
-
-        {[
-          { title: "First Cap", value: first, set: setFirst, pair: (c: string) => find(c, second) },
-          { title: "Second Cap", value: second, set: setSecond, pair: (c: string) => find(first, c) },
-        ].map((g, gi) => (
-          <fieldset key={g.title} className={gi ? "mt-6" : ""}>
-            <legend className="mb-[10px] font-body text-[13px] leading-[19.5px]">
-              {g.title}: {g.value}
-            </legend>
-            <div className="grid grid-cols-7 gap-[9px]">
-              {colors.map(({ color }) => {
-                const v = g.pair(color)
-                const out = stock !== null && (!v || stockState(stock[v.id]) === "sold_out")
-                return (
-                  <button
-                    key={color}
-                    type="button"
-                    title={color}
-                    aria-pressed={g.value === color}
-                    aria-label={`${g.title}: ${color}${out ? ", sold out with this pairing" : ""}`}
-                    onClick={() => {
-                      setAdded(false)
-                      g.set(color)
-                    }}
-                    className="h-[42px] w-[42px]"
-                  >
-                    <SwatchDot name={color} selected={g.value === color} soldOut={out} />
-                  </button>
-                )
-              })}
-            </div>
-          </fieldset>
-        ))}
-
-        <div className="mt-6">
-          <p className="mb-[10px] font-body text-[13px] leading-[19.5px]">Size</p>
-          <div className="flex h-12 items-center justify-center rounded-button border border-black bg-black font-body text-[14.08px] uppercase text-white">One Size</div>
-          <p className="mt-2 font-body text-[13px] text-muted">{oneSizeLine}</p>
+        {picker("FIRST CAP:", first, setFirst)}
+        {picker("SECOND CAP:", second, setSecond)}
+        <div ref={cta} className="flex flex-col gap-3">
+          <button type="button" className="btn btn-secondary btn-atc" disabled={soldOut || pending || stock === null || !variant} onClick={() => onAdd("offer_add")} data-track="offer_add">
+            {soldOut ? "SOLD OUT" : `ADD THE PAIR – ${formatMoney(p.amount, p.currency)}`}
+          </button>
+          {error && <p className="text-xs text-red">{error}</p>}
+          <p className="text-xs leading-4">
+            {stock === null ? (
+              <span className="text-light-charcoal">Checking stock…</span>
+            ) : soldOut ? (
+              <span className="text-light-charcoal">● That pair is sold out. Try another color.</span>
+            ) : (
+              <span className="text-green">● Both in stock · ships in 1–2 business days</span>
+            )}
+          </p>
+          <p className="text-xs leading-4">{formatMoney(p.amount)} qualifies for free shipping · {POLICY.returns} on the pair</p>
         </div>
-
-        <div id="offer-cta" className="mt-5">
-          <Button block size="atc" onClick={onAdd} disabled={soldOut || stock === null} loading={pending} track="offer_add">
-            {label}
-          </Button>
-          {error && (
-            <p role="alert" className="mt-2 font-body text-[13px] text-error">
-              {error}
-            </p>
-          )}
-        </div>
-        <p className="mt-3 flex items-center gap-2 font-heading text-[14px] leading-[21px]" aria-live="polite">
-          <span aria-hidden className={`h-[10px] w-[10px] rounded-full ${state === null ? "bg-tertiary" : soldOut ? "bg-text-disabled" : low ? "bg-black" : "bg-instock"}`} />
-          {stock === null
-            ? "Checking stock…"
-            : soldOut
-              ? "This pairing is sold out right now. Try another color."
-              : low
-                ? `Only ${available} pairs left, ready to ship!`
-                : "Both in stock, ready to ship!"}
+      </aside>
+      <div className={`fixed inset-x-0 bottom-0 z-[70] rounded-t-md bg-white px-7 py-5 shadow-xl transition-all duration-150 ease-in-out ${visible ? "pointer-events-none opacity-0" : ""}`} aria-hidden={visible}>
+        <p className="text-center text-sm leading-5">
+          The Pair: {first} + {second} · {formatMoney(p.amount, p.currency)}
         </p>
-        <Perks items={perks} />
+        <button type="button" tabIndex={visible ? -1 : 0} className="btn btn-secondary btn-atc mt-3" disabled={soldOut || pending || stock === null} onClick={() => onAdd("offer_sticky_add")} data-track="offer_sticky_add">
+          ADD THE PAIR – {formatMoney(p.amount, p.currency)}
+        </button>
       </div>
     </div>
+  )
+}
+
+/** The Foursome step-up (G.6.5, the offer page's golf-green band). */
+export function FoursomePicker({
+  foursome,
+  colors,
+  single,
+  stock,
+  initial,
+  source = "offer",
+  plain = false,
+}: {
+  foursome: Product
+  colors: string[]
+  single: number | null
+  stock: VariantStock | null
+  /** A `Caps` value: "One of each" or "4 × <color>". */
+  initial?: string
+  source?: string
+  /** White card instead of the golf-green band (when the page spends its band elsewhere). */
+  plain?: boolean
+}) {
+  const initialColor = initial?.startsWith("4 × ") ? initial.slice(4) : null
+  const [mode, setMode] = useState<"one" | "each">(initialColor ? "one" : "each")
+  const [color, setColor] = useState(initialColor && colors.includes(initialColor) ? initialColor : colors[0])
+  const { add, pending } = useAddToBag()
+  const value = mode === "each" ? "One of each" : `4 × ${color}`
+  const variant = findVariant(foursome, { Caps: value })
+  const n = variant && stock ? stock[variant.id] : undefined
+  const soldOut = stock !== null && typeof n === "number" && n <= 0
+  const p = price(foursome, variant)
+  const anchor = single !== null ? single * 4 : null
+  const saving = anchor !== null && p.amount !== null && anchor > p.amount ? anchor - p.amount : null
+  return (
+    <section id="foursome" aria-label="The Foursome" className={`${plain ? "bg-white text-black" : "band-golf"} mx-2.5 my-10 grid scroll-mt-28 gap-8 rounded-3xl p-5 md:grid-cols-2 md:p-10`}>
+      <div className={`grid grid-cols-2 gap-2 rounded-2xl p-3 ${plain ? "bg-natural-white-25" : "bg-white"}`}>
+        {(mode === "each" ? colors : [color, color, color, color]).map((c, i) => (
+          <span key={`${c}-${i}`} className="relative aspect-square">
+            <Image src={lead(c)} alt="" fill sizes="(min-width: 768px) 20vw, 45vw" className="object-contain" />
+          </span>
+        ))}
+      </div>
+      <div className="flex flex-col justify-center gap-4">
+        <p className={`kicker ${plain ? "text-golf-green" : "text-golf-tint"}`}>For the group trip, the outing or Father&apos;s Day.</p>
+        <h2 className="font-display text-[30px] leading-9">Four caps, {formatMoney(p.amount !== null ? p.amount / 4 : null)} each.</h2>
+        <div className={`flex gap-1 rounded-full border p-1 text-xs ${plain ? "border-black" : "border-white"}`} role="tablist" aria-label="Foursome mode">
+          {[
+            ["one", "FOUR OF ONE COLOR"],
+            ["each", "ONE OF EACH"],
+          ].map(([k, l]) => (
+            <button key={k} type="button" role="tab" aria-selected={mode === k} onClick={() => setMode(k as "one" | "each")} className={`flex-1 rounded-full px-3 py-1.5 font-medium transition-colors duration-200 ${mode === k ? (plain ? "bg-black text-white" : "bg-white text-golf-green") : plain ? "hover:bg-black/5" : "hover:bg-white/10"}`}>
+              {l}
+            </button>
+          ))}
+        </div>
+        {mode === "one" && (
+          <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Color">
+            {colors.map((c) => (
+              <button key={c} type="button" role="radio" aria-checked={c === color} aria-label={c} onClick={() => setColor(c)} className="p-0.5">
+                <SwatchFace name={c} selected={c === color} />
+              </button>
+            ))}
+          </div>
+        )}
+        <p className="flex items-center gap-2">
+          <span className="text-lg leading-7 font-medium">{formatMoney(p.amount, p.currency)}</span>
+          {saving !== null && (
+            <>
+              <span className="line-through opacity-65">{formatMoney(anchor, p.currency)}</span>
+              <span className={`rounded-full px-2 py-1 text-xs font-medium italic ${plain ? "bg-natural-white" : "bg-white/15"}`}>SAVE {formatMoney(saving, p.currency)}</span>
+            </>
+          )}
+        </p>
+        <button
+          type="button"
+          className={`btn ${plain ? "btn-secondary" : "btn-primary"} btn-atc`}
+          disabled={soldOut || pending || stock === null || !variant}
+          onClick={() => variant && add({ productId: foursome.id, variantId: variant.id, price: p.amount, currency: p.currency, source, extra: { offer: foursome.handle, caps: value } })}
+          data-track="offer_foursome_add"
+        >
+          {soldOut ? "SOLD OUT" : `ADD THE FOURSOME – ${formatMoney(p.amount, p.currency)}`}
+        </button>
+      </div>
+    </section>
   )
 }

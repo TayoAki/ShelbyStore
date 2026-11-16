@@ -1,37 +1,39 @@
 import { CheckCircle } from "@phosphor-icons/react/dist/ssr"
 import type { Metadata } from "next"
+import Image from "next/image"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { Suspense } from "react"
 import { ContinuityBanner } from "@/components/continuity-banner"
-import { FitScales } from "@/components/fit-scale"
-import { OfferRow } from "@/components/offer/offer-row"
-import { BuyBox } from "@/components/pdp/buy-box"
-import { Gallery } from "@/components/pdp/gallery"
-import { SelectionProvider } from "@/components/pdp/selection"
-import { RETURNS_PERK, SHIPPING_PERK } from "@/components/perks"
-import { ProductCard } from "@/components/product-card"
-import { ButtonLink } from "@/components/ui/button"
+import { FoursomePicker, PairPicker } from "@/components/offer/pair-picker"
+import { RopeBuyBlock } from "@/components/rope-buy-block"
+import { RopeRule } from "@/components/rope-rule"
+import { TeeSheetForm } from "@/components/tee-sheet-form"
 import { Track } from "@/components/track"
-import { getRegion, listOffers, listProducts } from "@/lib/data/catalog"
+import { ButtonLink } from "@/components/ui/button"
+import { liveStock, ropeCatalog, type RopeCatalog } from "@/lib/data/rope"
 import { getStock } from "@/lib/data/stock"
-import { colorThumbs, fitProfileOf, imagesFor, meta, offerOf, price, sizeChartOf } from "@/lib/product"
-import { parseAnswers, rankHats } from "@/lib/quiz"
+import { formatMoney } from "@/lib/format"
+import { price } from "@/lib/product"
+import { answerLabel, matchQuiz, parseAnswers, QUESTIONS, type Answers, type QuizMatch } from "@/lib/quiz"
+import { CORE_COLORS, holeDate, type Hole } from "@/lib/rope"
 
 export const metadata: Metadata = {
   title: "Your match",
-  description: "The hat, colour and size that match how you wear a hat.",
+  description: "The Rope Cap color, pair or foursome that suits how you'll wear it.",
 }
 
+const short = (c: string) => c.replace(/^Clubhouse /, "")
+
 /**
- * Quiz result (SITE_SPEC §12.4): the match with "why it fits you" (each line
- * an answer paired with a product fact), a buy box preselected to the matched
- * colour and size, the runner-up, and the two-pack when the match is the core.
+ * Quiz result (SITE_SPEC G.6.13): eyebrow "YOUR MATCH", the match as the H1,
+ * the "Why it fits you" card (the page's golf-green band), the matching buy
+ * card preselected (`source: "quiz"`), and the bundle nudge for one cap.
  * Stateless: the answers live in the URL, so a result can be shared.
  */
 export default function QuizResultPage(props: PageProps<"/quiz/result">) {
   return (
-    <Suspense fallback={<div className="h-[80vh] animate-pulse bg-tile" />}>
+    <Suspense fallback={<div className="mx-2.5 h-[80vh] animate-pulse rounded-3xl bg-white" />}>
       <Result searchParams={props.searchParams} />
     </Suspense>
   )
@@ -40,118 +42,143 @@ export default function QuizResultPage(props: PageProps<"/quiz/result">) {
 async function Result({ searchParams }: { searchParams: PageProps<"/quiz/result">["searchParams"] }) {
   const answers = parseAnswers(await searchParams)
   if (!answers) redirect("/quiz")
-  const region = await getRegion()
-  if (!region) redirect("/quiz")
-  const [products, offers] = await Promise.all([listProducts(region.id), listOffers(region.id)])
-  const stock = await getStock(products.map((p) => p.id))
-  const [match, runnerUp] = rankHats(products, stock, answers)
-  if (!match) {
-    return (
-      <div className="container-article flex flex-col items-center gap-4 py-16 text-center">
-        <h1 className="font-heading text-[26px] uppercase leading-[39px]">Everything Is Sold Out Right Now</h1>
-        <p className="font-body text-[15px]">Check back soon, or browse what&apos;s coming.</p>
-        <Link href="/drops" className="btn btn--light">
-          <span>See upcoming drops</span>
-        </Link>
-      </div>
-    )
-  }
+  const c = await ropeCatalog()
+  if (!c.core) redirect("/quiz")
+  const { stock, holes } = await liveStock(c)
+  const match = matchQuiz(answers, c.core, stock, holes)
 
-  const { product, color, size, why } = match
-  const offer = offers.find((o) => offerOf(o)?.singleHandle === product.handle) ?? null
-  const offerPrice = offer ? price(offer).amount : null
-  const singlePrice = price(product).amount
-  const profile = fitProfileOf(product)
-  const initialSelection: Record<string, string> = {}
-  if (color) initialSelection.Color = color
-  if (size) initialSelection.Size = size
-  const colors = colorThumbs(product).map((c) => c.color)
-  const imagesByColor = Object.fromEntries(colors.map((c) => [c, imagesFor(product, c)]))
-  const buyProps = {
-    product,
-    release: null,
-    fitNotes: meta(product, "fit_notes"),
-    sizeChart: sizeChartOf(product),
-    initialSelection,
-    source: "quiz",
-    showQuizLink: false,
-    perks: [SHIPPING_PERK, RETURNS_PERK],
-    addOn:
-      offer && offerPrice !== null ? (
-        <OfferRow
-          href={offerOf(offer)!.path}
-          title="The Two-Pack"
-          subtitle="Any two colors"
-          price={offerPrice}
-          saving={singlePrice !== null ? singlePrice * 2 - offerPrice : null}
-          currency={price(product).currency}
-          image="/hats/everyday-cap-black-1.jpg"
-          track="quiz_offer"
-        />
-      ) : undefined,
-  }
+  const title =
+    match.kind === "single"
+      ? `The Rope Cap in ${match.color}`
+      : match.kind === "edition"
+        ? `The Rope Cap in ${match.hole.name}`
+        : match.kind === "pair"
+          ? `The Pair: ${short(match.first)} + ${short(match.second)}`
+          : match.value === "One of each"
+            ? "The Foursome, one of each"
+            : `The Foursome, four ${match.value.slice(4)}`
+  const matchId =
+    match.kind === "single"
+      ? `rope-cap:${match.color}`
+      : match.kind === "edition"
+        ? `hole-${match.hole.hole}:${match.hole.name}`
+        : match.kind === "pair"
+          ? `the-pair:${match.first}+${match.second}`
+          : `the-foursome:${match.value}`
+  const why = <WhyCard lines={match.why} />
 
   return (
     <>
-      <Track event="quiz_completed" props={{ match: product.handle, color, size, runner_up: runnerUp?.product.handle ?? null, ...answers }} />
+      <Track event="quiz_completed" props={{ match: matchId, kind: match.kind, ...answers }} />
       <Suspense fallback={null}>
         <ContinuityBanner />
       </Suspense>
-      <div className="container-shop pt-[37.904px] text-center">
-        <p className="type-eyebrow uppercase text-muted">Your Match</p>
-        <h1 className="font-heading text-[26px] uppercase leading-[39px]">
-          {product.title}
-          {color ? ` in ${color}` : ""}
-        </h1>
-      </div>
-      <SelectionProvider initialColor={color ?? colors[0] ?? null} syncUrl={false}>
-        <div className="container-shop mt-[28.432px] grid gap-6 pb-[28.432px] lg:grid-cols-[minmax(0,740px)_370px] lg:justify-between lg:gap-[68px] lg:pb-[50.512px]">
-          <div className="-mx-[21.328px] lg:mx-0">
-            <Gallery images={imagesFor(product)} imagesByColor={imagesByColor} title={product.title} />
-          </div>
-          <div className="flex flex-col">
-            <h2 className="font-heading text-[14px] uppercase tracking-[1.3px]">Why It Fits You</h2>
-            <ul className="mt-3 flex flex-col gap-2">
-              {why.map((w) => (
-                <li key={w} className="flex gap-2 font-body text-[14px] leading-[21px]">
-                  <CheckCircle size={14} weight="fill" className="mt-[3px] shrink-0" aria-hidden />
-                  {w}
-                </li>
-              ))}
-            </ul>
-            <hr className="my-5 border-tertiary" />
-            <Suspense fallback={<BuyBox {...buyProps} stock={null} />}>
-              <LiveBuyBox {...buyProps} />
-            </Suspense>
-            {profile && (
-              <div className="mt-6 border-t border-tertiary pt-6">
-                <h3 className="mb-5 font-heading text-[18px] leading-[23.4px]">Fit Guide</h3>
-                <FitScales profile={profile} />
-              </div>
-            )}
-          </div>
-        </div>
-      </SelectionProvider>
-      <section className="bg-band py-[28.432px] lg:py-[50.512px]">
-        <div className="container-shop flex flex-col items-center">
-          {runnerUp && (
-            <>
-              <h2 className="mb-[22.08px] type-section">Runner-Up</h2>
-              <div className="w-[263px]">
-                <ProductCard product={runnerUp.product} stock={stock} status={null} track="quiz_runner_up" />
-              </div>
-            </>
-          )}
-          <ButtonLink href="/quiz" variant="light" className="mt-8" track="quiz_retake">
-            Retake the quiz
-          </ButtonLink>
-        </div>
-      </section>
+      <header className="mx-5 mb-5 flex flex-col gap-2 pt-4">
+        <p className="font-mono text-xs leading-4 tracking-[.1em]">YOUR MATCH</p>
+        <h1 className="font-serif text-[30px] leading-[38px] italic md:text-[40px] md:leading-[48px]">{title}</h1>
+      </header>
+
+      {match.kind === "single" && <RopeBuyBlock withGallery initialColor={match.color} source="quiz" aside={why} bundleTrack={{ pair: "quiz_bundle", foursome: "quiz_bundle" }} />}
+      {match.kind === "edition" && <EditionMatch hole={match.hole} why={why} c={c} />}
+      {match.kind === "pair" && c.pair && <PairMatch c={c} match={match} why={why} />}
+      {match.kind === "foursome" && c.foursome && <FoursomeMatch c={c} match={match} why={why} />}
+
+      <p className="my-10 text-center">
+        <Link href="/quiz" className="link text-sm leading-5" data-track="quiz_retake">
+          Retake the quiz
+        </Link>
+      </p>
+      <AnswersLine answers={answers} />
     </>
   )
 }
 
-async function LiveBuyBox(props: Omit<Parameters<typeof BuyBox>[0], "stock">) {
-  const stock = await getStock([props.product.id])
-  return <BuyBox {...props} stock={stock} />
+function WhyCard({ lines }: { lines: string[] }) {
+  return (
+    <section aria-label="Why it fits you" className="band-golf rounded-2xl p-6">
+      <h2 className="font-mono text-xs leading-4 tracking-[.1em]">WHY IT FITS YOU</h2>
+      <ul className="mt-4 flex flex-col gap-3">
+        {lines.map((w) => (
+          <li key={w} className="flex gap-2.5 text-sm leading-[22px]">
+            <CheckCircle size={16} weight="fill" className="mt-[3px] shrink-0" aria-hidden />
+            {w}
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+function EditionMatch({ hole, why, c }: { hole: Hole; why: React.ReactNode; c: RopeCatalog }) {
+  const { day, time } = holeDate(hole.date)
+  const edition = hole.productHandle ? c.editions.find((p) => p.handle === hole.productHandle) : null
+  const amount = edition ? price(edition).amount : null
+  return (
+    <div className="relative md:mx-5 md:grid md:grid-cols-[1fr_45vw] md:items-start md:gap-5 xl:grid-cols-[1fr_38vw]">
+      <div className="relative mx-2.5 aspect-square overflow-hidden rounded-2xl bg-white md:mx-0">
+        {hole.image ? (
+          <Image src={hole.image} alt={`The Rope Cap in ${hole.name}`} fill preload sizes="(min-width: 768px) 55vw, 100vw" className="object-contain" />
+        ) : (
+          <div className="flex size-full items-center justify-center bg-golf-tint font-display text-[40px] text-midnight">{hole.hole}</div>
+        )}
+      </div>
+      <div className="mt-4 flex flex-col gap-2.5 max-md:mx-2.5 md:mt-0">
+        {why}
+        <div className="flex flex-col gap-4 rounded-xl bg-white p-5 lg:p-6">
+          <p className="label-score">
+            HOLE {hole.hole} · {hole.status === "live" ? "LIVE NOW" : `${day ?? "DATE TBC"}${time ? ` · ${time.toUpperCase()}` : ""}`}
+          </p>
+          <RopeRule color={hole.name} />
+          {hole.size && <span className="badge-edition edition w-fit">EDITION OF {hole.size}</span>}
+          {hole.status === "live" && hole.productHandle ? (
+            <ButtonLink href={`/products/${hole.productHandle}`} variant="secondary" size="atc" track="quiz_edition">
+              {`SHOP ${hole.name.toUpperCase()}${amount !== null ? ` – ${formatMoney(amount)}` : ""}`}
+            </ButtonLink>
+          ) : hole.handle ? (
+            <TeeSheetForm releaseHandle={hole.handle} hole={hole.hole} name={hole.name} tone="light" />
+          ) : null}
+          <Link href="/products/rope-cap" className="link text-xs leading-4" data-track="quiz_core">
+            Or a core color, in stock today
+          </Link>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+async function PairMatch({ c, match, why }: { c: RopeCatalog; match: Extract<QuizMatch, { kind: "pair" }>; why: React.ReactNode }) {
+  const stock = await getStock([c.pair!.id])
+  return (
+    <>
+      <div className="mx-2.5 mb-2.5 md:mx-5">{why}</div>
+      <PairPicker
+        pair={c.pair!}
+        colors={[...CORE_COLORS]}
+        single={price(c.core!).amount}
+        stock={stock}
+        headline="Two rope caps, picked for you."
+        initial={[match.first, match.second]}
+        source="quiz"
+        headingAs="h2"
+      />
+    </>
+  )
+}
+
+async function FoursomeMatch({ c, match, why }: { c: RopeCatalog; match: Extract<QuizMatch, { kind: "foursome" }>; why: React.ReactNode }) {
+  const stock = await getStock([c.foursome!.id])
+  return (
+    <>
+      <div className="mx-2.5 md:mx-5">{why}</div>
+      <FoursomePicker foursome={c.foursome!} colors={[...CORE_COLORS]} single={price(c.core!).amount} stock={stock} initial={match.value} source="quiz" plain />
+    </>
+  )
+}
+
+function AnswersLine({ answers }: { answers: Answers }) {
+  return (
+    <p className="mx-5 mb-10 text-center font-mono text-xs leading-4 tracking-[.05em] text-light-charcoal uppercase">
+      Your answers: {QUESTIONS.map((q) => answerLabel(q.key, answers[q.key])).join(" · ")}
+    </p>
+  )
 }

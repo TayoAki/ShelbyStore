@@ -1,8 +1,9 @@
 /**
- * Advertorial content (SITE_SPEC §12.3). Written in Shelby's voice to the
- * reader ("you"), never as a fictional customer or editor. Claims about caps
- * in general are hedged; claims about the Everyday Cap are product facts.
- * `{tokens}` are filled from live data: {range} {price} {offer_price} {colors} {returns}.
+ * Advertorial content (SITE_SPEC G.6.12). Written in Shelby's voice to the
+ * reader ("you"), never as a fictional customer or editor, and never naming a
+ * competitor. Claims about rope caps in general are hedged; claims about The
+ * Rope Cap are product facts. `{tokens}` are filled from live data:
+ * {crown} {range} {price} {pair_price} {returns}.
  */
 export type ArticleBlock =
   | { kind: "p"; text: string }
@@ -25,74 +26,41 @@ export type Advertorial = {
 
 export const ADVERTORIALS: Advertorial[] = [
   {
-    slug: "one-cap",
-    product: "everyday-cap",
-    kicker: "Field notes",
-    headline: "Most caps are made to be replaced. We made one that isn't.",
-    dek: "Why a favorite cap goes flat, fades in patches and loses its curve by the end of summer, and what we changed in the Everyday Cap.",
+    slug: "the-rope-cap",
+    product: "rope-cap",
+    kicker: "FIELD NOTES",
+    headline: "Most rope caps sit too tall. We made one that doesn't.",
+    dek: "What changed, how we check it, and what it costs.",
     published: "2026-11-16",
-    lead: {
-      src: "/hats/lifestyle-hero.jpg",
-      alt: "Someone in a washed black cap on a coastal road at golden hour",
-      caption: "The Everyday Cap in washed black.",
-    },
+    lead: { src: "/hats/rope-lifestyle-hero.jpg", alt: "A golfer on a links course in a Pine rope cap", caption: "The Rope Cap in Pine, on the walk to the first tee." },
     blocks: [
+      { kind: "h2", text: "The cap you bought last summer" },
       {
         kind: "p",
-        text: "You know the one. The cap you wore everywhere for a summer. Then the front started to fold in, the brim flattened into a duck bill, and the color faded in patches where the sun hit it. So you bought another one, and it went the same way.",
+        text: "You liked it in the photo. Then you put it on and it sat up off your head like a stack of coasters. The rope looked good. The crown did not. You wore it twice and it went in the bag.",
       },
-      { kind: "p", text: "That usually isn't bad luck. It's how a lot of caps are built." },
-      { kind: "h2", text: "Why caps give up" },
+      { kind: "h2", text: "Why rope caps run tall" },
       {
         kind: "p",
-        text: "Many caps get their shape from a stiff panel behind the front, called buckram. It holds the crown up on the shelf, and it's the first thing to crease when the cap is folded or sat on. Once it creases, it tends to stay creased.",
+        text: "Many rope caps start from the same template: a structured five-panel with a high, stiff front, built to hold a big logo. That shape photographs well on a shelf. On a head, it can look like a chef's hat.",
       },
-      {
-        kind: "p",
-        text: "A brim that's curved by hand can drift back toward flat. And fabric that's dyed but never washed can fade unevenly the first time it meets sun and sweat.",
-      },
-      {
-        kind: "figure",
-        src: "/hats/everyday-cap-black-3.jpg",
-        alt: "Side profile of the Everyday Cap",
-        caption: "From the side: a low, unstructured crown with nothing stiff inside to crease.",
-      },
+      { kind: "figure", src: "/hats/rope-cap-tour-white-3.jpg", alt: "The Rope Cap in side profile", caption: "Side profile: the crown sits mid, about {crown} cm." },
       { kind: "h2", text: "What we changed" },
       {
         kind: "p",
-        text: "We took the stiff part out. The Everyday Cap is six panels of cotton twill with a low, unstructured crown, so there's nothing inside to crease. It sits close to your head and folds without a fight.",
+        text: "We kept the rope and lowered the crown to about {crown} cm, with a lightly structured front instead of a stiff one. The cotton twill is garment-washed, so it feels broken in on day one. The strap is self-fabric with an antique-brass slide and fits {range}.",
       },
-      {
-        kind: "p",
-        text: "We wash it after it's sewn. Garment-washing does the softening and fading before the cap reaches you, so it starts out broken in.",
-      },
-      {
-        kind: "p",
-        text: "The brim comes pre-curved, and a fabric strap with an antique-brass buckle adjusts so it {range}.",
-      },
-      { kind: "cta", label: "See the Everyday Cap", to: "pdp", track: "advertorial_inline" },
-      {
-        kind: "figure",
-        src: "/hats/everyday-cap-black-2.jpg",
-        alt: "The back of the Everyday Cap with its fabric strap and brass buckle",
-        caption: "The back: a self-fabric strap and an antique-brass buckle.",
-      },
+      { kind: "cta", label: "See The Rope Cap", to: "pdp", track: "advertorial_inline" },
       { kind: "h2", text: "How we check it" },
       {
         kind: "p",
-        text: "We'd rather show you than tell you. We film the test, and we post the live count of every color on the site. If a color is running low, the page says so.",
+        text: "We measure the crown of every rope cap we sign off, ruler on camera. The series is called The Crown Test, and it is where you can see the numbers for yourself.",
       },
       { kind: "proof" },
-      {
-        kind: "figure",
-        src: "/hats/story-crush.jpg",
-        alt: "A cap folded in half going into a back pocket",
-        caption: "The crush test: folded, pocketed, measured.",
-      },
-      { kind: "h2", text: "Try it" },
+      { kind: "h2", text: "What it costs" },
       {
         kind: "p",
-        text: "The Everyday Cap is {price} in {colors} colors, or two for {offer_price}. {returns}.",
+        text: "The Rope Cap is {price}, in four core colors that never run out. Two are {pair_price}, which clears the free-shipping line. Every cap comes with {returns}.",
       },
     ],
   },

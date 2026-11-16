@@ -1,65 +1,50 @@
-import { POLICY } from "./policy"
-import {
-  colorOption,
-  colorThumbs,
-  detailsOf,
-  fitProfileOf,
-  isOneSize,
-  oneSizeRange,
-  optionGroups,
-  price,
-  sizeChartOf,
-  usesOf,
-  variantOptions,
-} from "./product"
+import { findVariant } from "./product"
+import { CORE_COLORS } from "./rope"
+import type { Hole } from "./rope"
 import type { Product, VariantStock } from "./types"
 
 /**
- * The fit quiz (SITE_SPEC §12.4; the essay's "connect expressed needs to a
- * recommendation"). Pure and deterministic: the same answers and stock always
- * give the same match. Every "why" line pairs an answer with a product fact,
- * and says so plainly when the match doesn't meet an answer.
+ * The colour and bundle finder (SITE_SPEC G.6.13): four questions, a
+ * deterministic match. Keys and values are the result URL's query string.
  */
-
 export const QUESTIONS = [
   {
-    key: "use",
-    title: "What will you wear it for most?",
+    key: "wear",
+    question: "Where will it get the most wear?",
     answers: [
+      { value: "course", label: "On the course" },
+      { value: "range", label: "Range and simulator" },
       { value: "everyday", label: "Everyday" },
-      { value: "running", label: "Running & training" },
-      { value: "sun", label: "Sun & travel" },
-      { value: "cold", label: "Cold days" },
+      { value: "gift", label: "It's a gift" },
     ],
   },
   {
-    key: "fit",
-    title: "How do caps usually fit you?",
+    key: "palette",
+    question: "Which do you reach for?",
     answers: [
-      { value: "fine", label: "Usually fine" },
-      { value: "tight", label: "Often too tight" },
-      { value: "loose", label: "Often too loose" },
-      { value: "unsure", label: "Not sure" },
+      { value: "light", label: "Light" },
+      { value: "dark", label: "Dark" },
+      { value: "earthy", label: "Earthy" },
+      { value: "limited", label: "Something limited" },
+    ],
+  },
+  {
+    key: "count",
+    question: "How many are you buying?",
+    answers: [
+      { value: "one", label: "Just one" },
+      { value: "two", label: "Two" },
+      { value: "four", label: "Four (a group or a gift set)" },
     ],
   },
   {
     key: "crown",
-    title: "How do you like the crown?",
-    hint: "The crown is the part that covers your head.",
+    question: "How do you like a crown?",
     answers: [
-      { value: "low", label: "Low, close to the head" },
-      { value: "structured", label: "Some structure" },
-      { value: "any", label: "No preference" },
-    ],
-  },
-  {
-    key: "colors",
-    title: "Which colors do you reach for?",
-    answers: [
-      { value: "dark", label: "Dark" },
-      { value: "light", label: "Light" },
-      { value: "earthy", label: "Earthy" },
-      { value: "any", label: "Anything" },
+      { value: "low", label: "Low" },
+      { value: "mid", label: "Mid" },
+      { value: "tall", label: "Tall" },
+      { value: "unsure", label: "No idea" },
     ],
   },
 ] as const
@@ -83,137 +68,78 @@ export const answersQuery = (a: Answers) => new URLSearchParams(a as Record<stri
 const label = (key: Q["key"], value: string) =>
   QUESTIONS.find((q) => q.key === key)?.answers.find((a) => a.value === value)?.label ?? value
 
-/** House colour → family. Unknown colours have no family (never match a family answer). */
-const FAMILY: Record<string, "dark" | "light" | "earthy"> = {
-  "Washed Black": "dark",
-  Black: "dark",
-  Navy: "dark",
-  Charcoal: "dark",
-  Bone: "light",
-  Stone: "light",
-  Cream: "light",
-  Sand: "light",
-  "Bone / Brown": "light",
-  Olive: "earthy",
-  Rust: "earthy",
-  Tobacco: "earthy",
-  Forest: "earthy",
+const BY_PALETTE: Record<string, string> = { light: "Tour White", dark: "Clubhouse Navy", earthy: "Fescue" }
+const CONTRAST: Record<string, string> = { "Tour White": "Clubhouse Navy", "Clubhouse Navy": "Tour White", Fescue: "Pine", Pine: "Fescue" }
+
+export type QuizMatch =
+  | { kind: "single"; color: string; why: string[] }
+  | { kind: "edition"; hole: Hole; why: string[] }
+  | { kind: "pair"; first: string; second: string; why: string[] }
+  | { kind: "foursome"; value: string; why: string[] }
+
+const inStock = (core: Product | null, stock: VariantStock, color: string) => {
+  if (!core) return true
+  const v = findVariant(core, { Color: color })
+  const n = v ? stock[v.id] : undefined
+  return n === null || n === undefined || n > 0
 }
 
-export type Match = {
-  product: Product
-  color: string | null
-  size: string | null
-  score: number
-  why: string[]
+/** First in-stock colour starting from `want`, in the order Tour White, Clubhouse Navy, Pine, Fescue. */
+function available(core: Product | null, stock: VariantStock, want: string) {
+  const order = [want, ...CORE_COLORS.filter((c) => c !== want)]
+  return order.find((c) => inStock(core, stock, c)) ?? want
 }
 
-const available = (n: number | null | undefined) => n === null || (typeof n === "number" && n > 0)
-
-/** Ranked matches over hats with at least one colour in stock (best first). */
-export function rankHats(products: Product[], stock: VariantStock, answers: Answers): Match[] {
-  const out: Match[] = []
-  for (const product of products) {
-    const colorTitle = colorOption(product)
-    const sizeTitle = optionGroups(product).find((g) => /size/i.test(g.title))?.title ?? null
-    const variants = (product.variants ?? []).filter((v) => available(stock[v.id]))
-    if (!variants.length) continue
-
-    const colors = colorThumbs(product)
-      .map((c) => c.color)
-      .filter((c) => variants.some((v) => !colorTitle || variantOptions(v)[colorTitle] === c))
-    const sizesFor = (color: string | null) =>
-      variants
-        .filter((v) => !colorTitle || !color || variantOptions(v)[colorTitle] === color)
-        .map((v) => (sizeTitle ? variantOptions(v)[sizeTitle] : null))
-        .filter((s): s is string => !!s)
-
-    const profile = fitProfileOf(product)
-    const uses = usesOf(product)
-    const oneSize = isOneSize(product)
-    const range = oneSizeRange(product, POLICY.oneSize)
-    const name = product.title.replace(/^The /, "")
-    const fabric = Object.fromEntries(detailsOf(product)).Fabric ?? null
-    const why: string[] = []
-    let score = 0
-
-    // 1. Use.
-    if (uses.includes(answers.use)) {
-      score += 4
-      why.push(
-        answers.use === "everyday" && product.collection?.handle === "core"
-          ? `You'll wear it most days: the ${name} is our core cap, always in stock.`
-          : `You said ${label("use", answers.use).toLowerCase()}: that's what the ${name} is for${fabric ? ` (${fabric.toLowerCase()})` : ""}.`
-      )
-    }
-
-    // 2. Crown.
-    if (profile && answers.crown === "low") {
-      if (profile.crown === "Low") {
-        score += 2
-        why.push(`You like a low crown: this one is ${profile.crown.toLowerCase()} and ${profile.structure.toLowerCase()}.`)
-      } else {
-        why.push(`Its crown is ${profile.crown.toLowerCase()}, a little higher than you asked for.`)
-      }
-    } else if (profile && answers.crown === "structured") {
-      const bonus = profile.structure === "Structured" ? 2 : profile.structure === "Semi-structured" ? 1 : -1
-      score += bonus
-      why.push(
-        bonus > 0
-          ? `You like some structure: it's ${profile.structure.toLowerCase()}.`
-          : `It's ${profile.structure.toLowerCase()}, softer than you asked for.`
-      )
-    } else if (!profile && answers.crown !== "any") {
-      why.push("A beanie has no crown or brim to fit: the rib knit stretches to your head.")
-    }
-
-    // 3. Colour: first in-stock colour of the family, else the first in stock.
-    const inFamily = answers.colors === "any" ? colors : colors.filter((c) => FAMILY[c] === answers.colors)
-    const color = inFamily[0] ?? colors[0] ?? null
-    if (answers.colors !== "any") {
-      if (inFamily.length) {
-        score += 1
-        why.push(`You reach for ${answers.colors} colours: ${color} is in stock.`)
-      } else if (color) {
-        why.push(`Nothing ${answers.colors} is in stock in this style right now, so we picked ${color}.`)
-      }
-    }
-
-    // 4. Fit and size.
-    const sizes = sizesFor(color)
-    let size: string | null = null
-    const chart = sizeChartOf(product)
-    const inches = (s: string) => chart?.rows.find((r) => r.Size === s)?.Inches
-    if (oneSize) {
-      const max = Number(range.match(/–(\d+(?:\.\d+)?) in/)?.[1] ?? 0)
-      if (answers.fit === "tight") {
-        if (max > 23.75) score += 1
-        why.push(`Caps often feel tight on you: this one ${range}.`)
-      } else if (answers.fit === "loose") {
-        why.push(`Caps often feel loose on you: the strap ${range}, so you can take it in.`)
-      } else {
-        why.push(`One size: it ${range}.`)
-      }
-    } else {
-      const want = answers.fit === "tight" ? "L/XL" : answers.fit === "loose" ? "S/M" : null
-      if (want && sizes.includes(want)) {
-        size = want
-        score += 1
-        why.push(`Caps often feel ${answers.fit} on you, so we've picked ${want}${inches(want) ? ` (${inches(want)} in)` : ""}.`)
-      } else if (want) {
-        why.push(`${want} is sold out in ${color} right now; check the size chart before you pick.`)
-      } else {
-        why.push("It's sized (S/M or L/XL): measure your head with the fit guide before you pick.")
-      }
-    }
-
-    out.push({ product, color, size, score, why })
+/**
+ * Deterministic match (G.6.13): colour by palette (limited → the live edition,
+ * else the next upcoming one, else Pine), product by count, and a "why" line
+ * for every answer paired with a fact.
+ */
+export function matchQuiz(a: Answers, core: Product | null, stock: VariantStock, holes: Hole[]): QuizMatch {
+  const why: string[] = []
+  const wearWhy: Record<string, string> = {
+    course: "On the course: a moisture-wicking sweatband and a brim that keeps the sun off.",
+    range: "Range and simulator: washed cotton that's comfortable for a long session.",
+    everyday: "Everyday: four core colors that never run out.",
+    gift: "A gift: one size fits 21.5–23.75 in (55–60 cm), and there are 30-day returns.",
+  }
+  why.push(wearWhy[a.wear])
+  const crownWhy: Record<string, string> = {
+    low: "Ours sits mid, a touch higher than a low dad cap.",
+    mid: "Mid is exactly where ours sits.",
+    tall: "Ours is lower than most rope caps; if you like tall, try it on and use the 30-day returns.",
+    unsure: "Mid suits most heads; the fit guide shows why.",
   }
 
-  return out.sort(
-    (a, b) =>
-      b.score - a.score ||
-      Number(b.product.collection?.handle === "core") - Number(a.product.collection?.handle === "core") ||
-      (price(a.product).amount ?? 0) - (price(b.product).amount ?? 0)
-  )
+  if (a.palette === "limited" && a.count === "one") {
+    const live = holes.find((h) => !h.core && h.status === "live" && h.productHandle)
+    const next = holes.find((h) => !h.core && h.status === "upcoming")
+    const hole = live ?? next
+    if (hole) {
+      why.push(`Something limited: Hole ${hole.hole}, ${hole.name}${hole.size ? `, an edition of ${hole.size}` : ""}${hole.status === "upcoming" ? ". Join the tee sheet to hear when it goes live." : "."}`)
+      why.push(crownWhy[a.crown])
+      return { kind: "edition", hole, why }
+    }
+  }
+
+  const want = a.palette === "limited" ? "Pine" : BY_PALETTE[a.palette]
+  const color = available(core, stock, want)
+  why.push(`You reach for ${label("palette", a.palette).toLowerCase()}: ${color}${color !== want ? ` (${want} is restocking)` : ""}.`)
+
+  if (a.count === "two") {
+    const second = available(core, stock, CONTRAST[color] ?? "Pine")
+    why.push(`Two caps: ${color} and a contrasting ${second} as The Pair, which clears free shipping.`)
+    why.push(crownWhy[a.crown])
+    return { kind: "pair", first: color, second, why }
+  }
+  if (a.count === "four") {
+    const value = a.wear === "gift" ? `4 × ${color}` : "One of each"
+    why.push(a.wear === "gift" ? `A gift set of four: four ${color} caps as The Foursome.` : "Four caps: one of each core color as The Foursome.")
+    why.push(crownWhy[a.crown])
+    return { kind: "foursome", value, why }
+  }
+  why.push(crownWhy[a.crown])
+  return { kind: "single", color, why }
 }
+
+export const answerLabel = label
