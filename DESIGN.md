@@ -1,306 +1,357 @@
 ---
 name: Shelby
-description: The Ball Box. One rope cap sold from a golf-ball box printed flat in two-ink flexo.
+description: One rope cap, sold in a white golf-retail storefront with a single green for buying.
 colors:
-  base-ink: "#14213d"
-  ink-2: "#3f4a64"
-  ink-3: "#5d667c"
-  paper: "#ffffff"
-  wash: "#e7e9ee"
-  crease: "#14213d59"
-  clubhouse-navy-ink: "#2c4373"
-  pine-ink: "#1e3b2f"
-  pine-knockout: "#f1ece0"
-  fescue-ink: "#cfc3a6"
-  sleeve-red: "#c8302a"
-  sleeve-red-tint: "#fbe9e7"
-  in-stock: "#1d6a44"
-  low-stock: "#a3341f"
+  text: "#212121"
+  text-strong: "#000000"
+  text-light: "#646464"
+  bg: "#ffffff"
+  tile: "#f6f6f6"
+  sand: "#eee9e3"
+  bg-brighter: "#f2f2f2"
+  surface-sticky: "#fcfcfc"
+  border: "#f0f0f0"
+  track: "#eeeeee"
+  field-border: "#8c8c8c"
+  green: "#207212"
+  green-hover: "#1a5c0f"
+  green-deep: "#0b3305"
+  green-fade: "rgb(32 114 18 / 0.05)"
+  ink: "#000000"
+  tab-active: "#141414"
+  charcoal-hover: "#3b3b3b"
+  black-hover: "#1a1a1a"
+  on-ink: "#f7f7f7"
+  on-ink-hover: "rgb(247 247 247 / 0.7)"
+  link-hover: "rgb(33 33 33 / 0.7)"
+  underlay: "rgb(0 0 0 / 0.4)"
+  error: "#721c24"
+  error-bg: "#f8d7da"
+  error-border: "#f5c6cb"
 typography:
-  model:
-    fontFamily: "Sofia Sans Extra Condensed, Sofia Sans Semi Condensed, ui-sans-serif, sans-serif"
-    fontSize: "clamp(3.25rem, 1.9rem + 6vw, 6rem)"
-    fontWeight: 800
-    lineHeight: 0.86
-    letterSpacing: "-0.01em"
-  panel-title:
-    fontFamily: "Sofia Sans Extra Condensed, Sofia Sans Semi Condensed, ui-sans-serif, sans-serif"
-    fontSize: "clamp(2.25rem, 1.6rem + 2.8vw, 3.75rem)"
-    fontWeight: 800
-    lineHeight: 0.92
-    letterSpacing: "-0.005em"
-  figure:
-    fontFamily: "Sofia Sans Extra Condensed, ui-sans-serif, sans-serif"
-    fontSize: "2.75rem"
-    fontWeight: 800
+  display:
+    fontFamily: "Monomakh, Times New Roman, serif"
+    fontSize: "69px"
+    fontWeight: 400
+    lineHeight: 1.05
+  display-hero:
+    fontFamily: "Monomakh, Times New Roman, serif"
+    fontSize: "38.4px"
+    fontWeight: 400
+    lineHeight: 1.2
+  display-section:
+    fontFamily: "Monomakh, Times New Roman, serif"
+    fontSize: "38px"
+    fontWeight: 400
+    lineHeight: 1.05
+  wordmark:
+    fontFamily: "Monomakh, Times New Roman, serif"
+    fontSize: "30px"
+    fontWeight: 400
     lineHeight: 1
-    letterSpacing: "0em"
-    fontFeature: "\"tnum\", \"lnum\""
-  spec-line:
-    fontFamily: "Sofia Sans Semi Condensed, Sofia Sans, ui-sans-serif, sans-serif"
-    fontSize: "1rem"
+    letterSpacing: "0.04em"
+  headline:
+    fontFamily: "Montserrat, Helvetica Neue, Arial, sans-serif"
+    fontSize: "38.4px"
+    fontWeight: 500
+    lineHeight: 1.2
+  title-page:
+    fontFamily: "Montserrat, Helvetica Neue, Arial, sans-serif"
+    fontSize: "26px"
     fontWeight: 700
-    lineHeight: 1.3
-    letterSpacing: "0.1em"
-    fontFeature: "\"tnum\""
-  lead:
-    fontFamily: "Sofia Sans, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "1.125rem"
-    fontWeight: 400
-    lineHeight: 1.6
+    lineHeight: 1.2
+  title-product:
+    fontFamily: "Montserrat, Helvetica Neue, Arial, sans-serif"
+    fontSize: "24px"
+    fontWeight: 700
+    lineHeight: 1.2
+  title-card:
+    fontFamily: "Montserrat, Helvetica Neue, Arial, sans-serif"
+    fontSize: "19.2px"
+    fontWeight: 500
+    lineHeight: 1.2
   body:
-    fontFamily: "Sofia Sans, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "1rem"
+    fontFamily: "Roboto, Helvetica Neue, Arial, sans-serif"
+    fontSize: "0.9rem"
     fontWeight: 400
-    lineHeight: 1.5
-  label:
-    fontFamily: "Sofia Sans Semi Condensed, Sofia Sans, ui-sans-serif, sans-serif"
-    fontSize: "0.8125rem"
-    fontWeight: 650
-    lineHeight: "1.1rem"
-    letterSpacing: "0.08em"
-  button:
-    fontFamily: "Sofia Sans Semi Condensed, Sofia Sans, ui-sans-serif, sans-serif"
-    fontSize: "0.9375rem"
-    fontWeight: 750
-    lineHeight: 1
-    letterSpacing: "0.07em"
+    lineHeight: 1.37
+  body-long:
+    fontFamily: "Roboto, Helvetica Neue, Arial, sans-serif"
+    fontSize: "14.4px"
+    fontWeight: 500
+    lineHeight: "25px"
+  price:
+    fontFamily: "Roboto, Helvetica Neue, Arial, sans-serif"
+    fontSize: "18px"
+    fontWeight: 400
+    lineHeight: "24.75px"
+    fontFeature: "tnum"
+  meta:
+    fontFamily: "Roboto, Helvetica Neue, Arial, sans-serif"
+    fontSize: "12.6px"
+    fontWeight: 400
+    lineHeight: "17.64px"
+  label-nav:
+    fontFamily: "Roboto, Helvetica Neue, Arial, sans-serif"
+    fontSize: "11px"
+    fontWeight: 500
+    lineHeight: 1.2
+    letterSpacing: "0.025em"
+  label-table:
+    fontFamily: "Roboto, Helvetica Neue, Arial, sans-serif"
+    fontSize: "11px"
+    fontWeight: 500
+    letterSpacing: "0.14em"
 rounded:
-  print: "2px"
-  stripe: "3px"
-  control: "4px"
-  window: "28px"
+  sm: "3px"
+  tab: "4px"
+  bar: "10px"
+  pill: "20px"
+  round: "50%"
 spacing:
-  keyline: "2px"
-  crease: "1.5px"
-  panel-pad-phone: "1.25rem"
-  panel-pad: "2.25rem"
-  box-gutter-phone: "0.75rem"
-  box-gutter: "1.5rem"
-  box-max: "90rem"
+  grid-gap: "4px"
+  gutter-page-mobile: "16px"
+  gutter-page: "50px"
+  gutter-rail-mobile: "12px"
+  header-mobile: "72px"
+  header: "70px"
+  announce: "36px"
+  measure: "680px"
+  drawer: "380px"
+  flyout: "650px"
 components:
-  button-ink:
-    backgroundColor: "{colors.base-ink}"
-    textColor: "{colors.paper}"
-    typography: "{typography.button}"
-    rounded: "{rounded.control}"
-    padding: "0 1.25rem"
-    height: "3rem"
-  button-keyline:
-    backgroundColor: "{colors.paper}"
-    textColor: "{colors.base-ink}"
-    typography: "{typography.button}"
-    rounded: "{rounded.control}"
-    padding: "0 1.25rem"
-    height: "3rem"
-  button-keyline-hover:
-    backgroundColor: "{colors.base-ink}"
-    textColor: "{colors.paper}"
+  button-primary:
+    backgroundColor: "{colors.green}"
+    textColor: "{colors.bg}"
+    rounded: "{rounded.sm}"
+    padding: "10px 18px"
+    height: "44px"
+  button-primary-hover:
+    backgroundColor: "{colors.green-hover}"
+  button-secondary:
+    backgroundColor: "{colors.text}"
+    textColor: "{colors.bg}"
+    rounded: "{rounded.sm}"
+    padding: "10px 18px"
+    height: "44px"
+  button-secondary-hover:
+    backgroundColor: "{colors.charcoal-hover}"
+  button-outline:
+    backgroundColor: "{colors.bg}"
+    textColor: "{colors.text}"
+    rounded: "{rounded.sm}"
+    padding: "10px 18px"
+    height: "44px"
+  button-outline-white:
+    textColor: "{colors.bg}"
+    rounded: "{rounded.sm}"
+    padding: "10px 18px"
+    height: "44px"
   button-add-to-bag:
-    typography: "{typography.button}"
-    rounded: "{rounded.control}"
-    height: "3.5rem"
+    backgroundColor: "{colors.green}"
+    textColor: "{colors.bg}"
+    rounded: "{rounded.sm}"
+    padding: "16px 0"
+    height: "52px"
     width: "100%"
-  button-disabled:
-    backgroundColor: "{colors.wash}"
-    textColor: "{colors.ink-3}"
+  tab:
+    textColor: "{colors.text}"
+    rounded: "{rounded.tab}"
+    padding: "4px 16px"
+    height: "26px"
+  tab-active:
+    backgroundColor: "{colors.tab-active}"
+    textColor: "{colors.bg}"
+    rounded: "{rounded.tab}"
+  badge:
+    backgroundColor: "{colors.bg}"
+    textColor: "{colors.ink}"
+    typography: "{typography.label-nav}"
+    rounded: "{rounded.pill}"
+    padding: "2px 8px"
+  badge-dark:
+    backgroundColor: "{colors.text}"
+    textColor: "{colors.bg}"
+    rounded: "{rounded.pill}"
+    padding: "2px 8px"
   field:
-    backgroundColor: "{colors.paper}"
-    textColor: "{colors.base-ink}"
-    typography: "{typography.body}"
-    rounded: "{rounded.control}"
-    padding: "0.75rem 0.875rem"
-    height: "3rem"
-  tag:
-    textColor: "{colors.base-ink}"
-    typography: "{typography.label}"
-    rounded: "{rounded.print}"
-    padding: "0 0.5rem"
-    height: "1.5rem"
-  tag-edition:
-    backgroundColor: "{colors.sleeve-red}"
-    textColor: "{colors.paper}"
-    typography: "{typography.label}"
-    rounded: "{rounded.print}"
-    padding: "0 0.5rem"
-    height: "1.5rem"
-  panel:
-    backgroundColor: "{colors.paper}"
-    textColor: "{colors.base-ink}"
-    padding: "{spacing.panel-pad}"
-  window:
-    backgroundColor: "{colors.paper}"
-    rounded: "{rounded.window}"
-  ink-stripe:
-    rounded: "{rounded.stripe}"
-    height: "3rem"
+    backgroundColor: "{colors.bg}"
+    textColor: "{colors.text}"
+    rounded: "{rounded.sm}"
+    padding: "10px 12px"
+    height: "44px"
+  product-tile:
+    backgroundColor: "{colors.tile}"
+    rounded: "0"
+  announcement-bar:
+    backgroundColor: "{colors.ink}"
+    textColor: "{colors.on-ink}"
+    height: "{spacing.announce}"
+  footer:
+    backgroundColor: "{colors.ink}"
+    textColor: "{colors.on-ink}"
 ---
 
 # Design System: Shelby
 
 ## Overview
 
-**Creative North Star: "The Ball Box"**
+**Creative North Star: "The Pro Shop Rack"**
 
-The site is a golf-ball box printed flat. Every page is one flattened box: a white coated board held inside a single heavy ink keyline, its panels butted edge to edge and separated by dashed fold creases. The cap is the model printed on the front panel and is seen only through a die-cut window; its measured spec runs down the side panel; the numbered holes and the Pair and Foursome sleeves are printed on the back. The page reads as packaging, not as a lifestyle hero over a grid of product cards.
+The storefront is a bright, well-lit golf-retail floor: white walls, grey shelves, the caps on them, and one green tag that says "buy". It is a deliberate site-clone of Eastside Golf's live Shopify Broadcast style (SITE_SPEC v8 Part E), carried by Shelby's own name, copy, products and photos. Everything that is not merchandise stays quiet and small so the product photography and the single green accent do the selling. Density is retail-normal: tight 4px grid gaps, full-bleed photography, small uppercase navigation, and generous white between sections rather than decorative containers.
 
-Print is two-ink flexo. Navy is the base ink that sets type, keylines and the default front panel; each colourway's own ink floods whole panels; one sleeve-red is reserved for numbered editions. Type is one superfamily used the way a box is set: compressed bold caps for model names and every numeral, semi-condensed spaced caps for printed labels and controls, the regular width for running copy. Depth comes from the print, not from light: no drop shadows, no veils, no gradients.
+Black frames the page top and bottom (announcement bar, prefooter wordmark band, footer); white carries the middle. Three faces split the work cleanly: an old-style display serif for section titles and the wordmark, a bold geometric sans for product and page titles, and a plain grotesque for everything else. Motion is Eastside's: a skewed sweep across buttons on hover, a growing underline under nav links, a second product angle and a sliding quick-add bar on card hover, slide-in drawers. Nothing reveals on scroll.
 
-Motion is one beat. Choosing a colour re-inks the front panel, swaps the window photo and recolours the rope and the crown drawing together on the same 0.42s exponential ease-out. Scrolling turns the box from its front to its side panel once. Nothing loops, ticks or scrolls on its own.
+The Expo app (`mobile/src/constants/theme.ts`, `mobile/APP_SPEC.md` v8) is a native translation of this system: same palette values, same three faces, same tile and green-for-buying rules, expressed with native navigation, tab bar, pressed states in place of hover, and safe areas.
 
 **Key Characteristics:**
-- One flattened box per page: a 2px base-ink keyline round the whole, 1.5px dashed creases at every fold.
-- Whole panels inked in a colourway's ink; type knocked out of dark inks.
-- Photos only through die-cut windows (28px), never full bleed and never under text.
-- Compressed 800-weight caps for model names, panel titles, prices and hole numerals.
-- One braided rope line, in the chosen cap's rope colour, crossing the folds front to side to back.
-- One motion beat (0.42s, cubic-bezier(.16, 1, .3, 1)) and one scroll-driven panel turn.
+- White page, #F6F6F6 grey tiles behind every product shot, black bars at top and bottom.
+- One accent: golf green, reserved for buying, prices and focus.
+- Monomakh display serif for section titles and the SHELBY wordmark; Montserrat for product and page titles; Roboto for the rest.
+- Small corners (3-4px) on controls; photographs and tiles are square-cornered.
+- Hover motion lives on controls and cards; pages do not animate on scroll.
 
 ## Colors
 
-Two-ink flexo on white board: a navy base ink everywhere, one colourway ink per panel, and a single red kept for numbered editions.
+A near-monochrome retail palette of white, light greys and black, with a single saturated golf green doing all the commercial work.
 
 ### Primary
-- **Base Ink** (base-ink): the navy every page is printed in. Text, keylines, creases, the solid Add to bag on light panels, the footer flap, and the default front panel (Tour White prints on navy so the white cap sits in the window as a knock-out). Also the browser theme colour.
-
-### Secondary
-- **Colourway Inks** (clubhouse-navy-ink, pine-ink, fescue-ink): each floods an entire front panel when its colour is chosen, and pine carries The Foursome sleeve and long-form "stance" panels. Dark inks take knock-out type (white on navy, Pine Knockout cream on pine); Fescue takes base-ink type. Numbered editions add their own ink pairs (Azalea, Cypress, Haar) from the same colourway table in `web/src/lib/swatches.ts`, which is the normative source for every panel, knock-out and edge value.
-- **Pine Knockout** (pine-knockout): the cream that type is knocked out in on pine.
-
-### Tertiary
-- **Sleeve Red** (sleeve-red): numbered editions only. The edition tag, the hole countdown's tag, the live-hole stripe. Never a sale colour, never decoration.
-- **Sleeve Red Tint** (sleeve-red-tint): the ground of a live edition's unit on the holes plate.
+- **Fairway Green** (green): add-to-bag and checkout buttons, the PDP price, selection and checkbox accents, the progress fill, text selection and the focus ring. It is the only chromatic color in the interface.
+- **Rough Green** (green-hover): the hover sweep that fills a green button.
+- **Deep Fairway** (green-deep): hover color for green text links.
+- **Green Wash** (green-fade): the background of a selected radio card at checkout.
 
 ### Neutral
-- **Paper** (paper): the board and every uninked panel. The page ground is white.
-- **Ink 2** (ink-2): secondary copy and figure captions on paper.
-- **Ink 3** (ink-3): placeholders and disabled labels only.
-- **Wash** (wash): disabled button fill and quiet rows.
-- **Crease** (crease): base ink at 35% for dashed fold creases on light panels; dark panels re-set the crease to their knock-out colour at 40%.
-- **In Stock / Low Stock** (in-stock, low-stock): status text only, next to a real stock count.
+- **Scorecard Charcoal** (text): body text, outline button borders, secondary (charcoal) buttons, the dark badge.
+- **Pure Black** (ink / text-strong): announcement bar, prefooter band, footer, card titles, the black button.
+- **Pencil Grey** (text-light): metadata, card prices, breadcrumbs, helper copy.
+- **White** (bg): the page and drawers.
+- **Tile Grey** (tile): every product-photo tile and the grey section bands; product shots on white are multiplied onto it.
+- **Clubhouse Sand** (sand): the mobile shop-by-color strip only.
+- **Brighter Grey** (bg-brighter): mobile menu row hover and the white button's hover sweep.
+- **Sticky White** (surface-sticky): the mobile sticky add-to-bag bar.
+- **Hairline Grey** (border): accordion, table, menu and radio-card dividers.
+- **Track Grey** (track): progress bar track.
+- **Field Grey** (field-border): input borders and light swatch rims.
+- **Tab Black** (tab-active): the selected tab fill and the carousel arrow glyph.
+- **On-Ink** (on-ink, on-ink-hover): text on black bands and its hover.
+- **Error Maroon** (error, error-bg, error-border): field errors and their message box.
 
 ### Named Rules
-**The Two-Ink Rule.** A panel is printed in at most its own ink plus one knock-out or base-ink colour. A second accent on a panel is a third ink and is not allowed.
+**The One Green Rule.** Green means buy. It appears on the purchase action, the price, selection and focus, never as a decorative fill, a section band or a headline color.
 
-**The Red Edition Rule.** Sleeve red appears only on numbered editions. If the thing is not a numbered hole, it is not red.
+**The Grey Tile Rule.** Every product photograph sits on Tile Grey with `mix-blend-mode: multiply`, so white-background shots read as objects on a shelf rather than white boxes.
 
-**The Whole-Panel Rule.** A colourway ink floods an entire panel or does not appear. No tinted strips, chips of ink on paper, or gradient washes; the ink stripes that choose a colour are the one place an ink sits small, and they are the colour control.
+**The Black Frame Rule.** Black is for the page frame (announcement bar, prefooter, footer) and solid black buttons. Content sections in between stay white or Tile Grey.
 
 ## Typography
 
-**Display Font:** Sofia Sans Extra Condensed (with Sofia Sans Semi Condensed, ui-sans-serif)
-**Body Font:** Sofia Sans (with ui-sans-serif, system-ui)
-**Label/Control Font:** Sofia Sans Semi Condensed (with Sofia Sans)
+**Display Font:** Monomakh (with Times New Roman, serif)
+**Heading Font:** Montserrat 500/600/700 (with Helvetica Neue, Arial)
+**Body Font:** Roboto 400/500/700, italic for notes (with Helvetica Neue, Arial)
 
-**Character:** One superfamily set the way a box's print is set: the extra-condensed width shouts the model name and every number like a carton front, the semi-condensed width prints the small spaced-caps labels, and the regular width carries plain, warm running copy. There is no serif and no italic in this world.
+**Character:** An antique-feeling serif with a slightly hand-cut texture sits against clean commercial sans faces; the serif gives the store its clubhouse voice, the sans keeps buying plain.
+
+The root size is 14px under 750px and 16px above, so body text is 0.9rem (12.6px mobile, 14.4px desktop). Frontmatter sizes are the desktop values; mobile steps are below.
 
 ### Hierarchy
-- **Model** (800, clamp(3.25rem → 6rem), 0.86, uppercase): the product's name on a front panel and a sleeve's name. One per panel.
-- **Panel Title** (800, clamp(2.25rem → 3.75rem), 0.92, uppercase): the heading of every other panel ("The crown sits lower.", "Six holes in 2027.").
-- **Figure** (800, tabular lining, 1): prices (2.75rem on a panel, 1.75rem in the sticky strip), hole numerals (2.5rem on the plate), stock counts inline.
-- **Spec Line** (700, 1rem, 0.1em, uppercase, tabular): the model's spec under its name, groups joined by " · " ("Mid crown · 11–11.5 cm · One size · No. 01"); breaks only after a dot.
-- **Lead** (400, 1.125rem, 1.6): the paragraph under a panel title, max 56–60ch.
-- **Body** (400, 1rem, 1.5): running copy; panel fine print at 0.9375rem / 1.5rem.
-- **Label** (650, 0.8125rem, 0.08em, uppercase): spec plate keys, field legends, table heads, footer column heads.
+- **Display** (Monomakh 400, 69px / 28px mobile, 1.05): the big section statements on home, The Card and story pages.
+- **Display Hero** (Monomakh 400, 38.4px / 32.4px, 1.2): the hero title in its corner block.
+- **Display Section** (Monomakh 400, 38px / 22px, 1.05, uppercase): rail and tabs headings such as the Rope Cap tabs rail.
+- **Wordmark** (Monomakh 400, 30px / 26px, 0.04em, uppercase): the text SHELBY in the header and prefooter.
+- **Headline** (Montserrat 500, 38.4px, 1.2): long-form section headings on the fit guide and story pages.
+- **Title Page** (Montserrat 700, 26px, 1.2, uppercase): collection and utility page titles.
+- **Title Product** (Montserrat 700, 24px / 18px, 1.2): the product name on the PDP.
+- **Title Card** (Montserrat 500, 19.2px / 16.8px, 1.2): kit, hole and editorial card titles.
+- **Body** (Roboto 400, 0.9rem, 1.37): default copy.
+- **Body Long** (Roboto 500, 14.4px, 25px leading): descriptive paragraphs, held to the 680px measure.
+- **Price** (Roboto 400, 18px, tabular, green): PDP price. Card prices use Meta size in Pencil Grey.
+- **Meta** (Roboto 400, 12.6px, 17.64px): captions, card titles on mobile, breadcrumbs.
+- **Label Nav** (Roboto 500, 11px, 0.025em, uppercase): header nav, badges, quick add.
+- **Label Table** (Roboto 500, 11px, 0.14em, uppercase): table heads and small form labels.
 
 ### Named Rules
-**The Compressed Numeral Rule.** Every price, hole number and count is set in the model face at 800 with tabular lining figures. Engineered digit cells (each digit in its own 1.5px keylined slot) are kept for the release countdown and measured counters only.
+**The Three Faces Rule.** Monomakh speaks in section titles and the wordmark, Montserrat names products and pages, Roboto does everything else. No fourth face, and no face crosses into another's job.
 
-**The Heading Stands Alone Rule.** Nothing is printed above a heading. Tags and status sit in the spec line or meta line under it.
+**The 11px Floor Rule.** No interface text below 11px; Eastside's 9-10.8px labels were raised to 11px on purpose.
 
 ## Layout
 
-The page is one box. On a phone it hangs 0.75rem in from each edge; from 48rem the gutter is 1.5rem; from 93rem it centres at a 90rem maximum. Inside it, panels stack edge to edge, each padded by the panel pad (1.25rem on a phone, 2.25rem from 48rem), and each fold is a 1.5px dashed crease, never a gap.
+Full-width pages with a page gutter of 16px on mobile and 50px from 750px up; rails use 12px then 50px. Breakpoints are the theme's own: 480px, 750px (the main mobile/desktop switch), 990px and 1400px. Product grids and rails use a tight 4px gap so tiles read as one shelf. Rails scroll horizontally with snap, hidden scrollbars and round white arrow buttons that appear on hover (always visible on touch); card columns are 164px on mobile and 349px on desktop.
 
-From 64rem the front and side panels open side by side as two equal columns in one row (the flattened box), joined by a vertical crease. Below that they stack, front first. The front panel is composed to put window, model name, spec line, ink stripes, price and Add to bag in the first phone viewport: the window takes clamp(240px, 100svh − 470px, 440px).
-
-The one rope runs the reading order as a 14px braided cord: across the fold below the front and side panels on desktop; on a phone, a short crossing between the stacked front and side panels, a rail down the side panel's left edge, then the crossing into the back panel, so it stays one line.
-
-Numbered things sit on a **plate**: a grid of units sharing 2px base-ink rules (holes in 2 → 3 → 6 columns; the spec in 1 → 2 → 3). A short last row simply stops. Content grids inside panels split 5:7 at desktop (window : copy). Internal rhythm uses 4, 8, 12, 16, 24 and 32px gaps.
-
-### Named Rules
-**The One Box Rule.** A page is one keylined box with creases, not a stack of separate cards with gaps between them. A new section is a new panel inside the box.
+The header is 72px on mobile, 70px on desktop, and sticks once the 36px announcement bar has scrolled away. The hero is full-bleed photography (650px tall on mobile, 75vh on desktop) with its copy, title and an outline-white button in a small bottom-right corner block over a soft radial darkening. The PDP is a single column on mobile (head, gallery, buy) and from 990px a media column beside a sticky buy column (670fr / 620fr, 50px gap). Long-form text holds a 680px measure. Drawers are 380px (menu, narrow) or 650px (cart flyout) wide.
 
 ## Elevation & Depth
 
-Flat. The system has no drop shadows and no elevation scale; depth is what printed packaging has: a heavier keyline round the box, dashed creases at the folds, and die-cut windows edged by a 1.5px inset ink line (in the panel's edge ink) so the photo reads as seen through the board. Dark inks advance, paper recedes. The one dimensional moment is motion, not light: as the side panel scrolls in it turns from a 10° X tilt (12° Y from 64rem) to flat, like a box being rotated in the hand.
+The system is flat. Depth comes from the grey tile against white and the black frame, not from shadows. Three small shadows exist, each tied to a floating element.
+
+### Shadow Vocabulary
+- **Badge lift** (`box-shadow: 0 2px 2px rgb(0 0 0 / 0.02), 0 2px 6px rgb(0 0 0 / 0.04)`): white badges sitting on a tile.
+- **Arrow float** (`box-shadow: 0 2px 8px rgb(0 0 0 / 0.18)`): round rail arrows over photography.
+- **Drawer edge** (`box-shadow: 0 2px 8px rgb(0 0 0 / 0.06), 0 3px 12px rgb(0 0 0 / 0.02)`): cart and menu drawer panels, over a 40% black underlay.
 
 ### Named Rules
-**The Printed Depth Rule.** Depth is drawn with ink (keylines, creases, window edges), never lit. No drop shadows, glows, blurred veils, or stacked layers.
+**The Floating-Only Shadow Rule.** Only things that float over other content (badges, arrows, drawers) cast a shadow. Cards, buttons, bands and inputs are flat.
 
 ## Shapes
 
-Board is cut square with a slight die radius: 2px on printed tags, digit cells and focus rings, 3px on the ink stripes, 4px on buttons, fields and size buttons. Panels and the box itself are fully square (0). The only soft shape is the die-cut window at 28px, which is what makes a window read as cut through the board. Keylines are 2px solid base ink (1.5px on tags and window edges); folds are 1.5px dashed.
-
-The cap itself is drawn, not iconed, where measurement matters: the side panel draws two cap profiles to one scale (11 units per centimetre) on a shared ruler baseline, the Rope Cap filled in the chosen crown colour with its rope, a 12 cm high crown dashed behind it.
-
-### Named Rules
-**The Die-Cut Rule.** Only windows are round. Anything else with a radius over 4px is not part of this box.
+Controls carry small, barely-there corners: 3px on buttons, fields and radio cards; 4px on tabs and the sticky add-to-bag button. Badges are 20px pills, progress bars 10px, swatches and carousel arrows full circles. Photographs, tiles, bands and drawers are square-cornered. Borders are 1px: charcoal on outline buttons and tabs, Field Grey on inputs, Hairline Grey as dividers. Selected swatches get a white gap ring then a 1px charcoal ring.
 
 ## Components
 
 ### Buttons
-Printed ink blocks: spaced semi-condensed caps in a 2px keyline.
-- **Shape:** gently cut corners (4px), 3rem tall, 1.25rem side padding; 2.25rem small, 3.25rem large, 3.5rem full-width Add to bag.
-- **Ink (main CTA on paper):** base-ink fill, white type; hover deepens to #0b1427.
-- **Keyline:** paper fill, base-ink keyline and type; hover fills with base ink and knocks the type out white. The outline variant is the same on transparent.
-- **On ink:** on an inked panel the button is printed in the panel's knock-out colour with the panel ink as type (white on navy, cream on pine, navy on Fescue); hover dims to 94% brightness.
-- **Active / Focus / Disabled:** press nudges down 1px; focus is a 2px base-ink outline at 3px offset (white on dark inks); disabled is wash fill, faint keyline, ink-3 type.
+Quiet, rectangular, with one memorable hover.
+- **Shape:** gently squared (3px), 1px border, min-height 44px, padding 8px 16px (10px 18px from 750px), Roboto 16px.
+- **Primary (green):** Fairway Green fill and border, white text. Used for add to bag, checkout and the main buy actions.
+- **Secondary / Black / White:** solid charcoal, black or white fills for non-buying actions and dark sections.
+- **Outline (charcoal, black, white, green):** transparent fill, 1px border in the text color; outline-white is the hero button.
+- **Hover:** a skewed (30deg) panel sweeps in from the left over 0.5s (`cubic-bezier(0.33, 0, 0, 1)`): at full opacity in the hover color on solid buttons, at 10% currentColor on outlines. A trailing arrow nudges 5px right. Under reduced motion the sweep is replaced by a plain background change.
+- **Sizes:** small (33px, 12px text), add-to-bag (52px, full width, bold), sticky (47px, 4px corners, 18px text), checkout (50px, full width, 600).
+- **Disabled:** 50% opacity, no sweep. Loading shows a 16px spinning notch, the only looping animation in the system.
 
-### Ink Stripes (colour control)
-The front panel's colour picker is four equal stripes in a row (3rem tall, 3px corners), each painted in the cap's crown colour with a 5px band of its rope colour across it. The chosen stripe is ringed by a 2px panel-coloured gap and a 3px knock-out ring; the rest carry a faint 1.5px inset line. It is a radio group with arrow-key movement. Choosing one re-inks the panel on the beat.
+### Tabs
+- **Style:** 1px charcoal outline, 4px corners, 26px tall (44px on coarse pointers), 14px text, 0.06em tracking.
+- **State:** selected tab fills Tab Black with white bold text. Used in the home tabs rail and filters.
 
-### Tags
-- **Printed tag:** transparent, 1.5px current-colour keyline, 2px corners, 1.5rem tall, 0.75rem spaced caps. Never a pill.
-- **Edition tag:** sleeve-red block, white caps ("Hole 2 · 200 made"), same size. Only on numbered editions.
+### Badges and Swatches
+- **Badge:** white pill, 11px uppercase, badge-lift shadow, top-left of a tile at 5px. Only real states: a numbered edition ("No. 02") or "Sold out" (dark pill).
+- **Swatch:** 20px circle (32px large) filled with the cap color, 1px #E9E9E9 rim (Field Grey on light colors), double ring when selected.
 
-### Panels and the Box
-- **Corner Style:** square.
-- **Background:** paper, or a colourway ink set per panel (the panel exposes ink, knock-out, edge, button and crease colours together so everything inside re-inks at once).
-- **Shadow Strategy:** none (see Elevation & Depth).
-- **Border:** inside the box, panels drop their own keyline and are divided by dashed creases.
-- **Internal Padding:** the panel pad (1.25rem / 2.25rem).
-
-### Die-Cut Window
-Photo opening at 28px radius, white behind a contained product photo (6–8% inset), with an inset 1.5px edge in the panel's edge ink layered above the image. Photo arrows sit inside the window as small keyline buttons; the count is a figure on a white 2px-corner chip.
-
-### Plate
-A keylined grid of numbered units with shared 2px rules. Holes: a 2.5rem two-digit figure, the hole name, a label with its date or "Always in stock", and "Edition of 200". The spec plate: a label key over a body value.
+### Cards / Containers
+- **Product card:** a 5:6 Tile Grey tile with the product multiplied onto it; on hover the next angle fades in (0.5s) and a "+ Quick add" bar slides up from the tile bottom (0.25s), static below the tile on touch. Below: title (Meta size, black, greys on hover), price in Pencil Grey, a row of 20px swatches.
+- **Bands:** full-width Tile Grey sections group related content; no bordered or shadowed boxes.
+- **Accordion:** 1px Hairline Grey bottom rule, 48px summary at 18px 500, a plus icon that rotates 45deg when open.
 
 ### Inputs / Fields
-- **Style:** paper fill, 2px base-ink-at-35% keyline, 4px corners, 3rem tall.
-- **Focus:** keyline goes full base ink with a 3px base-ink-at-15% ring.
-- **Error:** keyline in low-stock red.
+- **Style:** white, 1px Field Grey border, 3px corners, 44px tall, 16px text.
+- **Hover / Focus:** border darkens to charcoal; focus adds a 2px green outline.
+- **Error:** border turns Error Maroon, with a message box in error-bg / error-border below.
+- **Radio card:** 52px row, Hairline border, 3px corners; checked gets a charcoal border and the Green Wash.
 
 ### Navigation
-A static top flap printed in base ink carries one line of real facts in small spaced caps (next hole, stock, shipping); nothing scrolls. Below it, a paper header with spaced-cap menu labels left, "SHELBY" set in the model face centred, and search, account and bag icons right; the bag count is a figure in a 1.5px keylined 2px tag. The footer is the box's bottom flap: a base-ink panel with knock-out type, the name in the model face, the tee-sheet form, and four label-headed link columns.
+- **Announcement bar:** 36px black strip, one real fact at a time cross-fading every 5s, with a pause control.
+- **Header:** white, sticky; desktop is a three-column grid with the SHELBY wordmark left, uppercase 11px nav links whose underline grows from the center (0.25s, `cubic-bezier(0.215, 0.61, 0.355, 1)`), and icons right. A full-width mega menu fades in with links rising 6px and an image settling from 1.06 scale.
+- **Mobile:** menu drawer slides in from the left (0.6s), 50px uppercase rows divided by hairlines; sub-menus slide in from the right.
+- **Footer:** black prefooter band with the centered wordmark, then a black footer of four link columns (accordions on mobile) and the tee-sheet signup.
 
-### Sleeves (The Pair, The Foursome)
-Each is one inked panel: navy for The Pair, pine for The Foursome. A row of die-cut windows, one per cap; the sleeve's name in the model face; a spec line ("2 caps · $44 a cap · ships free"); the price figure and an on-ink button at the foot past a dashed crease.
-
-### Crown Profiles (signature drawing)
-Two side profiles on one ruler (0–12 cm, every second centimetre numbered in label type), drawn to the same scale. The Rope Cap in the chosen crown and rope colours in front; the 12 cm high crown dashed behind; each height marked by a hairline and a spaced-caps label. Fills transition on the beat.
-
-### Sticky Add-to-Bag Strip
-When the main Add to bag scrolls away, a paper strip with a 2px base-ink top keyline rises from the bottom on the beat: colour face, name and colour, price figure, ink button.
+### Cart Drawer
+A 650px flyout from the right over a 40% black underlay (fades in after 0.1s), with the drawer-edge shadow; lines fade up 15px as they appear and collapse when removed. The close icon rotates 90deg on hover.
 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** keep each page inside one box: 2px base-ink keyline round it, panels butted edge to edge, 1.5px dashed creases at every fold.
-- **Do** ink whole panels in a colourway's ink and knock the type out, taking every panel value from the colourway table.
-- **Do** show product photos only through 28px die-cut windows with the inset edge line.
-- **Do** set model names, panel titles, prices and hole numerals in Sofia Sans Extra Condensed 800 caps, numbers tabular and lining.
-- **Do** print the spec as a spec line under the model name and as a keylined plate of units.
-- **Do** run every state change on the one beat: 0.42s, cubic-bezier(.16, 1, .3, 1); colour, photo, rope and crown drawing change together.
-- **Do** draw measurements to one honest scale on a shared baseline.
+- **Do** keep Fairway Green (#207212) for buying, price, selection and focus only.
+- **Do** put every product photo on a Tile Grey (#F6F6F6) tile with multiply blending.
+- **Do** use Monomakh for section titles and the wordmark, Montserrat for product and page titles, Roboto for everything else.
+- **Do** keep control corners at 3-4px and photographs square.
+- **Do** use the skewed hover sweep on every `.btn`, and provide the plain background-change fallback under reduced motion.
+- **Do** keep text at 11px or larger and nav and labels uppercase.
+- **Do** show badges only for real states: a numbered edition or live "Sold out".
 
 ### Don't:
-- **Don't** use drop shadows, glows, gradients, or veils over photos; depth is keylines, creases and window edges.
-- **Don't** round anything but windows past 4px; no pills.
-- **Don't** use sleeve red for anything but numbered editions.
-- **Don't** print a label, kicker or eyebrow above a heading.
-- **Don't** add tickers, marquees, looping motion, or a second scroll-driven effect; the panel turn is the one.
-- **Don't** lay products out as a grid of floating product cards; put units on a keylined plate or a row of windows.
-- **Don't** put text or tags on a photo.
-- **Don't** add a serif, an italic, or a typeface outside the Sofia Sans family.
+- **Don't** use green as a background band, headline color or decorative accent.
+- **Don't** add shadows to cards, buttons, bands or inputs; only badges, rail arrows and drawers float.
+- **Don't** add scroll-triggered reveals; the live source runs with them off and so does Shelby.
+- **Don't** introduce a fourth typeface or set body copy in Monomakh.
+- **Don't** add review stars, "best seller", sale strikethroughs or discount popups; the slots they occupy on the source stay empty or carry real Shelby content.
+- **Don't** round photographs or tiles, or raise control corners beyond 4px (pills are reserved for badges).

@@ -7,6 +7,10 @@ related_targets: ["web/src/app/products/[handle]/page.tsx","web/src/app/shop/pag
 
 # Storefront: The Ball Box
 
+## Status
+
+Superseded. The user pinned a new look: a site-clone of Eastside Golf's style (web/SITE_SPEC.md v8), applied to Shelby's own brand, copy, products and photos. DESIGN.md records the system that now ships. The Ball Box contract below is kept for history only and no longer governs this surface.
+
 ## Scope and mode
 
 The Shelby storefront in `web/`: home, shop, product page and the landing pages (offer, listicle, advertorial, story, quiz and result, The Card and hole pages, fit guide, custom) are **Persuade**; cart drawer, bag, checkout and order confirmation are **Operate** inside the same world.

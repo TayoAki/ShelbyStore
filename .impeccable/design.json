@@ -1,539 +1,474 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-16T12:27:16+00:00",
+  "generatedAt": "2026-11-16T18:18:02+00:00",
   "title": "Design System: Shelby",
   "extensions": {
     "colorMeta": {
-      "base-ink": {
+      "green": {
         "role": "primary",
-        "displayName": "Base Ink",
-        "canonical": "#14213d",
-        "oklch": "oklch(25.2% 0.056 264.0)",
+        "displayName": "Fairway Green",
         "tonalRamp": [
-          "#080b12",
-          "#1e2532",
-          "#374257",
-          "#53617e",
-          "#7382a1",
-          "#99a5be",
-          "#c0c9db",
-          "#e9eff9"
+          "#1b3616",
+          "#29601f",
+          "#348e24",
+          "#3ccc24",
+          "#6bda58",
+          "#a0de96",
+          "#cde9c9",
+          "#eff7ee"
         ]
       },
-      "ink-2": {
+      "green-hover": {
+        "role": "primary",
+        "displayName": "Rough Green",
+        "tonalRamp": [
+          "#1b3616",
+          "#296020",
+          "#348e25",
+          "#3ccb25",
+          "#6bda58",
+          "#a1de96",
+          "#cde9c9",
+          "#eff6ee"
+        ]
+      },
+      "green-deep": {
+        "role": "primary",
+        "displayName": "Deep Fairway",
+        "tonalRamp": [
+          "#193814",
+          "#25641b",
+          "#2d951d",
+          "#32d719",
+          "#63e34f",
+          "#9ce391",
+          "#cbebc7",
+          "#eff7ed"
+        ]
+      },
+      "green-fade": {
+        "role": "primary",
+        "displayName": "Green Wash"
+      },
+      "text": {
         "role": "neutral",
-        "displayName": "Ink 2",
-        "canonical": "#3f4a64",
-        "oklch": "oklch(41.1% 0.046 266.6)",
+        "displayName": "Scorecard Charcoal",
         "tonalRamp": [
-          "#090b11",
-          "#202530",
-          "#3a4253",
-          "#566179",
-          "#77829c",
-          "#9ca5ba",
-          "#c2c9d8",
-          "#ebeef7"
+          "#262626",
+          "#404040",
+          "#595959",
+          "#787878",
+          "#999999",
+          "#bababa",
+          "#d9d9d9",
+          "#f2f2f2"
         ]
       },
-      "ink-3": {
+      "text-strong": {
         "role": "neutral",
-        "displayName": "Ink 3",
-        "canonical": "#5d667c",
-        "oklch": "oklch(51.1% 0.037 267.6)",
-        "tonalRamp": [
-          "#090b0f",
-          "#21252e",
-          "#3c4250",
-          "#596175",
-          "#7a8297",
-          "#9ea5b5",
-          "#c4c9d5",
-          "#ebeef5"
-        ]
+        "displayName": "Pure Black"
       },
-      "paper": {
+      "ink": {
         "role": "neutral",
-        "displayName": "Paper",
-        "canonical": "#ffffff",
-        "oklch": "oklch(100.0% 0.000 89.9)",
+        "displayName": "Pure Black",
         "tonalRamp": [
-          "#0b0b0b",
-          "#252525",
-          "#424242",
-          "#616161",
-          "#828282",
-          "#a5a5a5",
-          "#c9c9c9",
-          "#eeeeee"
+          "#000000",
+          "#1a1a1a",
+          "#333333",
+          "#4d4d4d",
+          "#808080",
+          "#b3b3b3",
+          "#d9d9d9",
+          "#f2f2f2"
         ]
       },
-      "wash": {
+      "text-light": {
         "role": "neutral",
-        "displayName": "Wash",
-        "canonical": "#e7e9ee",
-        "oklch": "oklch(93.4% 0.007 268.5)",
+        "displayName": "Pencil Grey",
         "tonalRamp": [
-          "#0a0b0e",
-          "#242529",
-          "#404246",
-          "#5f6165",
-          "#808287",
-          "#a3a5aa",
-          "#c7c9ce",
-          "#eceef3"
+          "#262626",
+          "#404040",
+          "#595959",
+          "#787878",
+          "#999999",
+          "#bababa",
+          "#d9d9d9",
+          "#f2f2f2"
         ]
       },
-      "crease": {
+      "bg": {
         "role": "neutral",
-        "displayName": "Crease",
-        "canonical": "#14213d59",
-        "oklch": "oklch(25.2% 0.056 264.0)",
-        "tonalRamp": [
-          "#080b12",
-          "#1e2532",
-          "#374257",
-          "#53617e",
-          "#7382a1",
-          "#99a5be",
-          "#c0c9db",
-          "#e9eff9"
-        ]
+        "displayName": "White"
       },
-      "clubhouse-navy-ink": {
-        "role": "secondary",
-        "displayName": "Clubhouse Navy Ink",
-        "canonical": "#2c4373",
-        "oklch": "oklch(38.9% 0.087 263.5)",
-        "tonalRamp": [
-          "#060b15",
-          "#1a2539",
-          "#314162",
-          "#4a618e",
-          "#6a82b1",
-          "#92a5cb",
-          "#bbcae5",
-          "#e6efff"
-        ]
-      },
-      "pine-ink": {
-        "role": "secondary",
-        "displayName": "Pine Ink",
-        "canonical": "#1e3b2f",
-        "oklch": "oklch(32.5% 0.041 165.4)",
-        "tonalRamp": [
-          "#070d0a",
-          "#1c2823",
-          "#34473e",
-          "#4d685c",
-          "#6e8a7d",
-          "#95aba1",
-          "#becdc6",
-          "#e8f1ed"
-        ]
-      },
-      "pine-knockout": {
-        "role": "secondary",
-        "displayName": "Pine Knockout",
-        "canonical": "#f1ece0",
-        "oklch": "oklch(94.4% 0.017 88.0)",
-        "tonalRamp": [
-          "#0c0b09",
-          "#272521",
-          "#44423b",
-          "#656158",
-          "#868278",
-          "#a8a59d",
-          "#cbc9c3",
-          "#f0eeeb"
-        ]
-      },
-      "fescue-ink": {
-        "role": "secondary",
-        "displayName": "Fescue Ink",
-        "canonical": "#cfc3a6",
-        "oklch": "oklch(81.9% 0.041 88.2)",
-        "tonalRamp": [
-          "#0d0b06",
-          "#29251a",
-          "#484131",
-          "#6a6049",
-          "#8c8169",
-          "#aca491",
-          "#cec9bb",
-          "#f1eee6"
-        ]
-      },
-      "sleeve-red": {
-        "role": "tertiary",
-        "displayName": "Sleeve Red",
-        "canonical": "#c8302a",
-        "oklch": "oklch(54.9% 0.190 27.8)",
-        "tonalRamp": [
-          "#1c0202",
-          "#480b09",
-          "#781915",
-          "#ad2823",
-          "#d55045",
-          "#eb8377",
-          "#ffb3a8",
-          "#ffe2dc"
-        ]
-      },
-      "sleeve-red-tint": {
-        "role": "tertiary",
-        "displayName": "Sleeve Red Tint",
-        "canonical": "#fbe9e7",
-        "oklch": "oklch(94.8% 0.020 25.2)",
-        "tonalRamp": [
-          "#0d0a0a",
-          "#2a2323",
-          "#493f3e",
-          "#6b5e5c",
-          "#8d7e7d",
-          "#aea2a1",
-          "#cfc7c6",
-          "#f2eded"
-        ]
-      },
-      "in-stock": {
+      "tile": {
         "role": "neutral",
-        "displayName": "In Stock",
-        "canonical": "#1d6a44",
-        "oklch": "oklch(46.8% 0.097 157.3)",
+        "displayName": "Tile Grey",
         "tonalRamp": [
-          "#030e07",
-          "#0e2c1c",
-          "#1f4d34",
-          "#30704d",
-          "#53926e",
-          "#82b295",
-          "#b1d3bd",
-          "#e1f4e8"
+          "#262626",
+          "#404040",
+          "#595959",
+          "#787878",
+          "#999999",
+          "#bababa",
+          "#d9d9d9",
+          "#f2f2f2"
         ]
       },
-      "low-stock": {
+      "sand": {
         "role": "neutral",
-        "displayName": "Low Stock",
-        "canonical": "#a3341f",
-        "oklch": "oklch(48.6% 0.150 32.8)",
+        "displayName": "Clubhouse Sand",
         "tonalRamp": [
-          "#190402",
-          "#41140c",
-          "#6e281a",
-          "#9f3d2a",
-          "#c6604b",
-          "#de8d7b",
-          "#f4b9ab",
-          "#ffe5dd"
+          "#2c2721",
+          "#4b4135",
+          "#6b5b47",
+          "#947a5c",
+          "#af9b83",
+          "#c6bbae",
+          "#ded9d3",
+          "#f4f2f1"
         ]
-      }
-    },
-    "colorwayInks": {
-      "source": "web/src/lib/swatches.ts",
-      "purpose": "Per-colourway panel inks: the front panel takes panel/ink/edge when that colour is chosen; crown and rope paint the ink stripes, the crown drawing and the rope.",
-      "inks": {
-        "Tour White": {
-          "panel": "#14213D",
-          "ink": "#FFFFFF",
-          "edge": "#0A1226",
-          "crown": "#F4F2EE",
-          "rope": "#1F2A44"
-        },
-        "Clubhouse Navy": {
-          "panel": "#2C4373",
-          "ink": "#FFFFFF",
-          "edge": "#14213D",
-          "crown": "#26314A",
-          "rope": "#F4F2EE"
-        },
-        "Pine": {
-          "panel": "#1E3B2F",
-          "ink": "#F1ECE0",
-          "edge": "#10241B",
-          "crown": "#1E3B2F",
-          "rope": "#EDE6D6"
-        },
-        "Fescue": {
-          "panel": "#CFC3A6",
-          "ink": "#14213D",
-          "edge": "#14213D",
-          "crown": "#C9C1AE",
-          "rope": "#1F2A44"
-        },
-        "Azalea": {
-          "panel": "#F5D3DE",
-          "ink": "#14213D",
-          "edge": "#14213D",
-          "crown": "#F4F2EE",
-          "rope": "#D8648A"
-        },
-        "Cypress": {
-          "panel": "#2E4B4A",
-          "ink": "#F1E8D2",
-          "edge": "#1A2D2C",
-          "crown": "#2E4B4A",
-          "rope": "#CDBB98"
-        },
-        "Haar": {
-          "panel": "#B9BDBA",
-          "ink": "#14213D",
-          "edge": "#14213D",
-          "crown": "#A7ABA8",
-          "rope": "#EDE6D6"
-        }
       },
-      "sleeves": {
-        "pair": {
-          "panel": "#14213D",
-          "ink": "#FFFFFF",
-          "edge": "#0A1226"
-        },
-        "foursome": {
-          "panel": "#1E3B2F",
-          "ink": "#F1ECE0",
-          "edge": "#10241B"
-        }
+      "bg-brighter": {
+        "role": "neutral",
+        "displayName": "Brighter Grey"
+      },
+      "surface-sticky": {
+        "role": "neutral",
+        "displayName": "Sticky White"
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Hairline Grey"
+      },
+      "track": {
+        "role": "neutral",
+        "displayName": "Track Grey"
+      },
+      "field-border": {
+        "role": "neutral",
+        "displayName": "Field Grey",
+        "tonalRamp": [
+          "#262626",
+          "#404040",
+          "#595959",
+          "#787878",
+          "#999999",
+          "#bababa",
+          "#d9d9d9",
+          "#f2f2f2"
+        ]
+      },
+      "tab-active": {
+        "role": "neutral",
+        "displayName": "Tab Black"
+      },
+      "charcoal-hover": {
+        "role": "neutral",
+        "displayName": "Charcoal Hover"
+      },
+      "black-hover": {
+        "role": "neutral",
+        "displayName": "Black Hover"
+      },
+      "on-ink": {
+        "role": "neutral",
+        "displayName": "On-Ink"
+      },
+      "on-ink-hover": {
+        "role": "neutral",
+        "displayName": "On-Ink Hover"
+      },
+      "link-hover": {
+        "role": "neutral",
+        "displayName": "Link Hover"
+      },
+      "underlay": {
+        "role": "neutral",
+        "displayName": "Underlay"
+      },
+      "error": {
+        "role": "error",
+        "displayName": "Error Maroon",
+        "tonalRamp": [
+          "#34191b",
+          "#5b252a",
+          "#862d35",
+          "#be323f",
+          "#cf636d",
+          "#d89ca2",
+          "#e6cbce",
+          "#f6efef"
+        ]
+      },
+      "error-bg": {
+        "role": "error",
+        "displayName": "Error Blush"
+      },
+      "error-border": {
+        "role": "error",
+        "displayName": "Error Rim"
       }
     },
     "typographyMeta": {
-      "model": {
-        "displayName": "Model",
-        "purpose": "Product and sleeve names on a panel, uppercase, one per panel."
+      "display": {
+        "displayName": "Display",
+        "purpose": "Big section statements on home, The Card and stories. 28px under 750px."
       },
-      "panel-title": {
-        "displayName": "Panel Title",
-        "purpose": "Heading of every other panel, uppercase."
+      "display-hero": {
+        "displayName": "Display Hero",
+        "purpose": "Hero title in its corner block. 32.4px mobile."
       },
-      "figure": {
-        "displayName": "Figure",
-        "purpose": "Prices, hole numerals and counts as tight tabular lining figures."
+      "display-section": {
+        "displayName": "Display Section",
+        "purpose": "Uppercase rail and tabs headings. 22px mobile."
       },
-      "spec-line": {
-        "displayName": "Spec Line",
-        "purpose": "The model's spec under its name, uppercase, groups joined by middots."
+      "wordmark": {
+        "displayName": "Wordmark",
+        "purpose": "The text SHELBY in header and prefooter. 26px mobile."
       },
-      "lead": {
-        "displayName": "Lead",
-        "purpose": "Paragraph under a panel title, 56–60ch."
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Long-form section headings (fit guide, stories)."
+      },
+      "title-page": {
+        "displayName": "Title Page",
+        "purpose": "Uppercase collection and utility page titles."
+      },
+      "title-product": {
+        "displayName": "Title Product",
+        "purpose": "PDP product name. 18px mobile."
+      },
+      "title-card": {
+        "displayName": "Title Card",
+        "purpose": "Kit, hole and editorial card titles. 16.8px mobile."
       },
       "body": {
         "displayName": "Body",
-        "purpose": "Running copy and panel fine print."
+        "purpose": "Default copy: 12.6px mobile, 14.4px desktop."
       },
-      "label": {
-        "displayName": "Label",
-        "purpose": "Uppercase printed labels: plate keys, legends, table heads, column heads."
+      "body-long": {
+        "displayName": "Body Long",
+        "purpose": "Descriptive paragraphs at the 680px measure."
       },
-      "button": {
-        "displayName": "Button",
-        "purpose": "Uppercase control type on buttons and tabs."
+      "price": {
+        "displayName": "Price",
+        "purpose": "PDP price in Fairway Green, tabular."
+      },
+      "meta": {
+        "displayName": "Meta",
+        "purpose": "Captions, breadcrumbs, card prices in Pencil Grey."
+      },
+      "label-nav": {
+        "displayName": "Label Nav",
+        "purpose": "Uppercase header nav, badges, quick add."
+      },
+      "label-table": {
+        "displayName": "Label Table",
+        "purpose": "Wide-tracked uppercase table heads and small labels."
       }
     },
     "shadows": [
       {
-        "name": "window-edge",
-        "value": "inset 0 0 0 1.5px var(--window-edge, #14213d)",
-        "purpose": "Printed edge line of a die-cut window; ink, not elevation. The system has no drop shadows."
+        "name": "badge",
+        "value": "0 2px 2px rgb(0 0 0 / 0.02), 0 2px 6px rgb(0 0 0 / 0.04)",
+        "purpose": "White badges on a tile."
       },
       {
-        "name": "field-focus",
-        "value": "0 0 0 3px #14213d26",
-        "purpose": "Focus ring on text fields."
+        "name": "arrow",
+        "value": "0 2px 8px rgb(0 0 0 / 0.18)",
+        "purpose": "Round rail arrows over photography."
       },
       {
-        "name": "stripe-selected",
-        "value": "0 0 0 2px <panel ink>, 0 0 0 5px <knock-out ink>",
-        "purpose": "Ring on the chosen ink stripe."
+        "name": "drawer",
+        "value": "0 2px 8px rgb(0 0 0 / 0.06), 0 3px 12px rgb(0 0 0 / 0.02)",
+        "purpose": "Cart and menu drawer panels."
       }
     ],
     "motion": [
       {
-        "name": "beat",
-        "value": "0.42s cubic-bezier(.16, 1, .3, 1)",
-        "purpose": "The one beat: panel re-ink, window photo fade, rope and crown recolour, drawer and sticky strip, quiz step."
+        "name": "ease-theme",
+        "value": "cubic-bezier(0.215, 0.61, 0.355, 1)",
+        "purpose": "Nav underline, mega menu, menu rows."
       },
       {
-        "name": "control",
-        "value": "0.18s cubic-bezier(.16, 1, .3, 1)",
-        "purpose": "Button and field colour changes; press nudge 0.12s, 1px down."
+        "name": "ease-sweep",
+        "value": "cubic-bezier(0.33, 0, 0, 1)",
+        "purpose": "Button hover sweep (0.5s)."
       },
       {
-        "name": "panel-turn",
-        "value": "scroll-driven view() timeline, entry 5% to cover 28%: rotateX(10deg) at perspective 1600px to flat; rotateY(-12deg) at 1800px from 64rem",
-        "purpose": "The one authored scroll moment: the box turns from front to side panel. Off under reduced motion."
+        "name": "sweep",
+        "value": "transform 0.5s ease-sweep, skew(30deg) panel",
+        "purpose": "Every .btn hover; replaced by a background change under reduced motion."
+      },
+      {
+        "name": "image-swap",
+        "value": "opacity 0.5s ease-in",
+        "purpose": "Product card second angle on hover; image load fade."
+      },
+      {
+        "name": "quick-add",
+        "value": "slide-in-up 0.25s ease",
+        "purpose": "Quick-add bar rising from the tile bottom."
+      },
+      {
+        "name": "drawer-right",
+        "value": "slide-in-right 0.25s ease-in-out",
+        "purpose": "Cart flyout."
+      },
+      {
+        "name": "drawer-left",
+        "value": "slide-in-left 0.6s ease",
+        "purpose": "Mobile menu."
+      },
+      {
+        "name": "underlay",
+        "value": "opacity 0.3s, 0.1s delay",
+        "purpose": "40% black scrim behind drawers."
+      },
+      {
+        "name": "announcement",
+        "value": "cross-fade every 5s, pausable",
+        "purpose": "Announcement bar facts."
       }
     ],
     "breakpoints": [
       {
-        "name": "narrow",
-        "value": "30rem"
+        "name": "sm",
+        "value": "480px"
       },
       {
         "name": "md",
-        "value": "48rem"
+        "value": "750px"
       },
       {
         "name": "lg",
-        "value": "64rem"
+        "value": "990px"
       },
       {
-        "name": "box-max",
-        "value": "93rem"
+        "name": "xl",
+        "value": "1400px"
       }
     ],
-    "platforms": {
-      "mobile": {
-        "source": "mobile/src/constants/theme.ts, mobile/APP_SPEC.md Part V7",
-        "note": "The Expo app translates the same world natively (base ink #14213D, white board, sleeve red, pine; square corners, rounded windows only, no shadows, one rope down the left gutter) while keeping native tab bar, stack navigation, gestures and safe areas."
-      }
+    "platformTranslations": {
+      "mobile": "Expo app (mobile/src/constants/theme.ts, mobile/APP_SPEC.md v8) maps the same palette values, faces and tile/green rules to React Native: pressed states in place of hover, native tab bar and stack navigation, safe areas. Legacy v7 key aliases remain in theme.ts."
     }
   },
   "components": [
     {
-      "name": "Ink Button",
+      "name": "Primary Button",
       "kind": "button",
-      "refersTo": "button-ink",
-      "description": "Main call to action on paper: base-ink block, knock-out caps.",
-      "html": "<button class=\"ds-btn ds-btn-ink\">Add to bag</button>",
-      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;min-height:3rem;padding:0 1.25rem;font-family:'Sofia Sans Semi Condensed','Sofia Sans',ui-sans-serif,sans-serif;font-size:.9375rem;line-height:1;font-weight:750;letter-spacing:.07em;text-transform:uppercase;border:2px solid #14213d;border-radius:4px;cursor:pointer;transition:background-color .18s cubic-bezier(.16,1,.3,1),color .18s cubic-bezier(.16,1,.3,1),transform .12s cubic-bezier(.16,1,.3,1)} .ds-btn:active{transform:translateY(1px)} .ds-btn:focus-visible{outline:2px solid #14213d;outline-offset:3px} .ds-btn-ink{background:#14213d;color:#fff} .ds-btn-ink:hover{background:#0b1427;border-color:#0b1427}"
+      "refersTo": "button-primary",
+      "description": "Green buy action (add to bag, checkout) with the skewed hover sweep.",
+      "html": "<button class=\"ds-btn ds-btn-green\">Add to bag</button>",
+      "css": ".ds-btn{position:relative;overflow:hidden;isolation:isolate;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 18px;border:1px solid var(--b);border-radius:3px;background:var(--bg);color:var(--fg);font-family:Roboto,'Helvetica Neue',Arial,sans-serif;font-size:16px;line-height:22px;cursor:pointer;transition:color .25s ease-out,border .25s ease-out}.ds-btn::after{content:'';position:absolute;top:0;left:-60px;z-index:-1;width:calc(100% + 120px);height:100%;background:var(--sw);opacity:var(--so);transform:translate3d(-100%,0,0) skew(30deg);transition:transform .5s cubic-bezier(.33,0,0,1)}.ds-btn:hover::after{transform:translateZ(0)}.ds-btn:focus-visible{outline:2px solid #207212;outline-offset:2px}.ds-btn-green{--fg:#fff;--bg:#207212;--b:#207212;--sw:#1a5c0f;--so:1}.ds-btn-green:hover{border-color:#1a5c0f}"
     },
     {
-      "name": "Keyline Button",
+      "name": "Secondary Button",
       "kind": "button",
-      "refersTo": "button-keyline",
-      "description": "Secondary action on paper: paper fill in a 2px base-ink keyline; fills with ink on hover.",
-      "html": "<button class=\"ds-btn ds-btn-keyline\">The Card</button>",
-      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;min-height:3rem;padding:0 1.25rem;font-family:'Sofia Sans Semi Condensed','Sofia Sans',ui-sans-serif,sans-serif;font-size:.9375rem;line-height:1;font-weight:750;letter-spacing:.07em;text-transform:uppercase;border:2px solid #14213d;border-radius:4px;cursor:pointer;transition:background-color .18s cubic-bezier(.16,1,.3,1),color .18s cubic-bezier(.16,1,.3,1),transform .12s cubic-bezier(.16,1,.3,1)} .ds-btn:active{transform:translateY(1px)} .ds-btn:focus-visible{outline:2px solid #14213d;outline-offset:3px} .ds-btn-keyline{background:#fff;color:#14213d} .ds-btn-keyline:hover{background:#14213d;color:#fff}"
+      "refersTo": "button-secondary",
+      "description": "Solid charcoal for non-buying actions.",
+      "html": "<button class=\"ds-btn2\">Find your color</button>",
+      "css": ".ds-btn2{position:relative;overflow:hidden;isolation:isolate;min-height:44px;padding:10px 18px;border:1px solid #212121;border-radius:3px;background:#212121;color:#fff;font-family:Roboto,Arial,sans-serif;font-size:16px;cursor:pointer}.ds-btn2::after{content:'';position:absolute;top:0;left:-60px;z-index:-1;width:calc(100% + 120px);height:100%;background:#3b3b3b;transform:translate3d(-100%,0,0) skew(30deg);transition:transform .5s cubic-bezier(.33,0,0,1)}.ds-btn2:hover::after{transform:none}.ds-btn2:hover{border-color:#3b3b3b}.ds-btn2:focus-visible{outline:2px solid #207212;outline-offset:2px}"
     },
     {
-      "name": "On-Ink Button",
+      "name": "Outline Button",
       "kind": "button",
-      "refersTo": "button-ink",
-      "description": "A button printed on an inked panel in the panel's knock-out colour (here The Foursome's pine sleeve).",
-      "html": "<div style=\"background:#1e3b2f;padding:24px\"><button class=\"ds-btn ds-btn-onink\">Choose colors</button></div>",
-      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;min-height:3rem;padding:0 1.25rem;font-family:'Sofia Sans Semi Condensed','Sofia Sans',ui-sans-serif,sans-serif;font-size:.9375rem;line-height:1;font-weight:750;letter-spacing:.07em;text-transform:uppercase;border:2px solid #14213d;border-radius:4px;cursor:pointer;transition:background-color .18s cubic-bezier(.16,1,.3,1),color .18s cubic-bezier(.16,1,.3,1),transform .12s cubic-bezier(.16,1,.3,1)} .ds-btn:active{transform:translateY(1px)} .ds-btn:focus-visible{outline:2px solid #14213d;outline-offset:3px} .ds-btn-onink{background:#f1ece0;border-color:#f1ece0;color:#1e3b2f} .ds-btn-onink:hover{filter:brightness(.94)} .ds-btn-onink:focus-visible{outline-color:#fff}"
+      "refersTo": "button-outline",
+      "description": "Transparent with a 1px charcoal border; sweep at 10% currentColor.",
+      "html": "<button class=\"ds-btn3\">Shop the Rope Cap <svg width=\"16\" height=\"16\" viewBox=\"0 0 256 256\" fill=\"currentColor\"><path d=\"M221.7 133.7l-72 72a8 8 0 0 1-11.4-11.4L196.7 136H40a8 8 0 0 1 0-16h156.7l-58.4-58.3a8 8 0 0 1 11.4-11.4l72 72a8 8 0 0 1 0 11.4z\"/></svg></button>",
+      "css": ".ds-btn3{position:relative;overflow:hidden;isolation:isolate;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:10px 18px;border:1px solid #212121;border-radius:3px;background:transparent;color:#212121;font-family:Roboto,Arial,sans-serif;font-size:16px;cursor:pointer}.ds-btn3::after{content:'';position:absolute;top:0;left:-60px;z-index:-1;width:calc(100% + 120px);height:100%;background:currentColor;opacity:.1;transform:translate3d(-100%,0,0) skew(30deg);transition:transform .5s cubic-bezier(.33,0,0,1)}.ds-btn3:hover::after{transform:none}.ds-btn3 svg{transition:transform .25s ease-out}.ds-btn3:hover svg{transform:translate3d(5px,0,0)}.ds-btn3:focus-visible{outline:2px solid #207212;outline-offset:2px}"
     },
     {
-      "name": "Field",
+      "name": "Tab",
+      "kind": "chip",
+      "refersTo": "tab",
+      "description": "Outlined 4px tab; selected fills Tab Black.",
+      "html": "<div style=\"display:flex;gap:8px\"><button class=\"ds-tab\" aria-pressed=\"true\">Core</button><button class=\"ds-tab\">Holes</button></div>",
+      "css": ".ds-tab{display:inline-flex;align-items:center;min-height:26px;padding:4px 16px;border:1px solid #212121;border-radius:4px;background:transparent;color:#212121;font-family:Roboto,Arial,sans-serif;font-size:14px;letter-spacing:.06em;cursor:pointer;transition:border-color .2s,color .2s,background .2s}.ds-tab:hover{border-color:#000}.ds-tab[aria-pressed=true]{background:#141414;border-color:#000;color:#fff;font-weight:700}.ds-tab:focus-visible{outline:2px solid #207212;outline-offset:2px}"
+    },
+    {
+      "name": "Text Field",
       "kind": "input",
       "refersTo": "field",
-      "description": "Text field: paper, 2px faint ink keyline, 4px corners; full ink on focus.",
-      "html": "<input class=\"ds-field\" placeholder=\"Email for Hole 2, Azalea\">",
-      "css": ".ds-field{width:100%;min-height:3rem;padding:.75rem .875rem;border:2px solid #14213d59;border-radius:4px;background:#fff;color:#14213d;font:400 1rem/1.5 'Sofia Sans',ui-sans-serif,sans-serif;transition:border-color .18s cubic-bezier(.16,1,.3,1),box-shadow .18s cubic-bezier(.16,1,.3,1)} .ds-field::placeholder{color:#5d667c} .ds-field:hover{border-color:#14213d99} .ds-field:focus{outline:none;border-color:#14213d;box-shadow:0 0 0 3px #14213d26}"
+      "description": "White field, Field Grey border, green focus outline.",
+      "html": "<input class=\"ds-field\" placeholder=\"Email\">",
+      "css": ".ds-field{width:100%;min-height:44px;padding:10px 12px;border:1px solid #8c8c8c;border-radius:3px;background:#fff;color:#212121;font-family:Roboto,Arial,sans-serif;font-size:16px;transition:border-color .25s}.ds-field:hover{border-color:#212121}.ds-field:focus-visible{outline:2px solid #207212;outline-offset:0;border-color:#212121}"
     },
     {
-      "name": "Tags",
-      "kind": "chip",
-      "refersTo": "tag",
-      "description": "Printed tag (keylined, never a pill) and the sleeve-red edition tag for numbered holes only.",
-      "html": "<span class=\"ds-tag\">Core</span> <span class=\"ds-tag ds-tag-edition\">Hole 2 · 200 made</span>",
-      "css": ".ds-tag{display:inline-flex;align-items:center;min-height:1.5rem;padding:0 .5rem;border:1.5px solid currentColor;border-radius:2px;color:#14213d;font:750 .75rem/1 'Sofia Sans Semi Condensed',ui-sans-serif,sans-serif;letter-spacing:.1em;text-transform:uppercase} .ds-tag-edition{background:#c8302a;border-color:#c8302a;color:#fff}"
-    },
-    {
-      "name": "Front Panel",
+      "name": "Product Card",
       "kind": "card",
-      "refersTo": "panel",
-      "description": "The box's front panel inked in the chosen colourway: die-cut window, model name, spec line, ink stripes, price figure and Add to bag.",
-      "html": "<section class=\"ds-panel\"><div class=\"ds-window\"></div><h2 class=\"ds-model\">The Rope Cap</h2><p class=\"ds-spec\">Mid crown · 11–11.5 cm · One size · No. 01</p><div class=\"ds-stripes\" role=\"radiogroup\" aria-label=\"Color\"><button role=\"radio\" aria-checked=\"true\" style=\"background:#f4f2ee\"><i style=\"background:#1f2a44\"></i></button><button role=\"radio\" aria-checked=\"false\" style=\"background:#26314a\"><i style=\"background:#f4f2ee\"></i></button><button role=\"radio\" aria-checked=\"false\" style=\"background:#1e3b2f\"><i style=\"background:#ede6d6\"></i></button><button role=\"radio\" aria-checked=\"false\" style=\"background:#c9c1ae\"><i style=\"background:#1f2a44\"></i></button></div><hr class=\"ds-crease\"><div class=\"ds-buy\"><span class=\"ds-figure\">$48</span><button class=\"ds-atc\">Add to bag</button></div></section>",
-      "css": ".ds-panel{display:flex;flex-direction:column;gap:1rem;padding:1.25rem;background:#14213d;color:#fff;border:2px solid #14213d;transition:background-color .42s cubic-bezier(.16,1,.3,1)} .ds-window{height:220px;border-radius:28px;background:#fff;box-shadow:inset 0 0 0 1.5px #0a1226} .ds-model{margin:0;font:800 clamp(3.25rem,1.9rem + 6vw,6rem)/.86 'Sofia Sans Extra Condensed',ui-sans-serif,sans-serif;letter-spacing:-.01em;text-transform:uppercase} .ds-spec{margin:0;font:700 1rem/1.3 'Sofia Sans Semi Condensed',ui-sans-serif,sans-serif;letter-spacing:.1em;text-transform:uppercase;font-variant-numeric:tabular-nums} .ds-stripes{display:flex;gap:6px} .ds-stripes button{position:relative;flex:1;height:3rem;border:0;border-radius:3px;cursor:pointer;box-shadow:inset 0 0 0 1.5px #ffffff59;transition:box-shadow .2s} .ds-stripes button i{position:absolute;left:0;right:0;top:58%;height:5px} .ds-stripes button[aria-checked=true]{box-shadow:0 0 0 2px #14213d,0 0 0 5px #fff} .ds-crease{border:0;border-top:1.5px dashed #ffffff66;margin:0} .ds-buy{display:flex;align-items:center;gap:1rem} .ds-figure{font:800 2.75rem/1 'Sofia Sans Extra Condensed',ui-sans-serif,sans-serif;font-variant-numeric:tabular-nums lining-nums} .ds-atc{flex:1;min-height:3.5rem;background:#fff;color:#14213d;border:2px solid #fff;border-radius:4px;font:750 1.0625rem/1 'Sofia Sans Semi Condensed',ui-sans-serif,sans-serif;letter-spacing:.07em;text-transform:uppercase;cursor:pointer} .ds-atc:hover{filter:brightness(.94)} .ds-atc:focus-visible{outline:2px solid #fff;outline-offset:3px}"
+      "refersTo": "product-tile",
+      "description": "5:6 Tile Grey tile, white badge, quick-add bar slides up on hover; title, grey price, swatches.",
+      "html": "<article class=\"ds-card\"><div class=\"ds-tile\"><span class=\"ds-badge\">No. 02</span><div class=\"ds-cap\"></div><button class=\"ds-qa\">+ Quick add</button></div><p class=\"ds-ct\">Pine Rope Cap</p><p class=\"ds-cp\">$48.00</p><div class=\"ds-sw\"><i style=\"background:#1e3b2f\"></i><i style=\"background:#2c4373\"></i><i style=\"background:#fff\"></i></div></article>",
+      "css": ".ds-card{width:220px;font-family:Roboto,Arial,sans-serif}.ds-tile{position:relative;aspect-ratio:5/6;background:#f6f6f6;overflow:hidden}.ds-cap{position:absolute;inset:30% 20%;border-radius:50% 50% 8px 8px;background:#1e3b2f}.ds-badge{position:absolute;top:5px;left:5px;padding:2px 8px;border-radius:20px;background:#fff;color:#000;font-size:11px;letter-spacing:.05em;text-transform:uppercase;box-shadow:0 2px 2px rgb(0 0 0/.02),0 2px 6px rgb(0 0 0/.04)}.ds-qa{position:absolute;inset:auto 0 0 0;min-height:40px;border:0;background:#fff;color:#212121;font-size:11px;font-weight:500;letter-spacing:.025em;text-transform:uppercase;transform:translateY(100%);opacity:0;transition:transform .25s ease,opacity .25s ease}.ds-tile:hover .ds-qa,.ds-tile:focus-within .ds-qa{transform:none;opacity:1}.ds-ct{margin:8px 0 0;font-size:14.4px;line-height:20.16px;color:#000;transition:color .3s}.ds-card:hover .ds-ct{color:rgb(33 33 33/.7)}.ds-cp{margin:2px 0 0;font-size:12.6px;color:#646464;font-variant-numeric:tabular-nums}.ds-sw{display:flex;gap:6px;margin-top:6px}.ds-sw i{width:20px;height:20px;border-radius:50%;border:1px solid #e9e9e9}"
     },
     {
-      "name": "Holes Plate",
-      "kind": "custom",
-      "refersTo": "panel",
-      "description": "Numbered units on one keylined plate with shared 2px rules; a live edition's unit takes the sleeve-red tint.",
-      "html": "<ol class=\"ds-plate\"><li><b>01</b><span>The Rope Cap</span><small>Always in stock</small></li><li class=\"live\"><b>02</b><span>Azalea</span><small>05 Apr 2027</small></li><li><b>03</b><span>Cypress</span><small>01 Jun 2027</small></li></ol>",
-      "css": ".ds-plate{display:grid;grid-template-columns:repeat(3,1fr);margin:0;padding:0;list-style:none;border-top:2px solid #14213d;border-left:2px solid #14213d;color:#14213d} .ds-plate li{display:flex;flex-direction:column;gap:6px;padding:1rem;min-height:8rem;background:#fff;border-right:2px solid #14213d;border-bottom:2px solid #14213d} .ds-plate li.live{background:#fbe9e7} .ds-plate b{font:800 2.5rem/1 'Sofia Sans Extra Condensed',ui-sans-serif,sans-serif;font-variant-numeric:tabular-nums lining-nums} .ds-plate span{font:600 1.0625rem/1.3 'Sofia Sans',ui-sans-serif,sans-serif} .ds-plate small{font:650 11px/1.1rem 'Sofia Sans Semi Condensed',ui-sans-serif,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#3f4a64}"
-    },
-    {
-      "name": "Box Rope",
-      "kind": "custom",
-      "refersTo": "panel",
-      "description": "The page's one rope: a 14px braided cord in the chosen cap's rope colour, laid across a fold.",
-      "html": "<div class=\"ds-rope\"></div>",
-      "css": ".ds-rope{height:14px;background-color:#1f2a44;background-image:repeating-linear-gradient(-55deg,#00000047 0 3px,transparent 3px 7px,#ffffff38 7px 8.4px,transparent 8.4px 10px);transition:background-color .42s cubic-bezier(.16,1,.3,1)}"
-    },
-    {
-      "name": "Header",
+      "name": "Header Nav",
       "kind": "nav",
-      "refersTo": "panel",
-      "description": "Static flap of real facts in base ink over a paper header: spaced-cap menu left, the name in the model face centred, icons right.",
-      "html": "<div class=\"ds-flap\">Hole 2 · Azalea · 05 Apr 2027 &nbsp; Free shipping on $85+</div><nav class=\"ds-nav\"><span><a href=\"#\">Shop</a><a href=\"#\">The Card</a><a href=\"#\">Quiz</a></span><b>Shelby</b><span><a href=\"#\">Bag <i>2</i></a></span></nav>",
-      "css": ".ds-flap{background:#14213d;color:#fff;text-align:center;padding:8px;font:650 .6875rem/1 'Sofia Sans Semi Condensed',ui-sans-serif,sans-serif;letter-spacing:.08em;text-transform:uppercase} .ds-nav{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#fff;color:#14213d;border-bottom:2px solid #14213d} .ds-nav span{display:flex;gap:16px} .ds-nav a{color:inherit;text-decoration:none;font:650 .8125rem/1 'Sofia Sans Semi Condensed',ui-sans-serif,sans-serif;letter-spacing:.08em;text-transform:uppercase} .ds-nav a:hover{text-decoration:underline;text-underline-offset:.22em} .ds-nav a:focus-visible{outline:2px solid #14213d;outline-offset:3px} .ds-nav b{font:800 1.75rem/1 'Sofia Sans Extra Condensed',ui-sans-serif,sans-serif;text-transform:uppercase} .ds-nav i{font-style:normal;display:inline-flex;min-width:1.375rem;height:1.375rem;align-items:center;justify-content:center;border:1.5px solid currentColor;border-radius:2px;margin-left:4px}"
+      "refersTo": "announcement-bar",
+      "description": "Black announcement strip over a white header: Monomakh wordmark, 11px uppercase links with a growing underline.",
+      "html": "<div class=\"ds-ann\">Free shipping on $85+</div><nav class=\"ds-nav\"><span class=\"ds-mark\">Shelby</span><a href=\"#\"><span>Shop</span></a><a href=\"#\"><span>The Card</span></a><a href=\"#\"><span>Fit guide</span></a></nav>",
+      "css": ".ds-ann{height:36px;display:flex;align-items:center;justify-content:center;background:#000;color:#f7f7f7;font-family:Roboto,Arial,sans-serif;font-size:12.6px}.ds-nav{display:flex;align-items:center;gap:4px;height:70px;padding:0 50px;background:#fff;border-bottom:1px solid #f0f0f0}.ds-mark{font-family:Monomakh,'Times New Roman',serif;font-size:30px;letter-spacing:.04em;text-transform:uppercase;margin-right:24px}.ds-nav a{padding:15px;color:#212121;text-decoration:none;font-family:Roboto,Arial,sans-serif;font-size:11px;font-weight:500;letter-spacing:.025em;text-transform:uppercase;transition:color .25s cubic-bezier(.215,.61,.355,1)}.ds-nav a span{position:relative}.ds-nav a span::after{content:'';position:absolute;left:0;right:0;bottom:-2px;height:1px;background:rgb(33 33 33/.7);transform:scaleX(0);transition:transform .25s cubic-bezier(.215,.61,.355,1)}.ds-nav a:hover{color:rgb(33 33 33/.7)}.ds-nav a:hover span::after{transform:scaleX(1)}.ds-nav a:focus-visible{outline:2px solid #207212;outline-offset:2px}"
     }
   ],
   "narrative": {
-    "northStar": "The Ball Box",
-    "overview": "The site is a golf-ball box printed flat. Every page is one flattened box: a white coated board held inside a single heavy ink keyline, its panels butted edge to edge and separated by dashed fold creases. The cap is the model printed on the front panel and is seen only through a die-cut window; its measured spec runs down the side panel; the numbered holes and the Pair and Foursome sleeves are printed on the back. The page reads as packaging, not as a lifestyle hero over a grid of product cards.\n\nPrint is two-ink flexo. Navy is the base ink that sets type, keylines and the default front panel; each colourway's own ink floods whole panels; one sleeve-red is reserved for numbered editions. Type is one superfamily used the way a box is set: compressed bold caps for model names and every numeral, semi-condensed spaced caps for printed labels and controls, the regular width for running copy. Depth comes from the print, not from light: no drop shadows, no veils, no gradients.\n\nMotion is one beat. Choosing a colour re-inks the front panel, swaps the window photo and recolours the rope and the crown drawing together on the same 0.42s exponential ease-out. Scrolling turns the box from its front to its side panel once. Nothing loops, ticks or scrolls on its own.",
+    "northStar": "The Pro Shop Rack",
+    "overview": "The storefront is a bright, well-lit golf-retail floor: white walls, grey shelves, the caps on them, and one green tag that says \"buy\". It is a deliberate site-clone of Eastside Golf's live Shopify Broadcast style (SITE_SPEC v8 Part E), carried by Shelby's own name, copy, products and photos. Everything that is not merchandise stays quiet and small so the product photography and the single green accent do the selling. Density is retail-normal: tight 4px grid gaps, full-bleed photography, small uppercase navigation, and generous white between sections rather than decorative containers.\n\nBlack frames the page top and bottom (announcement bar, prefooter wordmark band, footer); white carries the middle. Three faces split the work cleanly: an old-style display serif for section titles and the wordmark, a bold geometric sans for product and page titles, and a plain grotesque for everything else. Motion is Eastside's: a skewed sweep across buttons on hover, a growing underline under nav links, a second product angle and a sliding quick-add bar on card hover, slide-in drawers. Nothing reveals on scroll.\n\nThe Expo app (`mobile/src/constants/theme.ts`, `mobile/APP_SPEC.md` v8) is a native translation of this system: same palette values, same three faces, same tile and green-for-buying rules, expressed with native navigation, tab bar, pressed states in place of hover, and safe areas.",
     "keyCharacteristics": [
-      "One flattened box per page: a 2px base-ink keyline round the whole, 1.5px dashed creases at every fold.",
-      "Whole panels inked in a colourway's ink; type knocked out of dark inks.",
-      "Photos only through die-cut windows (28px), never full bleed and never under text.",
-      "Compressed 800-weight caps for model names, panel titles, prices and hole numerals.",
-      "One braided rope line, in the chosen cap's rope colour, crossing the folds front to side to back.",
-      "One motion beat (0.42s, cubic-bezier(.16, 1, .3, 1)) and one scroll-driven panel turn."
+      "White page, #F6F6F6 grey tiles behind every product shot, black bars at top and bottom.",
+      "One accent: golf green, reserved for buying, prices and focus.",
+      "Monomakh display serif for section titles and the SHELBY wordmark; Montserrat for product and page titles; Roboto for the rest.",
+      "Small corners (3-4px) on controls; photographs and tiles are square-cornered.",
+      "Hover motion lives on controls and cards; pages do not animate on scroll."
     ],
     "rules": [
       {
-        "name": "The Two-Ink Rule",
-        "body": "A panel is printed in at most its own ink plus one knock-out or base-ink colour. A second accent on a panel is a third ink and is not allowed.",
+        "name": "The One Green Rule",
+        "body": "Green means buy. It appears on the purchase action, the price, selection and focus, never as a decorative fill, a section band or a headline color.",
         "section": "colors"
       },
       {
-        "name": "The Red Edition Rule",
-        "body": "Sleeve red appears only on numbered editions. If the thing is not a numbered hole, it is not red.",
+        "name": "The Grey Tile Rule",
+        "body": "Every product photograph sits on Tile Grey with `mix-blend-mode: multiply`, so white-background shots read as objects on a shelf rather than white boxes.",
         "section": "colors"
       },
       {
-        "name": "The Whole-Panel Rule",
-        "body": "A colourway ink floods an entire panel or does not appear. No tinted strips, chips of ink on paper, or gradient washes; the ink stripes that choose a colour are the one place an ink sits small, and they are the colour control.",
+        "name": "The Black Frame Rule",
+        "body": "Black is for the page frame (announcement bar, prefooter, footer) and solid black buttons. Content sections in between stay white or Tile Grey.",
         "section": "colors"
       },
       {
-        "name": "The Compressed Numeral Rule",
-        "body": "Every price, hole number and count is set in the model face at 800 with tabular lining figures. Engineered digit cells (each digit in its own 1.5px keylined slot) are kept for the release countdown and measured counters only.",
+        "name": "The Three Faces Rule",
+        "body": "Monomakh speaks in section titles and the wordmark, Montserrat names products and pages, Roboto does everything else. No fourth face, and no face crosses into another's job.",
         "section": "typography"
       },
       {
-        "name": "The Heading Stands Alone Rule",
-        "body": "Nothing is printed above a heading. Tags and status sit in the spec line or meta line under it.",
+        "name": "The 11px Floor Rule",
+        "body": "No interface text below 11px; Eastside's 9-10.8px labels were raised to 11px on purpose.",
         "section": "typography"
       },
       {
-        "name": "The One Box Rule",
-        "body": "A page is one keylined box with creases, not a stack of separate cards with gaps between them. A new section is a new panel inside the box.",
-        "section": "layout"
-      },
-      {
-        "name": "The Printed Depth Rule",
-        "body": "Depth is drawn with ink (keylines, creases, window edges), never lit. No drop shadows, glows, blurred veils, or stacked layers.",
+        "name": "The Floating-Only Shadow Rule",
+        "body": "Only things that float over other content (badges, arrows, drawers) cast a shadow. Cards, buttons, bands and inputs are flat.",
         "section": "elevation"
-      },
-      {
-        "name": "The Die-Cut Rule",
-        "body": "Only windows are round. Anything else with a radius over 4px is not part of this box.",
-        "section": "shapes"
       }
     ],
     "dos": [
-      "**Do** keep each page inside one box: 2px base-ink keyline round it, panels butted edge to edge, 1.5px dashed creases at every fold.",
-      "**Do** ink whole panels in a colourway's ink and knock the type out, taking every panel value from the colourway table.",
-      "**Do** show product photos only through 28px die-cut windows with the inset edge line.",
-      "**Do** set model names, panel titles, prices and hole numerals in Sofia Sans Extra Condensed 800 caps, numbers tabular and lining.",
-      "**Do** print the spec as a spec line under the model name and as a keylined plate of units.",
-      "**Do** run every state change on the one beat: 0.42s, cubic-bezier(.16, 1, .3, 1); colour, photo, rope and crown drawing change together.",
-      "**Do** draw measurements to one honest scale on a shared baseline."
+      "**Do** keep Fairway Green (#207212) for buying, price, selection and focus only.",
+      "**Do** put every product photo on a Tile Grey (#F6F6F6) tile with multiply blending.",
+      "**Do** use Monomakh for section titles and the wordmark, Montserrat for product and page titles, Roboto for everything else.",
+      "**Do** keep control corners at 3-4px and photographs square.",
+      "**Do** use the skewed hover sweep on every `.btn`, and provide the plain background-change fallback under reduced motion.",
+      "**Do** keep text at 11px or larger and nav and labels uppercase.",
+      "**Do** show badges only for real states: a numbered edition or live \"Sold out\"."
     ],
     "donts": [
-      "**Don't** use drop shadows, glows, gradients, or veils over photos; depth is keylines, creases and window edges.",
-      "**Don't** round anything but windows past 4px; no pills.",
-      "**Don't** use sleeve red for anything but numbered editions.",
-      "**Don't** print a label, kicker or eyebrow above a heading.",
-      "**Don't** add tickers, marquees, looping motion, or a second scroll-driven effect; the panel turn is the one.",
-      "**Don't** lay products out as a grid of floating product cards; put units on a keylined plate or a row of windows.",
-      "**Don't** put text or tags on a photo.",
-      "**Don't** add a serif, an italic, or a typeface outside the Sofia Sans family."
+      "**Don't** use green as a background band, headline color or decorative accent.",
+      "**Don't** add shadows to cards, buttons, bands or inputs; only badges, rail arrows and drawers float.",
+      "**Don't** add scroll-triggered reveals; the live source runs with them off and so does Shelby.",
+      "**Don't** introduce a fourth typeface or set body copy in Monomakh.",
+      "**Don't** add review stars, \"best seller\", sale strikethroughs or discount popups; the slots they occupy on the source stay empty or carry real Shelby content.",
+      "**Don't** round photographs or tiles, or raise control corners beyond 4px (pills are reserved for badges)."
     ]
   }
 }
