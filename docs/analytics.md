@@ -27,6 +27,17 @@ event data.
 | `notify_me_submitted` | `release_id` | web, app |
 | `order_completed` | `order_id`, `value`, `currency`, `asset`, `release_id`, `utm_*`, `items[]` | **backend only** (`order.placed` subscriber), deduped by `$insert_id` |
 | `release_live` | `release_id`, `handle`, `tier`, `title` | backend only |
+| `offer_viewed` | `offer` | web: offer landing page |
+| `listicle_viewed` | `listicle` | web: listicle |
+| `advertorial_viewed` | `slug` | web: advertorial |
+| `quiz_started` / `quiz_answered` | `step`, `question`, `answer` (answered) | web: `/quiz` |
+| `quiz_completed` | `match`, `color`, `size`, `runner_up`, `use`, `fit`, `crown`, `colors` | web: quiz result |
+
+Every web event also carries **`page_type`** (home, collection, pdp, offer, listicle, advertorial,
+quiz, quiz_result, story, drops, fit_guide, cart, checkout, order, other), derived from the path,
+so any funnel step can be filtered or broken down by the kind of page it happened on. `add_to_cart`
+carries **`source`** when it happens outside the PDP (offer, listicle, story, quiz,
+complete_the_look). See `docs/landing-pages/page-map.md` for each page type's success metric.
 
 Every event row also has `distinct_id` (person), `session_id`, `occurred_at`, `asset`,
 `utm_source/medium/campaign`, `device_type` (mobile/tablet/desktop/app/server) and
