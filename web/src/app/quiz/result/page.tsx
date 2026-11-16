@@ -26,14 +26,14 @@ export const metadata: Metadata = {
 const short = (c: string) => c.replace(/^Clubhouse /, "")
 
 /**
- * Quiz result (SITE_SPEC G.6.13): eyebrow "YOUR MATCH", the match as the H1,
- * the "Why it fits you" card (the page's golf-green band), the matching buy
- * card preselected (`source: "quiz"`), and the bundle nudge for one cap.
+ * Quiz result: the match as the H1, "Why it fits you" printed on a pine
+ * panel, the matching front panel preselected (`source: "quiz"`), and the
+ * bundle nudge for one cap.
  * Stateless: the answers live in the URL, so a result can be shared.
  */
 export default function QuizResultPage(props: PageProps<"/quiz/result">) {
   return (
-    <Suspense fallback={<div className="mx-2.5 h-[80vh] animate-pulse rounded-3xl bg-white" />}>
+    <Suspense fallback={<div className="panel mx-3 mt-6 h-[80vh] md:mx-6" />}>
       <Result searchParams={props.searchParams} />
     </Suspense>
   )
@@ -73,9 +73,10 @@ async function Result({ searchParams }: { searchParams: PageProps<"/quiz/result"
       <Suspense fallback={null}>
         <ContinuityBanner />
       </Suspense>
-      <header className="mx-5 mb-5 flex flex-col gap-2 pt-4">
-        <p className="font-mono text-xs leading-4 tracking-[.1em]">YOUR MATCH</p>
-        <h1 className="font-serif text-[30px] leading-[38px] italic md:text-[40px] md:leading-[48px]">{title}</h1>
+      <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-3 pt-6 md:gap-6 md:px-6 md:pt-10">
+      <header className="flex flex-col gap-2">
+        <h1 className="model">{title}</h1>
+        <p className="text-[1.125rem] text-ink-2">Your match, from your four answers.</p>
       </header>
 
       {match.kind === "single" && <RopeBuyBlock withGallery initialColor={match.color} source="quiz" aside={why} bundleTrack={{ pair: "quiz_bundle", foursome: "quiz_bundle" }} />}
@@ -83,28 +84,32 @@ async function Result({ searchParams }: { searchParams: PageProps<"/quiz/result"
       {match.kind === "pair" && c.pair && <PairMatch c={c} match={match} why={why} />}
       {match.kind === "foursome" && c.foursome && <FoursomeMatch c={c} match={match} why={why} />}
 
-      <p className="my-10 text-center">
-        <Link href="/quiz" className="link text-sm leading-5" data-track="quiz_retake">
+      <div className="flex flex-col gap-2">
+        <AnswersLine answers={answers} />
+        <Link href="/quiz" className="btn btn-outline-black w-fit" data-track="quiz_retake">
           Retake the quiz
         </Link>
-      </p>
-      <AnswersLine answers={answers} />
+      </div>
+      </div>
     </>
   )
 }
 
 function WhyCard({ lines }: { lines: string[] }) {
   return (
-    <section aria-label="Why it fits you" className="band-golf rounded-2xl p-6">
-      <h2 className="font-mono text-xs leading-4 tracking-[.1em]">WHY IT FITS YOU</h2>
+    <section aria-labelledby="why-title" className="panel ink-dark" style={{ "--panel-bg": "#1E3B2F", "--panel-ink": "#F1ECE0", "--panel-line": "#10241B" } as React.CSSProperties}>
+      <span className="panel-inner" aria-hidden />
+      <div className="relative p-[var(--panel-pad)]">
+      <h2 id="why-title" className="panel-title !text-[2rem]">Why it fits you</h2>
       <ul className="mt-4 flex flex-col gap-3">
         {lines.map((w) => (
-          <li key={w} className="flex gap-2.5 text-sm leading-[22px]">
-            <CheckCircle size={16} weight="fill" className="mt-[3px] shrink-0" aria-hidden />
+          <li key={w} className="flex gap-3 text-[1.0625rem] leading-7">
+            <CheckCircle size={20} weight="fill" className="mt-[4px] shrink-0" aria-hidden />
             {w}
           </li>
         ))}
       </ul>
+      </div>
     </section>
   )
 }
@@ -114,30 +119,30 @@ function EditionMatch({ hole, why, c }: { hole: Hole; why: React.ReactNode; c: R
   const edition = hole.productHandle ? c.editions.find((p) => p.handle === hole.productHandle) : null
   const amount = edition ? price(edition).amount : null
   return (
-    <div className="relative md:mx-5 md:grid md:grid-cols-[1fr_45vw] md:items-start md:gap-5 xl:grid-cols-[1fr_38vw]">
-      <div className="relative mx-2.5 aspect-square overflow-hidden rounded-2xl bg-white md:mx-0">
+    <div className="grid items-start gap-4 lg:grid-cols-2">
+      <div className="window aspect-square">
         {hole.image ? (
           <Image src={hole.image} alt={`The Rope Cap in ${hole.name}`} fill preload sizes="(min-width: 768px) 55vw, 100vw" className="object-contain" />
         ) : (
-          <div className="flex size-full items-center justify-center bg-golf-tint font-display text-[40px] text-midnight">{hole.hole}</div>
+          <div className="flex size-full items-center justify-center bg-wash font-model text-[3rem] font-[800] text-ink">{hole.hole}</div>
         )}
       </div>
-      <div className="mt-4 flex flex-col gap-2.5 max-md:mx-2.5 md:mt-0">
+      <div className="flex flex-col gap-4">
         {why}
-        <div className="flex flex-col gap-4 rounded-xl bg-white p-5 lg:p-6">
-          <p className="label-score">
-            HOLE {hole.hole} · {hole.status === "live" ? "LIVE NOW" : `${day ?? "DATE TBC"}${time ? ` · ${time.toUpperCase()}` : ""}`}
+        <div className="panel flex flex-col gap-4 p-[var(--panel-pad)]">
+          <p className="label">
+            Hole {hole.hole} · {hole.status === "live" ? "Live now" : `${day ?? "Date to come"}${time ? ` · ${time}` : ""}`}
           </p>
           <RopeRule color={hole.name} />
-          {hole.size && <span className="badge-edition edition w-fit">EDITION OF {hole.size}</span>}
+          {hole.size && <span className="badge-edition w-fit">Edition of {hole.size}</span>}
           {hole.status === "live" && hole.productHandle ? (
             <ButtonLink href={`/products/${hole.productHandle}`} variant="secondary" size="atc" track="quiz_edition">
-              {`SHOP ${hole.name.toUpperCase()}${amount !== null ? ` – ${formatMoney(amount)}` : ""}`}
+              {`Shop ${hole.name}${amount !== null ? ` · ${formatMoney(amount)}` : ""}`}
             </ButtonLink>
           ) : hole.handle ? (
             <TeeSheetForm releaseHandle={hole.handle} hole={hole.hole} name={hole.name} tone="light" />
           ) : null}
-          <Link href="/products/rope-cap" className="link text-xs leading-4" data-track="quiz_core">
+          <Link href="/products/rope-cap" className="link" data-track="quiz_core">
             Or a core color, in stock today
           </Link>
         </div>
@@ -150,7 +155,7 @@ async function PairMatch({ c, match, why }: { c: RopeCatalog; match: Extract<Qui
   const stock = await getStock([c.pair!.id])
   return (
     <>
-      <div className="mx-2.5 mb-2.5 md:mx-5">{why}</div>
+      {why}
       <PairPicker
         pair={c.pair!}
         colors={[...CORE_COLORS]}
@@ -169,7 +174,7 @@ async function FoursomeMatch({ c, match, why }: { c: RopeCatalog; match: Extract
   const stock = await getStock([c.foursome!.id])
   return (
     <>
-      <div className="mx-2.5 md:mx-5">{why}</div>
+      {why}
       <FoursomePicker foursome={c.foursome!} colors={[...CORE_COLORS]} single={price(c.core!).amount} stock={stock} initial={match.value} source="quiz" plain />
     </>
   )
@@ -177,7 +182,7 @@ async function FoursomeMatch({ c, match, why }: { c: RopeCatalog; match: Extract
 
 function AnswersLine({ answers }: { answers: Answers }) {
   return (
-    <p className="mx-5 mb-10 text-center font-mono text-xs leading-4 tracking-[.05em] text-light-charcoal uppercase">
+    <p className="label text-ink-2">
       Your answers: {QUESTIONS.map((q) => answerLabel(q.key, answers[q.key])).join(" · ")}
     </p>
   )

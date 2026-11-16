@@ -1,17 +1,17 @@
 "use client"
 
-import { ArrowRight } from "@phosphor-icons/react"
+import { ArrowLeft, ArrowRight } from "@phosphor-icons/react"
 import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 import { track } from "@/lib/analytics"
+import { Digits } from "../digits"
 import { prefersReducedMotion } from "@/lib/motion"
 import { QUESTIONS, answersQuery, type Answers } from "@/lib/quiz"
 
 /**
- * The colour and bundle finder (SITE_SPEC G.6.13 on v5 §6.13): a white card
- * with the mono header and step count, the golf-green progress fill (M21), the
- * question as the page's <h1>, 56px option rows (selected in golf green) and
- * "‹ Back". Steps change with M23. Finishing goes to a stateless result URL.
+ * The colour and bundle finder: one panel with the step in digit slots, a
+ * four-segment progress rule, the question as a panel title, keylined answer
+ * rows and Back. Finishing goes to a stateless result URL.
  */
 export function QuizFlow() {
   const router = useRouter()
@@ -54,58 +54,63 @@ export function QuizFlow() {
   }
 
   return (
-    <div id="quiz" className="mx-auto max-w-2xl scroll-mt-28 rounded-3xl bg-white p-6 md:p-10">
-      <div className="flex items-center justify-between font-mono text-xs leading-4 tracking-[.1em]">
-        <span>FIND YOUR COLOR · 30 SECONDS</span>
-        <span aria-live="polite">
-          {step + 1} OF {QUESTIONS.length}
-        </span>
-      </div>
-      <div className="mt-4 h-[7px] w-full overflow-hidden rounded-[4px] bg-natural-white" role="progressbar" aria-valuemin={0} aria-valuemax={QUESTIONS.length} aria-valuenow={step + 1} aria-label="Quiz progress">
-        <div className="h-full origin-left bg-golf-green transition-transform duration-600 ease-[var(--ease-power3-in-out)]" style={{ transform: `scaleX(${(step + 1) / QUESTIONS.length})` }} />
-      </div>
-      <fieldset
-        key={q.key}
-        className={`mt-8 transition-[opacity,transform] ${phase === "in" ? "quiz-step-in" : "translate-y-[10%] opacity-0 duration-200 ease-[var(--ease-sine-in)]"}`}
-        disabled={leaving}
-      >
-        <legend className="w-full">
-          <h1 className="font-display text-2xl leading-8 md:text-[30px] md:leading-9">{q.question}</h1>
-        </legend>
-        <div className="mt-6 flex flex-col gap-2.5">
-          {q.answers.map((a) => {
-            const selected = answers[q.key] === a.value
-            return (
-              <button
-                key={a.value}
-                type="button"
-                onClick={() => answer(a.value)}
-                aria-pressed={selected}
-                data-track="quiz_answer"
-                className={`flex h-14 items-center justify-between rounded-xl border px-5 text-left text-sm leading-5 font-medium tracking-[.05em] uppercase transition-colors duration-200 ease-[var(--ease-sine-in-out)] ${
-                  selected ? "border-golf-green bg-golf-green text-white" : "border-stroke bg-white hover:bg-light-charcoal-0.3"
-                }`}
-              >
-                <span>{a.label}</span>
-                <ArrowRight size={16} aria-hidden />
-              </button>
-            )
-          })}
+    <div id="quiz" className="panel scroll-mt-28">
+      <span className="panel-inner" aria-hidden />
+      <div className="relative flex flex-col gap-6 p-[var(--panel-pad)]">
+        <div className="flex items-center justify-between gap-4">
+          <span className="label">Question</span>
+          <span aria-live="polite" className="text-[2rem] leading-none">
+            <Digits value={`${step + 1}/${QUESTIONS.length}`} cells label={`Question ${step + 1} of ${QUESTIONS.length}`} />
+          </span>
         </div>
-      </fieldset>
-      <div className="mt-5 flex min-h-4 items-center justify-between">
-        {step > 0 && !leaving ? (
-          <button type="button" onClick={() => go(step - 1)} className="link text-xs leading-4" data-track="quiz_back">
-            ‹ Back
-          </button>
-        ) : (
-          <span />
-        )}
-        {leaving && (
-          <p className="text-xs leading-4 text-light-charcoal" role="status">
-            Finding your match…
-          </p>
-        )}
+        <div className="grid grid-cols-4 gap-1.5" role="progressbar" aria-valuemin={0} aria-valuemax={QUESTIONS.length} aria-valuenow={step + 1} aria-label="Quiz progress">
+          {QUESTIONS.map((x, i) => (
+            <span key={x.key} className={`h-2.5 rounded-[2px] border-2 border-ink transition-colors duration-[420ms] ${i <= step ? "bg-ink" : "bg-paper"}`} />
+          ))}
+        </div>
+        <fieldset
+          key={q.key}
+          className={`transition-[opacity,transform] ${phase === "in" ? "quiz-step-in" : "translate-y-3 opacity-0 duration-200"}`}
+          disabled={leaving}
+        >
+          <legend className="w-full">
+            <h2 className="panel-title">{q.question}</h2>
+          </legend>
+          <div className="mt-6 flex flex-col gap-2">
+            {q.answers.map((a) => {
+              const selected = answers[q.key] === a.value
+              return (
+                <button
+                  key={a.value}
+                  type="button"
+                  onClick={() => answer(a.value)}
+                  aria-pressed={selected}
+                  data-track="quiz_answer"
+                  className={`flex min-h-14 items-center justify-between gap-4 rounded-[4px] border-2 px-5 text-left font-label text-[1.0625rem] font-[700] tracking-[.04em] uppercase transition-colors duration-200 ${
+                    selected ? "border-ink bg-ink text-white" : "border-ink/30 bg-paper hover:border-ink"
+                  }`}
+                >
+                  <span>{a.label}</span>
+                  <ArrowRight size={18} weight="bold" aria-hidden />
+                </button>
+              )
+            })}
+          </div>
+        </fieldset>
+        <div className="flex min-h-11 items-center justify-between">
+          {step > 0 && !leaving ? (
+            <button type="button" onClick={() => go(step - 1)} className="btn btn-outline-black btn-small" data-track="quiz_back">
+              <ArrowLeft size={16} weight="bold" aria-hidden /> Back
+            </button>
+          ) : (
+            <span />
+          )}
+          {leaving && (
+            <p className="label" role="status">
+              Finding your match…
+            </p>
+          )}
+        </div>
       </div>
     </div>
   )

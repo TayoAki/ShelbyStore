@@ -4,8 +4,9 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
 import { Countdown } from "@/components/countdown"
-import { RopeRule } from "@/components/rope-rule"
+import { Digits } from "@/components/digits"
 import { TeeSheetForm } from "@/components/tee-sheet-form"
+import { colorway } from "@/lib/swatches"
 import { Track } from "@/components/track"
 import { getRelease } from "@/lib/data/catalog"
 import { liveStock, ropeCatalog } from "@/lib/data/rope"
@@ -20,7 +21,7 @@ export async function generateMetadata({ params }: PageProps<"/card/[handle]">):
 /** A hole page (G.6.7): hero, the story sheet, then by phase: countdown + tee sheet, shop, or played. */
 export default function HolePage(props: PageProps<"/card/[handle]">) {
   return (
-    <Suspense fallback={<div className="m-2.5 aspect-[2/1] animate-pulse rounded-[20px] bg-white" />}>
+    <Suspense fallback={<div className="panel m-3 aspect-[2/1] md:m-6" />}>
       <HoleContent params={props.params} />
     </Suspense>
   )
@@ -35,66 +36,91 @@ async function HoleContent({ params }: { params: PageProps<"/card/[handle]">["pa
   const hole = holes.find((h) => h.handle === handle)
   if (!hole) notFound()
   const { day, time } = holeDate(hole.date)
-  const phase = hole.status === "live" ? "LIVE NOW" : hole.status === "upcoming" ? "UPCOMING" : hole.status === "sold_out" ? "SOLD OUT" : "PLAYED"
-  const colorName = hole.core ? "Tour White" : hole.name
+  const phase = hole.status === "live" ? "Live now" : hole.status === "upcoming" ? "Upcoming" : hole.status === "sold_out" ? "Sold out" : "Played"
+  const ink = colorway(hole.core ? "Tour White" : hole.name)
 
   return (
     <>
       <Track event="drop_viewed" props={{ release_id: release.id, handle: release.handle, phase: release.phase }} />
-      <section data-hero="" className="relative m-2.5 grid overflow-hidden rounded-[20px] bg-white md:grid-cols-2" data-track="drop_hero">
-        <div className="relative aspect-square">
-          {hole.image && <Image src={hole.image} alt={`${hole.name}, Hole ${hole.hole}`} fill preload sizes="(min-width: 768px) 50vw, 100vw" className="object-contain" />}
-        </div>
-        <div className="flex flex-col justify-center gap-4 p-6 pt-20 md:p-12">
-          <p className="font-mono text-xs leading-5 tracking-[.1em]">
-            HOLE {hole.hole} · {phase}
-          </p>
-          <h1 className="font-display text-2xl leading-8 text-midnight md:text-[30px] md:leading-9">
-            <span className="tabular-nums">{pad2(hole.hole)}</span> <span className="kicker !text-[inherit]">{hole.name}</span>
-          </h1>
-          {hole.promise && <p className="text-sm leading-5">{hole.promise}</p>}
-          <p className="label-score">
-            {day ?? "DATE TO BE CONFIRMED"}
-            {time ? ` · ${time.toUpperCase()}` : ""}
-          </p>
-          <RopeRule color={colorName} className="max-w-[320px]" />
-          {hole.size && <span className="badge-edition edition w-fit">{hole.status === "live" && hole.left !== null ? `${hole.left} OF ${hole.size} LEFT` : `EDITION OF ${hole.size}`}</span>}
-          {hole.status === "live" && (
-            <Link href={hole.productHandle ? `/products/${hole.productHandle}` : "/products/rope-cap"} className="btn btn-secondary w-fit" data-track="drop_hero">
-              SHOP {hole.core ? "THE ROPE CAP" : hole.name.toUpperCase()}
-            </Link>
-          )}
-        </div>
-      </section>
-
-      <article className="mx-2.5 my-10 rounded-3xl bg-white p-6 md:p-10">
-        <div className="mx-auto max-w-[65ch]">
-          {release.story && <p className="text-base leading-[26px] text-charcoal">{release.story}</p>}
-          {release.proof && (
-            <>
-              <h2 className="mt-8 font-mono text-xs leading-4 tracking-[.1em] uppercase">What to look for</h2>
-              <p className="mt-3 text-base leading-[26px] text-charcoal">{release.proof}</p>
-            </>
-          )}
-        </div>
-      </article>
-
-      {hole.status === "upcoming" && (
-        <section aria-label="Tee sheet" className="band-golf mx-2.5 my-10 flex flex-col items-center gap-6 rounded-3xl p-6 text-center md:p-10">
-          {hole.date ? <Countdown iso={hole.date} tone="light" size="large" /> : <p className="text-sm">Coming soon</p>}
-          <div className="w-full max-w-[384px] text-left">
-            <TeeSheetForm releaseHandle={handle} hole={hole.hole} name={hole.name} />
+      <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-3 pt-3 md:gap-6 md:px-6 md:pt-6">
+        <nav aria-label="Breadcrumb" className="label !text-[12px] text-ink-2">
+          <Link href="/" className="hover:underline">
+            Home
+          </Link>{" "}
+          /{" "}
+          <Link href="/card" className="hover:underline">
+            The Card
+          </Link>{" "}
+          / Hole {hole.hole}
+        </nav>
+        <section
+          className={`panel ${ink.light ? "" : "ink-dark"}`}
+          style={{ "--panel-bg": ink.panel, "--panel-ink": ink.ink, "--panel-line": ink.edge, "--window-edge": ink.edge } as React.CSSProperties}
+          data-track="drop_hero"
+        >
+          <span className="panel-inner" aria-hidden />
+          <div className="relative grid grid-cols-[minmax(0,1fr)] gap-8 p-[var(--panel-pad)] md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] md:items-center">
+            <div className="window aspect-square">
+              {hole.image && <Image src={hole.image} alt={`${hole.name}, Hole ${hole.hole}`} fill preload sizes="(min-width: 768px) 45vw, 92vw" className="object-contain p-[8%]" />}
+              <span className="window-shade" aria-hidden />
+            </div>
+            <div className="flex flex-col gap-5">
+              <h1 className="flex items-end gap-4">
+                <span className="text-[4.5rem] leading-[.8]" aria-hidden>
+                  <Digits value={pad2(hole.hole)} />
+                </span>
+                <span className="model !text-[clamp(3rem,2rem+4vw,5.5rem)]">{hole.name}</span>
+              </h1>
+              <p className="flex flex-wrap items-center gap-3">
+                <span className={hole.status === "live" || hole.status === "upcoming" ? "badge-edition" : "badge"}>
+                  Hole {hole.hole} · {phase}
+                </span>
+                {hole.size && <span className="label">{hole.status === "live" && hole.left !== null ? `${hole.left} of ${hole.size} left` : `Edition of ${hole.size}`}</span>}
+              </p>
+              {hole.promise && <p className="max-w-[48ch] text-[1.125rem] leading-[1.6]">{hole.promise}</p>}
+              <p className="spec-line">
+                {day ?? "Date to be confirmed"}
+                {time ? ` · ${time}` : ""}
+              </p>
+              {hole.status === "upcoming" && hole.date && <Countdown iso={hole.date} size="large" />}
+              {hole.status === "upcoming" && (
+                <div className="max-w-[440px]">
+                  <TeeSheetForm releaseHandle={handle} hole={hole.hole} name={hole.name} tone={ink.light ? "light" : "dark"} />
+                </div>
+              )}
+              {hole.status === "live" && (
+                <Link href={hole.productHandle ? `/products/${hole.productHandle}` : "/products/rope-cap"} className="btn btn-on-ink btn-large w-fit" style={{ "--btn-bg": ink.light ? "#14213D" : ink.ink, "--btn-fg": ink.light ? "#FFFFFF" : ink.panel } as React.CSSProperties} data-track="drop_hero">
+                  Shop {hole.core ? "the Rope Cap" : hole.name}
+                </Link>
+              )}
+            </div>
           </div>
         </section>
-      )}
-      {(hole.status === "ended" || hole.status === "sold_out") && (
-        <section aria-label="Played" className="mx-2.5 my-10 flex flex-col items-center gap-4 rounded-3xl bg-white p-10 text-center">
-          <p className="text-xl leading-7">This hole has been played.</p>
-          <Link href="/products/rope-cap" className="btn btn-secondary">
-            SHOP THE ROPE CAP
-          </Link>
-        </section>
-      )}
+
+        {(release.story || release.proof) && (
+          <article className="panel">
+            <span className="panel-inner" aria-hidden />
+            <div className="relative mx-auto flex max-w-[68ch] flex-col gap-4 p-[var(--panel-pad)] md:py-12">
+              {release.story && <p className="text-[1.125rem] leading-[1.7]">{release.story}</p>}
+              {release.proof && (
+                <>
+                  <h2 className="panel-title !text-[2rem]">What to look for</h2>
+                  <p className="text-[1.125rem] leading-[1.7]">{release.proof}</p>
+                </>
+              )}
+            </div>
+          </article>
+        )}
+
+        {(hole.status === "ended" || hole.status === "sold_out") && (
+          <section className="panel flex flex-col items-start gap-4 p-[var(--panel-pad)]">
+            <p className="panel-title !text-[2.25rem]">This hole has been played.</p>
+            <Link href="/products/rope-cap" className="btn btn-secondary">
+              Shop the Rope Cap
+            </Link>
+          </section>
+        )}
+      </div>
     </>
   )
 }

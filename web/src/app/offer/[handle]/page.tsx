@@ -5,10 +5,10 @@ import { Suspense } from "react"
 import { Faq } from "@/components/accordion"
 import { ContinuityBanner } from "@/components/continuity-banner"
 import { Exposure } from "@/components/exposure"
-import { Reveal } from "@/components/motion/reveal"
+import { Digits } from "@/components/digits"
+import { SwatchFace } from "@/components/swatch"
 import { FoursomePicker, PairPicker } from "@/components/offer/pair-picker"
 import { ScrollTo } from "@/components/scroll-to"
-import { SeriesPill } from "@/components/series-pill"
 import { Track } from "@/components/track"
 import { listSeries } from "@/lib/data/content"
 import { liveStock, ropeCatalog } from "@/lib/data/rope"
@@ -27,13 +27,13 @@ export const metadata: Metadata = {
 }
 
 /**
- * The offer landing page (SITE_SPEC G.6.5): The Pair above the fold, then the
- * Foursome step-up (the page's golf-green band), what's included, why two,
- * proof, FAQ and the closing pill. `/offer/the-foursome` is the same page.
+ * The offer: The Pair as a two-window sleeve above the fold, The Foursome as
+ * the step-up sleeve printed in pine, then what's included, the live proof,
+ * the FAQ, and the close. `/offer/the-foursome` is the same page.
  */
 export default function OfferPage(props: PageProps<"/offer/[handle]">) {
   return (
-    <Suspense fallback={<div className="m-2.5 h-[70vh] animate-pulse rounded-2xl bg-white" />}>
+    <Suspense fallback={<div className="mx-auto mt-6 h-[70vh] max-w-[1440px] animate-pulse bg-wash" />}>
       <OfferContent params={props.params} />
     </Suspense>
   )
@@ -59,39 +59,59 @@ async function OfferContent({ params }: { params: PageProps<"/offer/[handle]">["
       <Suspense fallback={null}>
         <ContinuityBanner />
       </Suspense>
-      <Suspense fallback={<PairPicker pair={c.pair} colors={colors} single={single} stock={null} headline={headline} />}>
-        <LivePair handle={handle} headline={headline} />
-      </Suspense>
-      {c.foursome && (
-        <Suspense fallback={<FoursomePicker foursome={c.foursome} colors={colors} single={single} stock={null} />}>
-          <LiveFoursome />
+      <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-3 pt-3 md:gap-6 md:px-6 md:pt-6">
+        <Suspense fallback={<PairPicker pair={c.pair} colors={colors} single={single} stock={null} headline={headline} />}>
+          <LivePair handle={handle} headline={headline} />
         </Suspense>
-      )}
-      <Reveal aria-label="What's included" className="grid grid-cols-1 gap-2.5 p-2.5 md:grid-cols-3">
-        {[
-          ["WHAT'S INCLUDED", "Two Rope Caps, one size each. Mid crown, washed cotton, braided rope, strap with a brass slide."],
-          ["WHY TWO", "A light one and a dark one. One for the bag, one for the car. You already know the fit."],
-          ["FREE SHIPPING", `The Pair is ${formatMoney(pairPrice)}, over the $85 line, so it ships free. 30-day returns.`],
-        ].map(([t, b], i) => (
-          <div key={t} data-reveal-child="" style={{ ["--i" as string]: i, ["--stagger" as string]: ".05s" }} className="flex flex-col gap-5 rounded-2xl bg-white px-5 pt-10 pb-8 md:p-8">
-            <p className="eyebrow">{t}</p>
-            <p className="text-sm leading-[21px]">{b}</p>
+        {c.foursome && (
+          <Suspense fallback={<FoursomePicker foursome={c.foursome} colors={colors} single={single} stock={null} />}>
+            <LiveFoursome />
+          </Suspense>
+        )}
+        <section aria-labelledby="included-title" className="panel">
+          <span className="panel-inner" aria-hidden />
+          <div className="relative flex flex-col gap-6 p-[var(--panel-pad)]">
+            <h2 id="included-title" className="panel-title">
+              What&apos;s in the sleeve
+            </h2>
+            <dl className="grid plate md:grid-cols-3">
+              {[
+                ["Included", "Two Rope Caps, one size each. Mid crown, washed cotton, braided rope, strap with a brass slide."],
+                ["Why two", "A light one and a dark one. One for the bag, one for the car. You already know the fit."],
+                ["Shipping", `The Pair is ${formatMoney(pairPrice)}, over the $85 line, so it ships free. 30-day returns.`],
+              ].map(([t, b]) => (
+                <div key={t} className="flex flex-col gap-2 bg-paper p-5">
+                  <dt className="label">{t}</dt>
+                  <dd className="text-[1.0625rem] leading-7">{b}</dd>
+                </div>
+              ))}
+            </dl>
           </div>
-        ))}
-      </Reveal>
-      <Suspense fallback={null}>
-        <Proof stance={stance} handle={series[0]?.handle ?? null} />
-      </Suspense>
-      <Faq
-        items={[
-          { q: "Will it fit?", a: "One size. The strap fits 21.5–23.75 in (55–60 cm), and the crown sits mid. The fit guide shows how to measure." },
-          { q: "Can I pick the same color twice?", a: "Yes. Pick it for both caps." },
-          { q: "Returns", a: "30 days, on the pair." },
-          { q: "Shipping", a: "The Pair ships free (orders of $85 or more). Ships in 1–2 business days." },
-          { q: "Is this a sale?", a: `No. Singles stay ${formatMoney(single)}; two are ${formatMoney(pairPrice)} and four are ${formatMoney(c.foursome ? price(c.foursome).amount : null)}, every day.` },
-        ]}
-      />
-      {stance && <SeriesPill title={series[0].title} stance={stance} href="#top" episodes={series[0].episodes.map((e) => e.title)} cta={`ADD THE PAIR – ${formatMoney(pairPrice)}`} track="offer_close_cta" />}
+        </section>
+        <Suspense fallback={null}>
+          <Proof stance={stance} handle={series[0]?.handle ?? null} />
+        </Suspense>
+        <Faq
+          items={[
+            { q: "Will it fit?", a: "One size. The strap fits 21.5–23.75 in (55–60 cm), and the crown sits mid. The fit guide shows how to measure." },
+            { q: "Can I pick the same color twice?", a: "Yes. Pick it for both caps." },
+            { q: "Returns", a: "30 days, on the pair." },
+            { q: "Shipping", a: "The Pair ships free (orders of $85 or more). Ships in 1–2 business days." },
+            { q: "Is this a sale?", a: `No. Singles stay ${formatMoney(single)}; two are ${formatMoney(pairPrice)} and four are ${formatMoney(c.foursome ? price(c.foursome).amount : null)}, every day.` },
+          ]}
+        />
+        <section aria-labelledby="offer-close" className="panel ink-dark" style={{ "--panel-bg": "#14213D", "--panel-ink": "#FFFFFF", "--panel-line": "#14213D" } as React.CSSProperties}>
+          <span className="panel-inner" aria-hidden />
+          <div className="relative flex flex-col items-start gap-5 p-[var(--panel-pad)] md:flex-row md:items-end md:justify-between">
+            <h2 id="offer-close" className="model !text-[clamp(2.5rem,1.8rem+3vw,4.5rem)] max-w-[16ch]">
+              {headline}
+            </h2>
+            <a href="#top" className="btn btn-on-ink btn-large shrink-0" style={{ "--btn-bg": "#FFFFFF", "--btn-fg": "#14213D" } as React.CSSProperties} data-track="offer_close_cta">
+              Add the pair · {formatMoney(pairPrice)}
+            </a>
+          </div>
+        </section>
+      </div>
     </>
   )
 }
@@ -120,27 +140,37 @@ async function Proof({ stance, handle }: { stance: string | null; handle: string
     return { col, n: v ? stock[v.id] : undefined }
   })
   return (
-    <Reveal aria-label="Proof" className="mx-2.5 my-10 grid gap-2.5 md:grid-cols-2">
-      <div className="rounded-2xl bg-white p-6 md:p-8">
-        <p className="eyebrow">IN STOCK TODAY</p>
-        <ul className="mt-4 flex flex-col gap-2">
-          {rows.map((r) => (
-            <li key={r.col} className="flex justify-between text-sm leading-5">
-              <span>{r.col}</span>
-              <span className={typeof r.n === "number" && r.n > 0 ? "text-green" : "text-light-charcoal"}>{typeof r.n === "number" ? (r.n > 0 ? `● ${r.n} in stock` : "● Restocking") : "● In stock"}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-      {stance && handle && (
-        <div className="flex flex-col gap-4 rounded-2xl bg-white p-6 md:p-8">
-          <p className="eyebrow">THE CROWN TEST</p>
-          <p className="font-serif text-xl leading-7 italic">{stance}</p>
-          <Link href={`/stories/${handle}`} className="link w-fit text-sm" data-track="offer_story">
-            See the test
-          </Link>
+    <section aria-labelledby="proof-title" className="panel">
+      <span className="panel-inner" aria-hidden />
+      <div className="relative grid grid-cols-[minmax(0,1fr)] gap-8 p-[var(--panel-pad)] md:grid-cols-2">
+        <div className="flex flex-col gap-4">
+          <h2 id="proof-title" className="panel-title">
+            In stock today
+          </h2>
+          <ul className="flex flex-col border-2 border-ink">
+            {rows.map((r) => (
+              <li key={r.col} className="flex items-center justify-between gap-3 border-ink px-4 py-3 [&+&]:border-t-2">
+                <span className="flex items-center gap-3 text-[1.0625rem]">
+                  <SwatchFace name={r.col} size={20} /> {r.col}
+                </span>
+                <span className="text-[1.375rem] leading-none">
+                  {typeof r.n === "number" ? r.n > 0 ? <Digits value={r.n} label={`${r.n} in stock`} /> : <span className="label">Restocking</span> : <span className="label">In stock</span>}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <p className="text-[0.875rem] text-ink-2">Live counts from the warehouse.</p>
         </div>
-      )}
-    </Reveal>
+        {stance && handle && (
+          <div className="flex flex-col gap-4">
+            <h2 className="panel-title">The Crown Test</h2>
+            <p className="text-[1.25rem] leading-[1.5]">{stance}</p>
+            <Link href={`/stories/${handle}`} className="link w-fit font-semibold" data-track="offer_story">
+              See the test
+            </Link>
+          </div>
+        )}
+      </div>
+    </section>
   )
 }

@@ -11,11 +11,11 @@ import { editionOf } from "@/lib/rope"
 
 export const metadata: Metadata = { title: "Order confirmed", robots: { index: false } }
 
-/** Order confirmation (v5 §6.8, G.6.9): never shows a specific edition number. */
+/** Order confirmation (Operate): one panel; never shows a specific edition number. */
 export default function OrderPage(props: PageProps<"/order/[id]">) {
   return (
-    <div className="mx-auto max-w-[760px] px-2.5 pb-16">
-      <Suspense fallback={<div className="h-60 animate-pulse rounded-3xl bg-white" />}>
+    <div className="mx-auto max-w-[860px] px-3 pt-6 md:px-6 md:pt-10">
+      <Suspense fallback={<div className="panel h-60" />}>
         <OrderContent params={props.params} />
       </Suspense>
     </div>
@@ -35,13 +35,12 @@ async function OrderContent({ params }: { params: PageProps<"/order/[id]">["para
   const numbered = (order.items ?? []).some((i) => editionOf(catalog.find((p) => p.id === i.product_id))?.numberedInside)
   const a = order.shipping_address
   return (
-    <div className="flex flex-col gap-6 rounded-3xl bg-white p-6 md:p-10">
-      <p className="font-mono text-xs leading-4 tracking-[.1em]">ORDER CONFIRMED</p>
-      <h1 className="font-display text-2xl leading-8 md:text-[30px] md:leading-9">Thanks{a?.first_name ? `, ${a.first_name}` : ""}.</h1>
-      <p className="text-sm leading-5">
-        Order #{order.display_id} is confirmed. We&apos;ll email tracking to {order.email} when it ships.
+    <div className="panel flex flex-col gap-6 p-[var(--panel-pad)]">
+      <h1 className="model">Thanks{a?.first_name ? `, ${a.first_name}` : ""}.</h1>
+      <p className="text-[1.125rem] leading-[1.6]">
+        Order <span className="font-semibold tabular-nums">#{order.display_id}</span> is confirmed. We&apos;ll email tracking to {order.email} when it ships.
       </p>
-      <ul className="-mx-5 border-t border-natural-white-60">
+      <ul className="border-t-2 border-ink">
         {(order.items ?? []).map((i) => (
           <LineItem
             key={i.id}
@@ -59,19 +58,19 @@ async function OrderContent({ params }: { params: PageProps<"/order/[id]">["para
           />
         ))}
       </ul>
-      <div className="flex w-full justify-between text-sm leading-5 font-medium">
-        <span>Total</span>
-        <span>{formatMoney(Number(order.total ?? 0), order.currency_code)}</span>
+      <div className="flex w-full items-baseline justify-between border-t-2 border-ink pt-4">
+        <span className="label">Total</span>
+        <span className="font-model text-[2rem] leading-none font-[800] tabular-nums">{formatMoney(Number(order.total ?? 0), order.currency_code)}</span>
       </div>
       {a && (
-        <p className="text-xs leading-4 text-light-charcoal">
+        <p className="text-[1rem] leading-6 text-ink-2">
           Shipping to {a.first_name} {a.last_name}, {a.address_1}
           {a.address_2 ? `, ${a.address_2}` : ""}, {a.city} {a.province} {a.postal_code}
         </p>
       )}
-      {numbered && <p className="text-xs leading-4 text-light-charcoal">Your edition number is printed inside the cap.</p>}
+      {numbered && <p className="text-[1rem] leading-6 text-ink-2">Your edition number is printed inside the cap.</p>}
       <ButtonLink href="/" className="w-fit" track="checkout_complete">
-        KEEP SHOPPING
+        Keep shopping
       </ButtonLink>
     </div>
   )

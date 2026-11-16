@@ -4,6 +4,7 @@ import Image from "next/image"
 import { useEffect, useRef, useState } from "react"
 import { useAddToBag } from "@/components/cart/use-add-to-bag"
 import { RopeRule } from "@/components/rope-rule"
+import { Digits } from "@/components/digits"
 import { SwatchFace } from "@/components/swatch"
 import { formatMoney } from "@/lib/format"
 import { POLICY } from "@/lib/policy"
@@ -13,9 +14,9 @@ import type { Product, VariantStock } from "@/lib/types"
 const lead = (c: string) => `/hats/rope-cap-${c.toLowerCase().replace(/\s+/g, "-")}-1.jpg`
 
 /**
- * The Pair (G.6.5): two colour pickers over the core colours, the chosen caps
- * side by side, a rope rule under each picker, live kit stock, the true $96
- * anchor and "ADD THE PAIR – $88". Sticky bar once the CTA scrolls away.
+ * The Pair as a two-window sleeve: two ink-chip pickers over the core colours,
+ * the chosen caps side by side in their windows, live kit stock, the true
+ * single-price anchor and Add the pair. Sticky strip once the button scrolls away.
  */
 export function PairPicker({
   pair,
@@ -60,8 +61,8 @@ export function PairPicker({
 
   const picker = (label: string, value: string, set: (c: string) => void) => (
     <div className="flex flex-col gap-2">
-      <p className="flex gap-2 text-xs leading-4 font-medium tracking-wider">
-        <span className="font-mono">{label}</span>
+      <p className="label flex gap-2">
+        <span>{label}</span>
         <span>{value}</span>
       </p>
       <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={label}>
@@ -76,57 +77,57 @@ export function PairPicker({
   )
 
   return (
-    <div className="relative md:mx-5 md:grid md:grid-cols-[1fr_45vw] md:items-start md:gap-5 xl:grid-cols-[1fr_38vw]">
-      <div className="mx-2.5 grid grid-cols-2 gap-2 md:mx-0">
+    <div className="grid items-start gap-4 md:gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <div className="panel grid grid-cols-2 gap-3 p-[var(--panel-pad)]">
         {[first, second].map((c, i) => (
-          <figure key={`${c}-${i}`} className="relative aspect-square overflow-hidden rounded-2xl bg-white md:aspect-[7/8]">
-            <Image src={lead(c)} alt={`The Rope Cap in ${c}`} fill preload={i === 0} sizes="(min-width: 768px) 25vw, 50vw" className="object-contain" />
-            <figcaption className="absolute bottom-3 left-3 font-mono text-xs tracking-[.05em] text-light-charcoal uppercase">
+          <figure key={`${c}-${i}`} className="window aspect-square md:aspect-[7/8]">
+            <Image src={lead(c)} alt={`The Rope Cap in ${c}`} fill preload={i === 0} sizes="(min-width: 768px) 25vw, 50vw" className="object-contain p-[8%]" />
+            <figcaption className="label absolute bottom-3 left-3 z-[2] rounded-[2px] bg-paper px-1.5 py-0.5">
               Cap {i + 1} · {c}
             </figcaption>
           </figure>
         ))}
       </div>
-      <aside className="mt-4 grid gap-6 rounded-xl bg-white p-5 max-md:mx-2.5 md:sticky md:top-[120px] md:mt-0 md:shadow-sm lg:p-6 xl:p-8">
+      <aside className="panel grid gap-6 p-[var(--panel-pad)] lg:sticky lg:top-24">
         <div className="flex flex-col gap-2">
-          <Heading className="font-serif text-2xl leading-8 italic md:text-[30px] md:leading-9">{headline}</Heading>
-          <p className="font-mono text-xs leading-4 tracking-[.05em] text-light-charcoal uppercase md:text-sm md:leading-5">THE PAIR · CORE COLORS</p>
+          <Heading className="model !text-[clamp(2.75rem,2rem+3vw,4.5rem)]">{headline}</Heading>
+          <p className="spec-line">The Pair · Core colors</p>
           <div className="flex items-center gap-2">
-            <span className="text-lg leading-7 font-medium tracking-[.05em]">{formatMoney(p.amount, p.currency)}</span>
+            <span className="text-[2.75rem] leading-none"><Digits value={formatMoney(p.amount, p.currency)} /></span>
             {saving !== null && (
               <>
-                <span className="text-lg leading-7 line-through opacity-65">{formatMoney(anchor, p.currency)}</span>
-                <span className="rounded-full bg-natural-white px-2 py-1 text-xs leading-4 font-medium tracking-[.05em] italic">SAVE {formatMoney(saving, p.currency)}</span>
+                <span className="text-[1.375rem] leading-none line-through opacity-75">{formatMoney(anchor, p.currency)}</span>
+                <span className="badge">Save {formatMoney(saving, p.currency)}</span>
               </>
             )}
           </div>
-          <p className="text-xs leading-4 text-light-charcoal">Pick any two colors{single !== null ? `. Singles stay ${formatMoney(single)}.` : "."}</p>
+          <p className="text-[1rem] leading-6 text-ink-2">Pick any two colors{single !== null ? `. Singles stay ${formatMoney(single)}.` : "."}</p>
         </div>
         {picker("FIRST CAP:", first, setFirst)}
         {picker("SECOND CAP:", second, setSecond)}
         <div ref={cta} className="flex flex-col gap-3">
           <button type="button" className="btn btn-secondary btn-atc" disabled={soldOut || pending || stock === null || !variant} onClick={() => onAdd("offer_add")} data-track="offer_add">
-            {soldOut ? "SOLD OUT" : `ADD THE PAIR – ${formatMoney(p.amount, p.currency)}`}
+            {soldOut ? "Sold out" : `Add the pair · ${formatMoney(p.amount, p.currency)}`}
           </button>
-          {error && <p className="text-xs text-red">{error}</p>}
-          <p className="text-xs leading-4">
+          {error && <p className="text-[0.875rem] text-red">{error}</p>}
+          <p className="text-[0.9375rem] leading-6">
             {stock === null ? (
               <span className="text-light-charcoal">Checking stock…</span>
             ) : soldOut ? (
-              <span className="text-light-charcoal">● That pair is sold out. Try another color.</span>
+              <span>That pair is sold out. Try another color.</span>
             ) : (
-              <span className="text-green">● Both in stock · ships in 1–2 business days</span>
+              <span className="text-ok">Both in stock · ships in 1–2 business days</span>
             )}
           </p>
-          <p className="text-xs leading-4">{formatMoney(p.amount)} qualifies for free shipping · {POLICY.returns} on the pair</p>
+          <p className="text-[0.9375rem] leading-6">{formatMoney(p.amount)} qualifies for free shipping · {POLICY.returns} on the pair</p>
         </div>
       </aside>
-      <div className={`fixed inset-x-0 bottom-0 z-[70] rounded-t-md bg-white px-7 py-5 shadow-xl transition-all duration-150 ease-in-out ${visible ? "pointer-events-none opacity-0" : ""}`} aria-hidden={visible}>
+      <div className={`sheet fixed inset-x-0 bottom-0 z-[70] border-t-2 border-ink bg-paper px-4 py-3 ${visible ? "pointer-events-none translate-y-full opacity-0" : ""}`} aria-hidden={visible}>
         <p className="text-center text-sm leading-5">
           The Pair: {first} + {second} · {formatMoney(p.amount, p.currency)}
         </p>
         <button type="button" tabIndex={visible ? -1 : 0} className="btn btn-secondary btn-atc mt-3" disabled={soldOut || pending || stock === null} onClick={() => onAdd("offer_sticky_add")} data-track="offer_sticky_add">
-          ADD THE PAIR – {formatMoney(p.amount, p.currency)}
+          Add the pair · {formatMoney(p.amount, p.currency)}
         </button>
       </div>
     </div>
@@ -165,23 +166,23 @@ export function FoursomePicker({
   const anchor = single !== null ? single * 4 : null
   const saving = anchor !== null && p.amount !== null && anchor > p.amount ? anchor - p.amount : null
   return (
-    <section id="foursome" aria-label="The Foursome" className={`${plain ? "bg-white text-black" : "band-golf"} mx-2.5 my-10 grid scroll-mt-28 gap-8 rounded-3xl p-5 md:grid-cols-2 md:p-10`}>
-      <div className={`grid grid-cols-2 gap-2 rounded-2xl p-3 ${plain ? "bg-natural-white-25" : "bg-white"}`}>
+    <section id="foursome" aria-label="The Foursome" className={`panel ${plain ? "" : "ink-dark"} grid scroll-mt-28 gap-8 p-[var(--panel-pad)] md:grid-cols-2`} style={plain ? undefined : ({ "--panel-bg": "#1E3B2F", "--panel-ink": "#F1ECE0", "--panel-line": "#10241B" } as React.CSSProperties)}>
+      <div className="grid grid-cols-2 gap-2">
         {(mode === "each" ? colors : [color, color, color, color]).map((c, i) => (
-          <span key={`${c}-${i}`} className="relative aspect-square">
-            <Image src={lead(c)} alt="" fill sizes="(min-width: 768px) 20vw, 45vw" className="object-contain" />
+          <span key={`${c}-${i}`} className="window relative aspect-square !rounded-[18px]">
+            <Image src={lead(c)} alt="" fill sizes="(min-width: 768px) 20vw, 45vw" className="object-contain p-[8%]" />
           </span>
         ))}
       </div>
       <div className="flex flex-col justify-center gap-4">
-        <p className={`kicker ${plain ? "text-golf-green" : "text-golf-tint"}`}>For the group trip, the outing or Father&apos;s Day.</p>
-        <h2 className="font-display text-[30px] leading-9">Four caps, {formatMoney(p.amount !== null ? p.amount / 4 : null)} each.</h2>
-        <div className={`flex gap-1 rounded-full border p-1 text-xs ${plain ? "border-black" : "border-white"}`} role="tablist" aria-label="Foursome mode">
+        <h2 className="panel-title">Four caps, {formatMoney(p.amount !== null ? p.amount / 4 : null)} each.</h2>
+        <p className="text-[1.0625rem] leading-7">For the group trip, the outing or Father&apos;s Day.</p>
+        <div className="flex gap-6 border-b-2 border-current" role="tablist" aria-label="Foursome mode">
           {[
-            ["one", "FOUR OF ONE COLOR"],
-            ["each", "ONE OF EACH"],
+            ["one", "Four of one color"],
+            ["each", "One of each"],
           ].map(([k, l]) => (
-            <button key={k} type="button" role="tab" aria-selected={mode === k} onClick={() => setMode(k as "one" | "each")} className={`flex-1 rounded-full px-3 py-1.5 font-medium transition-colors duration-200 ${mode === k ? (plain ? "bg-black text-white" : "bg-white text-golf-green") : plain ? "hover:bg-black/5" : "hover:bg-white/10"}`}>
+            <button key={k} type="button" role="tab" aria-selected={mode === k} onClick={() => setMode(k as "one" | "each")} className="tab-title -mb-[2px] min-h-11">
               {l}
             </button>
           ))}
@@ -196,22 +197,22 @@ export function FoursomePicker({
           </div>
         )}
         <p className="flex items-center gap-2">
-          <span className="text-lg leading-7 font-medium">{formatMoney(p.amount, p.currency)}</span>
+          <span className="text-[2.5rem] leading-none"><Digits value={formatMoney(p.amount, p.currency)} /></span>
           {saving !== null && (
             <>
               <span className="line-through opacity-65">{formatMoney(anchor, p.currency)}</span>
-              <span className={`rounded-full px-2 py-1 text-xs font-medium italic ${plain ? "bg-natural-white" : "bg-white/15"}`}>SAVE {formatMoney(saving, p.currency)}</span>
+              <span className="badge">Save {formatMoney(saving, p.currency)}</span>
             </>
           )}
         </p>
         <button
           type="button"
-          className={`btn ${plain ? "btn-secondary" : "btn-primary"} btn-atc`}
+          className={`btn ${plain ? "btn-secondary" : "btn-on-ink"} btn-atc`} style={plain ? undefined : ({ "--btn-bg": "#F1ECE0", "--btn-fg": "#1E3B2F" } as React.CSSProperties)}
           disabled={soldOut || pending || stock === null || !variant}
           onClick={() => variant && add({ productId: foursome.id, variantId: variant.id, price: p.amount, currency: p.currency, source, extra: { offer: foursome.handle, caps: value } })}
           data-track="offer_foursome_add"
         >
-          {soldOut ? "SOLD OUT" : `ADD THE FOURSOME – ${formatMoney(p.amount, p.currency)}`}
+          {soldOut ? "Sold out" : `Add the foursome · ${formatMoney(p.amount, p.currency)}`}
         </button>
       </div>
     </section>

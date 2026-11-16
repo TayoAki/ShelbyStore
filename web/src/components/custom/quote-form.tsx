@@ -6,8 +6,8 @@ import { track } from "@/lib/analytics"
 import { CORE_COLORS } from "@/lib/rope"
 import { SwatchFace } from "../swatch"
 
-const input = "h-[42px] w-full rounded-full border border-black bg-white px-4 text-base"
-const label = "mb-1.5 block text-xs leading-4 font-medium tracking-[.05em] uppercase"
+const input = "field"
+const label = "label mb-1.5 block"
 
 /**
  * The custom quote form (G.6.10): name, email, organisation, quantity (24+),
@@ -29,12 +29,12 @@ export function QuoteForm() {
 
   if (state?.ok)
     return (
-      <p className="font-display text-2xl leading-8" role="status">
+      <p className="panel-title !text-[2rem]" role="status">
         Thanks, {state.firstName}. We&apos;ll reply within two business days.
       </p>
     )
 
-  const err = (k: string) => (fe[k] ? <p className="mt-1 text-xs leading-4 text-red">{fe[k]}</p> : null)
+  const err = (k: string) => (fe[k] ? <p className="mt-1 text-[0.875rem] leading-5 text-red">{fe[k]}</p> : null)
   return (
     <form action={action} className="grid gap-5 md:grid-cols-2" noValidate>
       <div>
@@ -75,10 +75,10 @@ export function QuoteForm() {
         <legend className={label}>Colors, in twelves</legend>
         <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
           {CORE_COLORS.map((c) => (
-            <div key={c} className="flex items-center gap-3 rounded-xl border border-stroke p-3">
+            <div key={c} className="flex items-center gap-3 rounded-[4px] border-2 border-ink/30 p-3">
               <SwatchFace name={c} size={20} />
               <div className="flex flex-1 flex-col">
-                <label htmlFor={`q-${c}`} className="text-xs leading-4">
+                <label htmlFor={`q-${c}`} className="text-[0.875rem] leading-5">
                   {c}
                 </label>
                 <input
@@ -89,13 +89,13 @@ export function QuoteForm() {
                   step={12}
                   value={colors[c] ?? 0}
                   onChange={(e) => setColors((s) => ({ ...s, [c]: Number(e.target.value) }))}
-                  className="mt-1 w-full rounded-full border border-black px-3 py-1 text-sm"
+                  className="field mt-1"
                 />
               </div>
             </div>
           ))}
         </div>
-        <p className={`mt-2 text-xs leading-4 ${total === qty ? "text-light-charcoal" : "text-red"}`}>
+        <p className={`mt-2 text-[0.875rem] leading-5 ${total === qty ? "text-ink-2" : "text-low"}`}>
           {total} of {qty} caps assigned.
         </p>
         {err("colors")}
@@ -111,18 +111,18 @@ export function QuoteForm() {
         <label htmlFor="q-notes" className={label}>
           Notes (optional)
         </label>
-        <textarea id="q-notes" name="notes" defaultValue={v.notes} rows={4} className="w-full rounded-2xl border border-black bg-white px-4 py-3 text-base" />
+        <textarea id="q-notes" name="notes" defaultValue={v.notes} rows={4} className="field" />
       </div>
       <div className="hidden" aria-hidden>
         <label htmlFor="q-hp">Company website</label>
         <input id="q-hp" name="company_website" tabIndex={-1} autoComplete="off" />
       </div>
-      <label className="flex items-start gap-3 text-sm leading-5 md:col-span-2">
+      <label className="flex items-start gap-3 text-[1rem] leading-6 md:col-span-2">
         <input type="checkbox" name="rights" defaultChecked={v.rights === "on"} required className="checkbox mt-0.5" />I have the right to use this artwork.
       </label>
       {err("rights")}
       {state?.error && (
-        <p className="text-xs leading-4 text-red md:col-span-2" role="alert">
+        <p className="text-[0.875rem] leading-5 text-red md:col-span-2" role="alert">
           {state.error}
         </p>
       )}

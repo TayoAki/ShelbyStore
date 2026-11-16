@@ -1,12 +1,14 @@
 import type { Metadata } from "next"
 import Image from "next/image"
+import Link from "next/link"
 import { Suspense } from "react"
-import { Banner } from "@/components/banner"
 import { Countdown } from "@/components/countdown"
+import { Digits } from "@/components/digits"
 import { HoleCard } from "@/components/hole-card"
 import { TeeSheetForm } from "@/components/tee-sheet-form"
 import { liveStock, ropeCatalog, type RopeCatalog } from "@/lib/data/rope"
 import { price } from "@/lib/product"
+import { colorway } from "@/lib/swatches"
 import { holeDate, nextHole, pad2, type Hole } from "@/lib/rope"
 
 export const metadata: Metadata = {
@@ -15,23 +17,28 @@ export const metadata: Metadata = {
 }
 
 /**
- * The Card (SITE_SPEC G.6.7): the drop calendar and archive. The next-hole band
- * (the page's golf-green band) with a real countdown and the tee sheet, then
- * one card per hole in hole order. Sold-out and ended holes stay in place.
+ * The Card: the drop calendar and archive, printed as the box's back panel.
+ * The next hole's panel is printed in that colourway's own ink with its real
+ * countdown and tee sheet; then all six holes as numbered units on one plate.
+ * Sold-out and ended holes stay in place.
  */
 export default function CardPage() {
   return (
-    <>
-      <Banner
-        image="/hats/rope-clubhouse.jpg"
-        crumbs={[{ label: "Home", href: "/" }, { label: "The Card" }]}
-        title="The Card"
-        description="Six numbered holes in 2027. Hole 1 is the core cap. Each hole after it is one numbered color, released on its date and not remade."
-      />
-      <Suspense fallback={<div className="mx-2.5 my-10 h-80 animate-pulse rounded-3xl bg-white" />}>
+    <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-3 pt-6 md:gap-6 md:px-6 md:pt-10">
+      <nav aria-label="Breadcrumb" className="label !text-[12px] text-ink-2">
+        <Link href="/" className="hover:underline">
+          Home
+        </Link>{" "}
+        / The Card
+      </nav>
+      <div className="flex flex-col gap-3">
+        <h1 className="model">The Card</h1>
+        <p className="max-w-[60ch] text-[1.125rem] leading-[1.6]">Six numbered holes in 2027. Hole 1 is the core cap. Each hole after it is one numbered color, released on its date and not remade.</p>
+      </div>
+      <Suspense fallback={<div className="h-80 animate-pulse bg-wash" />}>
         <CardContent />
       </Suspense>
-    </>
+    </div>
   )
 }
 
@@ -41,16 +48,12 @@ async function CardContent() {
   const next = nextHole(holes)
   return (
     <>
-      {next && <NextBand hole={next} />}
-      <section aria-label="Holes" className="mb-10">
-        <div className="mx-2.5 mb-2.5 hidden grid-cols-5 rounded-xl bg-white px-4 py-3 md:grid">
-          {["HOLE", "NAME", "DATE", "EDITION", "STATUS"].map((h) => (
-            <span key={h} className="label-score">
-              {h}
-            </span>
-          ))}
-        </div>
-        <div className="grid gap-2.5 px-2.5 md:grid-cols-3">
+      {next && <NextPanel hole={next} />}
+      <section aria-labelledby="holes-title" className="flex flex-col gap-4">
+        <h2 id="holes-title" className="panel-title">
+          All six holes
+        </h2>
+        <div className="grid plate sm:grid-cols-2 lg:grid-cols-3">
           {holes.map((h) => (
             <HoleCard key={h.hole} hole={h} price={priceFor(c, h)} />
           ))}
@@ -65,26 +68,43 @@ const priceFor = (c: RopeCatalog, h: Hole) => {
   return p ? price(p).amount : null
 }
 
-function NextBand({ hole }: { hole: Hole }) {
+function NextPanel({ hole }: { hole: Hole }) {
   const { day, time } = holeDate(hole.date)
+  const ink = colorway(hole.name)
   return (
-    <section aria-label="Next hole" className="band-golf mx-2.5 my-10 grid gap-8 rounded-3xl p-5 md:grid-cols-2 md:p-10">
-      <div className="relative mx-auto aspect-square w-full max-w-[420px] overflow-hidden rounded-full bg-white">
-        {hole.image && <Image src={hole.image} alt={`${hole.name}, Hole ${hole.hole}`} fill sizes="420px" className="object-contain p-10" />}
-      </div>
-      <div className="flex flex-col justify-center gap-4">
-        <p className="font-mono text-xs leading-5 tracking-[.1em] text-golf-tint">NEXT · HOLE {hole.hole}</p>
-        <p className="flex items-baseline gap-3">
-          <span className="font-display text-[32px] leading-10 tabular-nums md:text-[40px] md:leading-[48px]">{pad2(hole.hole)}</span>
-          <span className="kicker">{hole.name}</span>
-        </p>
-        <p className="label-score !text-white">
-          {day}
-          {time ? ` · ${time.toUpperCase()}` : ""}
-        </p>
-        {hole.date && <Countdown iso={hole.date} tone="light" size="large" />}
-        {hole.size && <span className="badge-edition edition w-fit">EDITION OF {hole.size}</span>}
-        {hole.handle && <TeeSheetForm releaseHandle={hole.handle} hole={hole.hole} name={hole.name} />}
+    <section
+      aria-labelledby="next-title"
+      className={`panel ${ink.light ? "" : "ink-dark"}`}
+      style={{ "--panel-bg": ink.panel, "--panel-ink": ink.ink, "--panel-line": ink.edge, "--window-edge": ink.edge } as React.CSSProperties}
+    >
+      <span className="panel-inner" aria-hidden />
+      <div className="relative grid grid-cols-[minmax(0,1fr)] gap-8 p-[var(--panel-pad)] md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] md:items-center">
+        <div className="window aspect-square">
+          {hole.image && <Image src={hole.image} alt={`${hole.name}, Hole ${hole.hole}`} fill sizes="(min-width: 768px) 40vw, 92vw" className="object-contain p-[8%]" />}
+          <span className="window-shade" aria-hidden />
+        </div>
+        <div className="flex flex-col gap-5">
+          <h2 id="next-title" className="flex items-end gap-4">
+            <span className="text-[4.5rem] leading-[.8]" aria-hidden>
+              <Digits value={pad2(hole.hole)} />
+            </span>
+            <span className="model !text-[clamp(3rem,2rem+4vw,5.5rem)]">{hole.name}</span>
+          </h2>
+          <p className="flex flex-wrap items-center gap-3">
+            <span className="badge-edition">Next · Hole {hole.hole}</span>
+            {hole.size && <span className="label">Edition of {hole.size}</span>}
+          </p>
+          <p className="spec-line">
+            {day}
+            {time ? ` · ${time}` : ""}
+          </p>
+          {hole.date && <Countdown iso={hole.date} size="large" />}
+          {hole.handle && (
+            <div className="max-w-[440px]">
+              <TeeSheetForm releaseHandle={hole.handle} hole={hole.hole} name={hole.name} tone={ink.light ? "light" : "dark"} />
+            </div>
+          )}
+        </div>
       </div>
     </section>
   )

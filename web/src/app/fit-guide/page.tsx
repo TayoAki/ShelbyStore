@@ -1,12 +1,8 @@
 import type { Metadata } from "next"
-import Image from "next/image"
 import Link from "next/link"
 import { Suspense } from "react"
-import { Banner } from "@/components/banner"
-import { CROWN, FitScale } from "@/components/fit-scale"
-import { MaterialRing } from "@/components/material-ring"
-import { Reveal } from "@/components/motion/reveal"
-import { Scorecard } from "@/components/scorecard"
+import { SidePanel } from "@/components/box/side-panel"
+import { Digits } from "@/components/digits"
 import { ropeCatalog } from "@/lib/data/rope"
 
 export const metadata: Metadata = {
@@ -20,99 +16,95 @@ const STEPS = [
   "Between 21.5 and 23.75 in (55–60 cm)? The strap covers you. Outside that range, use the 30-day returns.",
 ]
 
-/** Fit guide (SITE_SPEC G.6.11): one cap, one size, a mid crown. */
+/**
+ * Fit guide (Read, in the box's vocabulary): the crown drawn to true size with
+ * the printed spec (the side panel), how to measure as numbered steps on one
+ * plate, the size table, and the way into the quiz.
+ */
 export default function FitGuidePage() {
   return (
-    <>
-      <Banner
-        image="/hats/rope-brim.jpg"
-        crumbs={[{ label: "Home", href: "/" }, { label: "Fit guide" }]}
-        title="How it fits"
-        description="One size. The strap fits 21.5–23.75 in (55–60 cm). The crown sits mid, about 11–11.5 cm."
-      />
-      <Reveal aria-label="Crown height" className="band-golf mx-2.5 my-10 grid items-center gap-8 rounded-3xl p-5 md:grid-cols-2 md:p-10">
-        <div className="relative mx-auto aspect-square w-full max-w-[380px] overflow-hidden rounded-full bg-white">
-          <Image src="/hats/rope-cap-tour-white-3.jpg" alt="The Rope Cap in side profile, showing the mid crown" fill sizes="380px" className="object-contain p-8" />
-        </div>
-        <div className="flex flex-col gap-6">
-          <p className="font-mono text-xs leading-5 tracking-[.1em] text-golf-tint">THE CROWN</p>
-          <p className="font-display text-[30px] leading-9">Most rope caps sit tall. Ours sits mid.</p>
-          <FitScale title="Crown height" steps={CROWN} value="Mid" note="about 11–11.5 cm" large tone="light" />
-        </div>
-      </Reveal>
-      <Reveal aria-label="How to measure" className="mx-2.5 my-10 grid gap-10 rounded-3xl bg-white p-6 md:grid-cols-2 md:p-10">
-        <div>
-          <h2 className="font-mono text-xs leading-4 tracking-[.1em] uppercase">How to measure</h2>
-          <ol className="mt-5 flex flex-col gap-4">
-            {STEPS.map((s, i) => (
-              <li key={s} className="flex gap-3">
-                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-natural-white font-mono text-xs">{i + 1}</span>
-                <span className="text-sm leading-[22px] text-charcoal">{s}</span>
-              </li>
-            ))}
-          </ol>
-        </div>
-        <div>
-          <h2 className="font-mono text-xs leading-4 tracking-[.1em] uppercase">Size</h2>
-          <table className="mt-5 w-full text-sm leading-5">
-            <thead>
-              <tr>
-                {["Size", "Inches", "Centimetres", "Fitted size"].map((h) => (
-                  <th key={h} scope="col" className="pb-2 text-left font-mono text-xs font-normal uppercase">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="h-11 border-t border-natural-white">
-                <td>One size</td>
-                <td>21.5–23.75</td>
-                <td>55–60</td>
-                <td>6⅞–7½</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </Reveal>
-      <Suspense fallback={null}>
-        <FitScorecard />
+    <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-3 pt-6 md:gap-6 md:px-6 md:pt-10">
+      <nav aria-label="Breadcrumb" className="label !text-[12px] text-ink-2">
+        <Link href="/" className="hover:underline">
+          Home
+        </Link>{" "}
+        / Fit guide
+      </nav>
+      <div className="flex flex-col gap-3">
+        <h1 className="model">How it fits</h1>
+        <p className="max-w-[60ch] text-[1.125rem] leading-[1.6]">One size. The strap fits 21.5–23.75 in (55–60 cm). The crown sits mid, about 11–11.5 cm.</p>
+      </div>
+      <Suspense fallback={<div className="panel h-96" />}>
+        <FitSpec />
       </Suspense>
-      <MaterialRing
-        background="/hats/rope-lifestyle-hero.jpg"
-        callouts={[
-          { title: "WHERE IT GETS WORN", body: "On the course, at the range, every day, or as a gift." },
-          { title: "WHICH COLORS", body: "Light, dark, earthy, or something limited." },
-          { title: "HOW MANY", body: "One, two or four." },
-          { title: "YOUR CROWN", body: "Low, mid or tall." },
-        ]}
-        centre={
-          <>
-            <h2 className="font-display text-2xl leading-8">Find your color</h2>
-            <p className="text-sm leading-5">Four questions. One color that&apos;s in stock, and the right bundle.</p>
-            <Link href="/quiz" className="btn btn-primary" data-track="fit_guide_quiz">
-              TAKE THE QUIZ
+      <section aria-labelledby="measure-title" className="panel">
+        <span className="panel-inner" aria-hidden />
+        <div className="relative grid grid-cols-[minmax(0,1fr)] gap-10 p-[var(--panel-pad)] lg:grid-cols-2">
+          <div className="flex flex-col gap-5">
+            <h2 id="measure-title" className="panel-title">
+              How to measure
+            </h2>
+            <ol className="flex flex-col border-2 border-ink">
+              {STEPS.map((step, i) => (
+                <li key={step} className="flex gap-4 border-ink p-4 [&+&]:border-t-2">
+                  <span className="text-[2.25rem] leading-none" aria-hidden>
+                    <Digits value={String(i + 1).padStart(2, "0")} />
+                  </span>
+                  <span className="text-[1.0625rem] leading-7">{step}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+          <div className="flex flex-col gap-5">
+            <h2 className="panel-title">Size</h2>
+            <table className="scorecard">
+              <thead>
+                <tr>
+                  {["Size", "Inches", "Centimetres", "Fitted"].map((h) => (
+                    <th key={h} scope="col">
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">One size</th>
+                  <td>21.5–23.75</td>
+                  <td>55–60</td>
+                  <td>6⅞–7½</td>
+                </tr>
+              </tbody>
+            </table>
+            <p className="text-[1rem] leading-6 text-ink-2">Outside that range? Use the 30-day returns.</p>
+          </div>
+        </div>
+      </section>
+      <section aria-labelledby="quiz-title" className="panel ink-dark" style={{ "--panel-bg": "#1E3B2F", "--panel-ink": "#F1ECE0", "--panel-line": "#10241B" } as React.CSSProperties}>
+        <span className="panel-inner" aria-hidden />
+        <div className="relative flex flex-col items-start gap-5 p-[var(--panel-pad)] md:flex-row md:items-end md:justify-between">
+          <div className="flex flex-col gap-3">
+            <h2 id="quiz-title" className="panel-title">
+              Find your color
+            </h2>
+            <p className="max-w-[48ch] text-[1.125rem] leading-[1.6]">Four questions about where you wear it and what you reach for. One color that&apos;s in stock, and the right bundle.</p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Link href="/quiz" className="btn btn-on-ink btn-large" style={{ "--btn-bg": "#F1ECE0", "--btn-fg": "#1E3B2F" } as React.CSSProperties} data-track="fit_guide_quiz">
+              Take the quiz
             </Link>
-          </>
-        }
-      />
-    </>
+            <Link href="/products/rope-cap" className="btn btn-outline-white btn-large" data-track="fit_guide_shop">
+              Shop the Rope Cap
+            </Link>
+          </div>
+        </div>
+      </section>
+    </div>
   )
 }
 
-async function FitScorecard() {
+async function FitSpec() {
   const { core } = await ropeCatalog()
   if (!core) return null
-  return (
-    <Reveal aria-label="Scorecard" className="mx-2.5 my-10 grid gap-6 rounded-3xl bg-white p-6 md:grid-cols-[1fr_1.4fr] md:p-10">
-      <div className="flex flex-col gap-3">
-        <h2 className="font-display text-2xl leading-8">The scorecard</h2>
-        <p className="kicker text-light-charcoal">Every spec that decides the fit.</p>
-        <Link href="/products/rope-cap" className="btn btn-secondary mt-2 w-fit" data-track="fit_guide_shop">
-          SHOP THE ROPE CAP
-        </Link>
-      </div>
-      <Scorecard product={core} color="Tour White" title={core.title} />
-    </Reveal>
-  )
+  return <SidePanel product={core} id="crown" />
 }

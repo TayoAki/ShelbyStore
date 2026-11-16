@@ -13,12 +13,12 @@ import type { Line } from "@/components/line-item"
 
 export const metadata: Metadata = { title: "Checkout", robots: { index: false } }
 
-/** Checkout in the Allbirds style (v5 §6.8, G.6.8): three white step cards left, the summary right (first on mobile). */
+/** Checkout (Operate): three numbered steps printed on one panel, the summary panel right (first on mobile, collapsed). */
 export default function CheckoutPage() {
   return (
-    <div className="mx-auto max-w-[1100px] px-2.5 pb-16">
-      <h1 className="mb-6 px-2.5 font-display text-2xl leading-8 md:text-[30px] md:leading-9">Checkout</h1>
-      <Suspense fallback={<div className="h-80 animate-pulse rounded-2xl bg-white" />}>
+    <div className="mx-auto max-w-[1200px] px-3 pt-6 md:px-6 md:pt-10">
+      <h1 className="model mb-6">Checkout</h1>
+      <Suspense fallback={<div className="panel h-80" />}>
         <CheckoutContent />
       </Suspense>
     </div>
@@ -30,9 +30,9 @@ async function CheckoutContent() {
   const lines = cart ? cartLines(cart, await lineThumbs()) : []
   if (!cart || !lines.length) {
     return (
-      <div className="flex flex-col items-center gap-6 rounded-2xl bg-white py-12 text-center">
-        <p className="text-xl leading-7">Your bag is empty.</p>
-        <ButtonLink href="/products/rope-cap">SHOP THE ROPE CAP</ButtonLink>
+      <div className="panel flex flex-col items-start gap-5 p-[var(--panel-pad)]">
+        <p className="panel-title">Your bag is empty.</p>
+        <ButtonLink href="/products/rope-cap">Shop the Rope Cap</ButtonLink>
       </div>
     )
   }
@@ -61,29 +61,32 @@ async function CheckoutContent() {
           <SummaryLine key={l.id} line={l} />
         ))}
       </ul>
-      <div className="mt-4 flex flex-col gap-2 border-t border-natural-white pt-4 text-sm leading-5">
+      <div className="mt-4 flex flex-col gap-2 border-t-2 border-dashed border-ink/40 pt-4 text-[1rem] leading-6">
         <Row label="Subtotal" value={formatMoney(n(cart.item_subtotal ?? cart.subtotal), currency)} />
         <Row label="Shipping" value={cart.shipping_methods?.length ? formatMoney(n(cart.shipping_subtotal ?? cart.shipping_total), currency) : "Choose at step 2"} />
         <Row label="Tax" value={formatMoney(n(cart.tax_total), currency)} />
       </div>
-      <div className="mt-4 flex justify-between border-t border-natural-white pt-4 text-sm leading-5 font-medium">
-        <span>Total</span>
-        <span>{formatMoney(n(cart.total), currency)}</span>
+      <div className="mt-4 flex items-baseline justify-between border-t-2 border-ink pt-4">
+        <span className="label">Total</span>
+        <span className="font-model text-[2rem] leading-none font-[800] tabular-nums">{formatMoney(n(cart.total), currency)}</span>
       </div>
     </>
   )
 
   return (
-    <div className="grid gap-2.5 md:grid-cols-[1fr_400px]">
+    <div className="grid items-start gap-4 md:grid-cols-[minmax(0,1fr)_400px] md:gap-6">
       {/* Mobile: the summary comes first, collapsed. */}
-      <details className="rounded-2xl bg-white md:hidden">
-        <summary className="flex h-12 cursor-pointer items-center justify-between px-5 text-xs leading-4 font-medium tracking-[.05em] uppercase">
+      <details className="panel md:hidden">
+        <summary className="label flex min-h-12 cursor-pointer items-center justify-between px-5">
           Show order summary <span>{formatMoney(n(cart.total), currency)}</span>
         </summary>
-        <div className="p-4">{summary}</div>
+        <div className="border-t-2 border-ink p-5">{summary}</div>
       </details>
       <CheckoutForm cartId={cart.id} total={n(cart.total)} currency={currency} address={address} options={options} selectedOption={selected} />
-      <aside className="hidden h-fit rounded-2xl bg-white p-6 md:sticky md:top-[120px] md:block">{summary}</aside>
+      <aside className="panel hidden h-fit p-6 md:sticky md:top-[96px] md:block">
+        <h2 className="label mb-4">Order summary</h2>
+        {summary}
+      </aside>
     </div>
   )
 }
@@ -91,17 +94,17 @@ async function CheckoutContent() {
 function SummaryLine({ line }: { line: Line }) {
   return (
     <li className="flex items-center gap-3">
-      <span className="relative size-16 shrink-0 rounded-[20px] bg-natural-white-25">
-        {line.thumbnail && <Image src={line.thumbnail} alt="" fill sizes="64px" className="rounded-[20px] object-contain" />}
-        <span className="absolute -right-2 -top-2 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-black px-1 text-[10px] font-medium text-white">
+      <span className="relative size-16 shrink-0 rounded-[4px] border-2 border-ink bg-paper">
+        {line.thumbnail && <Image src={line.thumbnail} alt="" fill sizes="64px" className="object-contain p-1" />}
+        <span className="absolute -top-2 -right-2 flex h-6 min-w-6 items-center justify-center rounded-[3px] border-2 border-ink bg-paper px-1 text-[0.8125rem] font-bold">
           {line.quantity}
         </span>
       </span>
       <span className="flex min-w-0 flex-1 flex-col">
-        <span className="text-xs leading-4 font-medium tracking-[.05em] uppercase">{line.title}</span>
-        {line.variant && <span className="text-xs leading-4 text-light-charcoal">{line.variant}</span>}
+        <span className="label">{line.title}</span>
+        {line.variant && <span className="text-[0.9375rem] leading-5 text-ink-2">{line.variant}</span>}
       </span>
-      <span className="text-xs leading-4 font-medium">{formatMoney(line.unitPrice * line.quantity, line.currency)}</span>
+      <span className="text-[1rem] leading-5 font-semibold tabular-nums">{formatMoney(line.unitPrice * line.quantity, line.currency)}</span>
     </li>
   )
 }
@@ -109,8 +112,8 @@ function SummaryLine({ line }: { line: Line }) {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between">
-      <span>{label}</span>
-      <span>{value}</span>
+      <span className="text-ink-2">{label}</span>
+      <span className="tabular-nums">{value}</span>
     </div>
   )
 }
