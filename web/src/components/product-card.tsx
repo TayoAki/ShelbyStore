@@ -9,16 +9,17 @@ import { findVariant, imagesFor, imageUrl, price } from "@/lib/product"
 import { ropeName } from "@/lib/rope"
 import type { Product, VariantStock } from "@/lib/types"
 import { useAddToBag } from "./cart/use-add-to-bag"
+import { Digits } from "./digits"
 import { SwatchFace } from "./swatch"
 
 export type CardBadge = "CORE" | "LIMITED" | "LOW STOCK" | "SOLD OUT" | `HOLE ${number}` | null
 
 /**
- * Allbirds' master product card as a colourway card (SITE_SPEC §6.2, G.6.4):
- * white rounded card, square image (hover = the colour's side shot, M8),
- * badge, title, "Colour · Rope" line, price, crown+rope swatches that switch
- * the card's colourway, and the quick-add row that flips in on hover (M10).
- * `upcoming` editions show the tee sheet link instead of add to bag.
+ * One colourway as a unit on a keylined plate (the range printed on a box's
+ * back): a die-cut window (hover shows the side angle), the tag, model name,
+ * colour and rope, the price in digit slots, the ink chips that switch the
+ * unit's colourway, and a plain Add button. Upcoming editions show the tee
+ * sheet link instead.
  */
 export function ProductCard({
   product,
@@ -51,70 +52,54 @@ export function ProductCard({
   const rope = ropeName(product, active)
   const href = upcomingHref ?? `/products/${product.handle}?color=${encodeURIComponent(active)}`
 
+  const multi = !!colors && colors.length > 1
   const onAdd = () => {
     if (!variant || soldOut) return
     add({ productId: product.id, variantId: variant.id, price: p.amount, currency: p.currency, source: "quick_add" })
   }
 
   return (
-    <article className="ab-qa-card group relative flex h-full flex-col rounded-2xl bg-white transition-all duration-300 ease-in-out max-sm:min-h-86">
-      <div className="relative z-10 aspect-square">
-        <Link href={href} className="absolute inset-0 overflow-hidden rounded-t-2xl" aria-label={`${product.title}, ${active}`}>
-          {first && <Image src={first} alt={`${product.title} in ${active}`} fill sizes="(min-width: 768px) 25vw, 50vw" className="object-cover" preload={preload} />}
-          {second && (
-            <Image src={second} alt="" fill sizes="(min-width: 768px) 25vw, 50vw" className="object-cover opacity-0 transition-opacity duration-150 ease-in-out md:group-hover:opacity-100" />
-          )}
+    <article className="group relative flex h-full flex-col gap-3 bg-paper p-3 md:p-4">
+      <div className="relative">
+        <Link href={href} className="window block aspect-square !rounded-[20px]" aria-label={`${product.title}, ${active}`}>
+          {first && <Image src={first} alt={`${product.title} in ${active}`} fill sizes="(min-width: 768px) 22vw, 45vw" className="object-contain p-[7%]" preload={preload} />}
+          {second && <Image src={second} alt="" fill sizes="(min-width: 768px) 22vw, 45vw" className="object-contain p-[7%] opacity-0 md:group-hover:opacity-100" />}
+          <span className="window-shade" aria-hidden />
         </Link>
         {(badge || soldOut) && (
-          <div className="pointer-events-none absolute inset-x-2.5 top-2.5 z-20 flex justify-between md:inset-x-5 md:top-5">
-            <span className="badge">{soldOut ? "SOLD OUT" : badge}</span>
-          </div>
+          <span className={`pointer-events-none absolute top-2 left-2 z-[2] bg-paper ${badge === "LIMITED" || String(badge).startsWith("HOLE") ? "badge-edition" : "badge"}`}>{soldOut ? "Sold out" : badge}</span>
         )}
       </div>
-      <div className="relative p-4">
-        <Link href={href} className="flex flex-col gap-1">
-          <h3 className="text-xs leading-4 font-medium tracking-[.05em] uppercase md:truncate md:text-sm md:leading-5">{product.title}</h3>
-          <p className="qa-meta min-h-[1.5em] truncate text-xs leading-4 tracking-[.05em] md:text-sm md:leading-5">
-            {active}
-            {rope ? ` · ${rope} rope` : ""}
-          </p>
-          <p className="qa-meta text-xs leading-4 font-medium tracking-[.05em]">{formatMoney(p.amount, p.currency)}</p>
-        </Link>
-        {colors && colors.length > 1 && (
-          <div className="mt-2.5 flex items-center gap-1" role="radiogroup" aria-label="Color">
-            {colors.slice(0, 5).map((c) => (
-              <button key={c} type="button" role="radio" aria-checked={c === active} aria-label={c} onClick={() => setActive(c)} onMouseEnter={() => setActive(c)} className="p-0.5">
-                <SwatchFace name={c} size={20} selected={c === active} />
-              </button>
-            ))}
-            {colors.length > 5 && <span className="text-sm leading-[14px] font-medium underline">+{colors.length - 5}</span>}
-          </div>
+      <Link href={href} className="flex flex-col gap-0.5">
+        {/* The core cap is one model in four inks, so its unit is named by the ink. */}
+        <h3 className="font-model text-[1.375rem] leading-none font-[800] uppercase">{multi ? active : product.title}</h3>
+        <p className="min-h-[1.5em] truncate text-[0.9375rem] leading-6 text-ink-2">
+          {multi ? product.title : active}
+          {rope ? `, ${rope.toLowerCase()} rope` : ""}
+        </p>
+        <p className="text-[1.375rem] leading-none">
+          <Digits value={formatMoney(p.amount, p.currency)} />
+        </p>
+      </Link>
+      {colors && colors.length > 1 && (
+        <div className="flex items-center gap-2" role="radiogroup" aria-label="Color">
+          {colors.slice(0, 5).map((c) => (
+            <button key={c} type="button" role="radio" aria-checked={c === active} aria-label={c} onClick={() => setActive(c)} onMouseEnter={() => setActive(c)} className="flex size-8 items-center justify-center">
+              <SwatchFace name={c} size={20} selected={c === active} />
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="mt-auto">
+        {upcomingHref ? (
+          <Link href={upcomingHref} className="btn btn-outline-black btn-small w-full" data-track="notify_me">
+            Join the tee sheet
+          </Link>
+        ) : (
+          <button type="button" className="btn btn-outline-black btn-small w-full" disabled={soldOut || pending || !variant} onClick={onAdd} data-track={track} aria-busy={pending || undefined}>
+            <Handbag size={16} weight="bold" aria-hidden /> {soldOut ? "Sold out" : "Add"}
+          </button>
         )}
-        {/* Desktop quick add (M10 flip) */}
-        <div className="ab-qa-flip absolute top-10 right-4 left-4 z-[2] hidden h-[42px] items-center gap-1.5 md:flex">
-          {upcomingHref ? (
-            <Link href={upcomingHref} className="btn btn-outline-black btn-small" data-track="notify_me">
-              JOIN THE TEE SHEET
-            </Link>
-          ) : (
-            <button type="button" className="btn btn-secondary btn-small" disabled={soldOut || pending || !variant} onClick={onAdd} data-track={track}>
-              {soldOut ? "SOLD OUT" : `ADD TO BAG · ${formatMoney(p.amount, p.currency)}`}
-            </button>
-          )}
-        </div>
-        {/* Mobile quick add row */}
-        <div className="mt-2 flex items-center justify-between md:hidden">
-          <span className="text-xs leading-4 text-light-charcoal">One size</span>
-          {upcomingHref ? (
-            <Link href={upcomingHref} className="text-xs leading-4 font-medium uppercase underline">
-              Tee sheet
-            </Link>
-          ) : (
-            <button type="button" onClick={onAdd} disabled={soldOut || pending || !variant} className="flex items-center gap-1 text-xs leading-4 font-medium uppercase disabled:opacity-40" data-track={track}>
-              <Handbag size={16} /> Add
-            </button>
-          )}
-        </div>
       </div>
     </article>
   )

@@ -6,12 +6,12 @@ import { CORE_COLORS, crownCm, holeDate, ropeName } from "@/lib/rope"
 import type { Product } from "@/lib/types"
 import { BundleRows } from "./bundle-rows"
 import { BuyCard } from "./pdp/buy-card"
-import { Gallery } from "./pdp/gallery"
 import { SelectionProvider } from "./pdp/selection"
 
 /**
- * The core Rope Cap's buy card for landing pages (story, listicle, advertorial,
- * quiz result): its own colour state (no URL writes), live stock, bundles.
+ * The core Rope Cap's front panel for landing pages (story, listicle,
+ * advertorial, quiz result): its own colour state (no URL writes), live stock,
+ * its die-cut window and the bundle sleeves.
  */
 export async function RopeBuyBlock({
   initialColor,
@@ -56,6 +56,9 @@ export async function RopeBuyBlock({
     bundles: showBundles ? <BundleRows pair={c.pair} foursome={c.foursome} trackPair={bundleTrack?.pair} trackFoursome={bundleTrack?.foursome} /> : null,
     titleAs: "h2" as const,
     source,
+    imagesByColor: Object.fromEntries(CORE_COLORS.map((col) => [col, imagesFor(core, col)])),
+    fallbackImages: imagesFor(core),
+    modelNumber: 1,
   }
   const initial = initialColor && (CORE_COLORS as readonly string[]).includes(initialColor) ? initialColor : CORE_COLORS[0]
   const card = (
@@ -63,22 +66,12 @@ export async function RopeBuyBlock({
       <Live core={core} props={props} />
     </Suspense>
   )
-  if (!withGallery)
-    return (
-      <SelectionProvider initialColor={initial} syncUrl={false}>
-        {aside}
-        {card}
-      </SelectionProvider>
-    )
-  const imagesByColor = Object.fromEntries(CORE_COLORS.map((col) => [col, imagesFor(core, col)]))
+  // The front panel carries its own die-cut window; `withGallery` sets it beside the aside on wide screens.
   return (
     <SelectionProvider initialColor={initial} syncUrl={false}>
-      <div className="relative md:mx-5 md:grid md:grid-cols-[1fr_45vw] md:items-start md:gap-5 xl:grid-cols-[1fr_38vw] 2xl:grid-cols-[1fr_33vw]">
-        <Gallery imagesByColor={imagesByColor} fallback={imagesFor(core)} title={core.title} badge={null} />
-        <div className="mt-4 flex flex-col gap-2.5 md:mt-0">
-          {aside}
-          {card}
-        </div>
+      <div className={withGallery && aside ? "grid items-start gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]" : "flex flex-col gap-4"}>
+        {aside}
+        {card}
       </div>
     </SelectionProvider>
   )

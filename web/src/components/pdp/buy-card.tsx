@@ -1,13 +1,16 @@
 "use client"
 
+import { CaretLeft, CaretRight } from "@phosphor-icons/react"
+import Image from "next/image"
 import Link from "next/link"
-import { useEffect, useRef, useState, type ReactNode } from "react"
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react"
 import { formatMoney } from "@/lib/format"
 import { POLICY } from "@/lib/policy"
 import { findVariant, LOW_STOCK, price } from "@/lib/product"
+import { colorway } from "@/lib/swatches"
 import type { Product, VariantStock } from "@/lib/types"
 import { useAddToBag } from "../cart/use-add-to-bag"
-import { FitScales } from "../fit-scale"
+import { Digits } from "../digits"
 import { RopeRule } from "../rope-rule"
 import { SwatchFace, SwatchLink } from "../swatch"
 import { useSelection } from "./selection"
@@ -20,7 +23,7 @@ type Props = {
   stock: VariantStock | null
   /** In-page colourways (the core four, or the edition's one colour). */
   colors: string[]
-  /** Swatches that link to another product: editions (on the core PDP) or the core colours (on an edition PDP). */
+  /** Chips that link to another product: editions (on the core PDP) or the core colours (on an edition PDP). */
   linked: { group: "CORE" | "LIMITED"; swatches: LimitedSwatch[] }
   ropeByColor: Record<string, string | null>
   edition: { hole: number; size: number | null; dateLabel: string | null; released: boolean } | null
@@ -31,25 +34,66 @@ type Props = {
   titleAs?: "h1" | "h2"
   /** `add_to_cart` source (pdp, quiz, story…); the sticky bar always reports "sticky". */
   source?: string
+  /** Photos per colourway for the die-cut window; omit to render the panel without a window. */
+  imagesByColor?: Record<string, string[]>
+  fallbackImages?: string[]
+  /** Hole number printed as the model number (No. 01 for the core cap). */
+  modelNumber?: number
+  /** Show the sticky add-to-bag strip once the main button leaves the viewport. */
+  sticky?: boolean
+  /** Tag printed at the panel's top right (CORE, or the edition stripe). */
+  tag?: ReactNode
+  /** Where the panel sits away from the PDP (home): link the model name and a "Full details" line to the PDP in the chosen colour. */
+  details?: { href: string; titleTrack: string; linkTrack: string }
+  /** A step-up link printed in the shipping line (home: The Pair). */
+  pairLink?: { href: string; label: string; track: string }
 }
 
 /**
- * Allbirds' PDP buy card (v5 §6.4.3, G.6.3): serif italic title, mono sub-line,
- * price + pill, rope rule, colour groups (ALL · CORE · LIMITED), one-size line,
- * crown-height scale, add to bag (or SOLD OUT), policy + stock + edition lines,
- * bundle rows and the quiz link. The sticky buy bar appears once the main CTA
- * leaves the viewport (M33).
+ * The box's front panel: the model number, a die-cut window onto the chosen
+ * colourway, the model name, the spec line, the ink stripes that choose the
+ * colour, then the price and Add to bag printed on the panel. Choosing a colour
+ * re-inks the whole panel and swaps the window photo on one beat.
  */
-export function BuyCard({ product, stock, colors, linked, ropeByColor, edition, releaseId, crown, bundles, titleAs: Title = "h1", source = "pdp" }: Props) {
+export function BuyCard({
+  product,
+  stock,
+  colors,
+  linked,
+  ropeByColor,
+  edition,
+  releaseId,
+  crown,
+  bundles,
+  titleAs: Title = "h1",
+  source = "pdp",
+  imagesByColor,
+  fallbackImages = [],
+  modelNumber,
+  sticky = true,
+  tag,
+  details,
+  pairLink,
+}: Props) {
   const { color, setColor, shared } = useSelection()
   const active = color && colors.includes(color) ? color : colors[0]
-  const [group, setGroup] = useState<"ALL" | "CORE" | "LIMITED">("ALL")
+  const [showLinked, setShowLinked] = useState(false)
   const { add, pending, error } = useAddToBag()
   const variant = findVariant(product, { Color: active })
   const n = variant && stock ? stock[variant.id] : undefined
   const soldOut = stock !== null && typeof n === "number" && n <= 0
   const p = price(product, variant)
-  const ownGroup = edition ? "LIMITED" : "CORE"
+  const ink = colorway(active)
+  const dark = !ink.light
+
+  const images = (active && imagesByColor?.[active]?.length ? imagesByColor[active] : fallbackImages) ?? []
+  const [shot, setShot] = useState(0)
+  const [shotFor, setShotFor] = useState(active)
+  if (shotFor !== active) {
+    setShotFor(active)
+    setShot(0)
+  }
+  const src = images[Math.min(shot, Math.max(0, images.length - 1))]
 
   const pick = (c: string) => {
     setColor(c)
@@ -58,6 +102,15 @@ export function BuyCard({ product, stock, colors, linked, ropeByColor, edition, 
       url.searchParams.set("color", c)
       window.history.replaceState(null, "", url)
     }
+  }
+  const onStripeKey = (e: KeyboardEvent<HTMLButtonElement>, i: number) => {
+    const d = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0
+    if (!d) return
+    e.preventDefault()
+    const next = (i + d + colors.length) % colors.length
+    pick(colors[next])
+    const group = e.currentTarget.parentElement
+    ;(group?.children[next] as HTMLElement | undefined)?.focus()
   }
   const onAdd = (track = "add_to_cart") => {
     if (!variant || soldOut) return
@@ -68,130 +121,231 @@ export function BuyCard({ product, stock, colors, linked, ropeByColor, edition, 
   const [ctaVisible, setCtaVisible] = useState(true)
   useEffect(() => {
     const el = cta.current
-    if (!el) return
+    if (!el || !sticky) return
     const io = new IntersectionObserver(([e]) => setCtaVisible(e.isIntersecting || e.boundingClientRect.top > 0))
     io.observe(el)
     return () => io.disconnect()
-  }, [])
+  }, [sticky])
 
-  const label = soldOut ? "SOLD OUT" : `ADD TO BAG – ${formatMoney(p.amount, p.currency)}`
+  const label = soldOut ? "Sold out" : "Add to bag"
+  const spec = crown ? `${crown.value} crown${crown.note ? ` · ${crown.note.replace(/^about /, "")}` : ""} · One size` : "One size"
   const stockLine =
     stock === null ? (
-      <span className="text-light-charcoal">Checking stock…</span>
+      <span className="opacity-80">Checking stock…</span>
     ) : soldOut ? (
-      <span className="text-light-charcoal">● Sold out in {active}</span>
+      <span>Sold out in {active}</span>
     ) : typeof n === "number" && n <= LOW_STOCK ? (
-      <span className="text-red">● Only {n} left in {active}</span>
+      <span className="font-semibold">
+        Only <Digits value={n} /> left in {active}
+      </span>
     ) : (
-      <span className="text-green">● In stock · ships in 1–2 business days</span>
+      <span>In stock · {POLICY.dispatch.toLowerCase()}</span>
     )
 
-  const showOwn = group === "ALL" || group === ownGroup
-  const showLinked = (group === "ALL" || group === linked.group) && linked.swatches.length > 0
+  const panelStyle = {
+    "--panel-bg": ink.panel,
+    "--panel-ink": ink.ink,
+    "--panel-line": ink.edge,
+    "--window-edge": ink.edge,
+    "--btn-bg": dark ? ink.ink : "#14213D",
+    "--btn-fg": dark ? ink.panel : "#FFFFFF",
+  } as CSSProperties
 
   return (
-    <aside className="grid grid-cols-1 gap-6 rounded-xl bg-white p-5 max-md:mx-2.5 md:sticky md:top-[120px] md:self-start md:shadow-sm lg:p-6 xl:p-8" data-reveal="" data-in="true">
-      <div className="flex flex-col gap-2">
-        <Title className="font-serif text-2xl leading-8 italic md:text-[30px] md:leading-9">{product.title}</Title>
-        <p className="font-mono text-xs leading-4 tracking-[.05em] text-light-charcoal uppercase md:text-sm md:leading-5">
-          {edition
-            ? `HOLE ${edition.hole} · LIMITED EDITION${edition.dateLabel ? ` · ${edition.released ? "RELEASED" : "RELEASES"} ${edition.dateLabel}` : ""}`
-            : "ONE SIZE · CORE COLOR"}
-        </p>
-        <div className="flex items-center gap-2">
-          <span className="text-lg leading-7 font-medium tracking-[.05em]">{formatMoney(p.amount, p.currency)}</span>
-          <span className="rounded-full bg-natural-white px-2 py-1 text-xs leading-4 font-medium tracking-[.05em] uppercase italic">+ ANY TWO SHIP FREE</span>
-        </div>
-        <RopeRule color={active} className="mt-2" />
-      </div>
-
-      <div className="flex flex-col gap-3">
-        <div className="flex gap-1 rounded-full border border-black p-1 text-xs" role="tablist" aria-label="Color groups">
-          {(["ALL", "CORE", "LIMITED"] as const).map((g) => (
-            <button
-              key={g}
-              type="button"
-              role="tab"
-              aria-selected={group === g}
-              onClick={() => setGroup(g)}
-              data-track="color_pill"
-              className={`flex-1 rounded-full px-3 py-1.5 font-medium tracking-[.025em] transition-colors duration-200 ${group === g ? "bg-golf-green text-white" : "hover:bg-black/10"}`}
-            >
-              {g}
-            </button>
-          ))}
-        </div>
-        <p className="flex flex-wrap gap-2 text-xs leading-4 font-medium tracking-wider">
-          <span className="font-mono">COLOR:</span>
-          <span>{active}</span>
-          <span className="font-normal text-light-charcoal capitalize">
-            {edition ? `(Hole ${edition.hole}${edition.size ? `, edition of ${edition.size}` : ""})` : "(Core)"}
-          </span>
-        </p>
-        {ropeByColor[active] && <p className="-mt-1 text-xs leading-4 text-light-charcoal">{ropeByColor[active]} rope</p>}
-        <div className="flex flex-wrap items-start gap-2">
-          {showOwn &&
-            colors.map((c) => (
-              <button key={c} type="button" role="radio" aria-checked={c === active} aria-label={c} onClick={() => pick(c)} className="p-0.5">
-                <SwatchFace name={c} selected={c === active} />
-              </button>
-            ))}
-          {showLinked &&
-            linked.swatches.map((s) => <SwatchLink key={s.name} name={s.name} href={s.href} caption={s.caption} track="pdp_edition_link" selected={s.selected} />)}
-        </div>
-      </div>
-
-      <p className="text-xs leading-4 text-light-charcoal">
-        One size · {POLICY.oneSize}.{" "}
-        <Link href="/fit-guide" className="link text-xs" data-track="fit_guide">
-          Fit guide
-        </Link>
-      </p>
-
-      {crown && <FitScales crown={crown.value} structure={crown.structure} crownNote={crown.note} />}
-
-      <div ref={cta} className="flex flex-col gap-3">
-        <button type="button" className="btn btn-secondary btn-atc" onClick={() => onAdd()} disabled={soldOut || pending || stock === null || !variant} data-track="add_to_cart" aria-busy={pending || undefined}>
-          {label}
-        </button>
-        {error && (
-          <p className="text-xs text-red" role="alert">
-            {error}
+    <section aria-label={`${product.title}, buy`} className={`panel overflow-hidden ${dark ? "ink-dark" : ""}`} style={panelStyle}>
+      <span className="panel-inner" aria-hidden />
+      <div className="relative flex flex-col gap-4 p-[var(--panel-pad)]">
+        <div className="flex items-start justify-between gap-3">
+          <p className="label">
+            Rope cap · No. <Digits value={String(modelNumber ?? edition?.hole ?? 1).padStart(2, "0")} />
           </p>
+          {tag ?? (edition ? <span className="badge-edition">Hole {edition.hole}{edition.size ? ` · ${edition.size} made` : ""}</span> : <span className="badge">Core</span>)}
+        </div>
+
+        {imagesByColor && src && (
+          <div className="window aspect-[4/3] w-full md:aspect-[5/4] lg:aspect-auto lg:h-[clamp(280px,calc(100svh-570px),520px)]">
+            <Image key={src} src={src} alt={`${product.title} in ${active}, photo ${shot + 1} of ${images.length}`} fill preload sizes="(min-width: 1024px) 40vw, 92vw" className="animate-[fade-in_var(--beat)_var(--ease-box)_both] object-contain p-[6%]" />
+            <span className="window-shade" aria-hidden />
+            {images.length > 1 && (
+              <div className="absolute inset-x-3 bottom-3 z-[2] flex items-center justify-between text-ink">
+                <button type="button" className="btn btn-primary btn-icon-black !min-h-10 !min-w-10 bg-white" aria-label="Previous photo" onClick={() => setShot((s) => (s - 1 + images.length) % images.length)}>
+                  <CaretLeft size={18} weight="bold" />
+                </button>
+                <span className="rounded-[2px] bg-white/90 px-2 py-1 text-[1rem]" aria-live="polite">
+                  <Digits value={`${shot + 1}/${images.length}`} label={`Photo ${shot + 1} of ${images.length}`} />
+                </span>
+                <button type="button" className="btn btn-primary btn-icon-black !min-h-10 !min-w-10 bg-white" aria-label="Next photo" onClick={() => setShot((s) => (s + 1) % images.length)}>
+                  <CaretRight size={18} weight="bold" />
+                </button>
+              </div>
+            )}
+          </div>
         )}
-        <p className="text-center text-xs leading-4">{POLICY.shipping}</p>
-        <p className="text-xs leading-4">{stockLine}</p>
-        {edition && (
-          <>
-            <p className="edition">
-              {edition.size ? `EDITION OF ${edition.size}` : "NUMBERED EDITION"}
-              {typeof n === "number" && edition.released ? ` · ${n} LEFT` : ""}
+
+        <div className="flex flex-col gap-2">
+          <Title className="model">
+            {details ? (
+              <Link href={`${details.href}?color=${encodeURIComponent(active)}`} data-track={details.titleTrack} className="decoration-[3px] underline-offset-[6px] hover:underline">
+                {product.title}
+              </Link>
+            ) : (
+              product.title
+            )}
+          </Title>
+          <p className="spec-line">{spec}</p>
+        </div>
+
+        <fieldset className="flex flex-col gap-2">
+          <legend className="label mb-2 flex flex-wrap gap-x-2">
+            <span>Color</span>
+            <span aria-live="polite" className="normal-case tracking-normal font-[550] text-[0.9375rem]">
+              {active}
+              {ropeByColor[active] ? `, ${ropeByColor[active]!.toLowerCase()} rope` : ""}
+            </span>
+          </legend>
+          <div role="radiogroup" aria-label="Color" className="flex gap-1.5">
+            {colors.map((c, i) => {
+              const w = colorway(c)
+              const on = c === active
+              return (
+                <button
+                  key={c}
+                  type="button"
+                  role="radio"
+                  aria-checked={on}
+                  aria-label={`${c}${ropeByColor[c] ? `, ${ropeByColor[c]} rope` : ""}`}
+                  tabIndex={on ? 0 : -1}
+                  onClick={() => pick(c)}
+                  onKeyDown={(e) => onStripeKey(e, i)}
+                  className="relative h-12 flex-1 rounded-[3px] transition-[box-shadow] duration-200"
+                  style={{
+                    background: w.crown,
+                    boxShadow: on ? `0 0 0 2px ${ink.panel}, 0 0 0 5px ${ink.ink}` : `inset 0 0 0 1.5px ${dark ? "#ffffff59" : "#14213d40"}`,
+                  }}
+                >
+                  <span className="absolute inset-x-0 top-[58%] h-[5px]" style={{ background: w.rope }} aria-hidden />
+                </button>
+              )
+            })}
+          </div>
+          {linked.swatches.length > 0 && (
+            <div className="mt-1">
+              {linked.group === "LIMITED" ? (
+                <button type="button" aria-expanded={showLinked} onClick={() => setShowLinked((o) => !o)} data-track="color_pill" className="label min-h-10 underline decoration-1 underline-offset-4">
+                  {showLinked ? "Hide numbered editions" : `Numbered editions (${linked.swatches.length})`}
+                </button>
+              ) : (
+                <p className="label min-h-8">Core colors</p>
+              )}
+              {(showLinked || linked.group === "CORE") && (
+                <div className="mt-2 flex flex-wrap gap-3">
+                  {linked.swatches.map((s) => (
+                    <SwatchLink key={s.name} name={s.name} href={s.href} caption={s.caption} track="pdp_edition_link" selected={s.selected} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </fieldset>
+
+        <RopeRule color={active} />
+
+        <div ref={cta} className="flex flex-col gap-3">
+          <div className="flex items-center gap-4">
+            <span className="text-[2.75rem] leading-none" aria-label={`Price ${formatMoney(p.amount, p.currency)}`}>
+              <Digits value={formatMoney(p.amount, p.currency)} label={formatMoney(p.amount, p.currency)} />
+            </span>
+            <button
+              type="button"
+              className="btn btn-on-ink btn-atc flex-1"
+              onClick={() => onAdd()}
+              disabled={soldOut || pending || stock === null || !variant}
+              data-track="add_to_cart"
+              aria-busy={pending || undefined}
+            >
+              {pending ? "Adding…" : label}
+            </button>
+          </div>
+          {error && (
+            <p className="text-[0.9375rem] font-semibold" role="alert">
+              {error}
             </p>
-            <p className="text-xs leading-4 text-light-charcoal">{POLICY.limitedRun}</p>
-          </>
-        )}
-      </div>
+          )}
+          <p className="text-[0.9375rem] leading-6">{stockLine}</p>
+          <p className="text-[0.9375rem] leading-6 opacity-90">
+            Any two caps ship free ($85+).{" "}
+            {pairLink && (
+              <>
+                <Link href={pairLink.href} className="link font-semibold" data-track={pairLink.track}>
+                  {pairLink.label}
+                </Link>
+                .{" "}
+              </>
+            )}
+            {POLICY.returns}.
+          </p>
+          {edition && (
+            <p className="text-[0.9375rem] leading-6">
+              {edition.size ? (
+                <>
+                  Edition of <Digits value={edition.size} />
+                </>
+              ) : (
+                "Numbered edition"
+              )}
+              {typeof n === "number" && edition.released ? (
+                <>
+                  {" "}
+                  · <Digits value={n} /> left
+                </>
+              ) : null}
+              . {POLICY.limitedRun}
+            </p>
+          )}
+        </div>
 
-      {bundles}
-
-      <Link href="/quiz" className="link text-xs" data-track="pdp_quiz">
-        Not sure which color? Take the 30-second quiz
-      </Link>
-
-      <div
-        className={`fixed inset-x-0 bottom-0 z-[70] rounded-t-md bg-white px-7 py-5 shadow-xl transition-all duration-150 ease-in-out ${ctaVisible ? "pointer-events-none opacity-0" : "opacity-100"}`}
-        aria-hidden={ctaVisible}
-      >
-        <p className="flex justify-center gap-2 text-sm leading-5">
-          <span>
-            {product.title}, {active}
-          </span>
-          <span>{formatMoney(p.amount, p.currency)}</span>
+        <p className="text-[0.9375rem] leading-6">
+          One size, {POLICY.oneSize}.{" "}
+          <Link href="/fit-guide" className="link font-semibold" data-track="fit_guide">
+            Fit guide
+          </Link>{" "}
+          ·{" "}
+          <Link href="/quiz" className="link" data-track="pdp_quiz">
+            Not sure which color? Take the quiz
+          </Link>
+          {details && (
+            <>
+              {" "}
+              ·{" "}
+              <Link href={`${details.href}?color=${encodeURIComponent(active)}`} className="link" data-track={details.linkTrack}>
+                Full details
+              </Link>
+            </>
+          )}
         </p>
-        <button type="button" tabIndex={ctaVisible ? -1 : 0} className="btn btn-secondary btn-atc mt-3" onClick={() => onAdd("sticky_add_to_cart")} disabled={soldOut || pending || stock === null} data-track="sticky_add_to_cart">
-          {label}
-        </button>
+
+        {bundles}
       </div>
-    </aside>
+
+      {sticky && (
+        <div
+          className={`sheet fixed inset-x-0 bottom-0 z-[70] border-t-2 border-ink bg-paper text-ink ${ctaVisible ? "pointer-events-none translate-y-full opacity-0" : "translate-y-0 opacity-100"}`}
+          aria-hidden={ctaVisible}
+        >
+          <div className="mx-auto flex max-w-[1440px] items-center gap-3 px-4 py-3 md:px-6">
+            <SwatchFace name={active} size={20} className="hidden sm:inline-block" />
+            <p className="min-w-0 flex-1 truncate text-[0.9375rem]">
+              <span className="font-semibold">{product.title}</span>, {active}
+            </p>
+            <span className="text-[1.75rem] leading-none">
+              <Digits value={formatMoney(p.amount, p.currency)} />
+            </span>
+            <button type="button" tabIndex={ctaVisible ? -1 : 0} className="btn btn-secondary" onClick={() => onAdd("sticky_add_to_cart")} disabled={soldOut || pending || stock === null} data-track="sticky_add_to_cart">
+              {label}
+            </button>
+          </div>
+        </div>
+      )}
+    </section>
   )
 }
