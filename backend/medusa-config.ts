@@ -29,6 +29,7 @@ const modules: Record<string, any>[] = [
   { resolve: "./src/modules/release" },
   { resolve: "./src/modules/content" },
   { resolve: "./src/modules/analytics" },
+  { resolve: "./src/modules/custom-quote" },
 ]
 
 if (REDIS_URL) {

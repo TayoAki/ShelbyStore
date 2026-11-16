@@ -25,9 +25,21 @@ import {
   AdminUpdateExperiment,
 } from "./admin/analytics/validators"
 import { StoreAnalyticsBatch } from "./store/analytics/validators"
+import { AdminUpdateCustomQuote, StoreCreateCustomQuote } from "./store/custom-quotes/validators"
 
 export default defineMiddlewares({
   routes: [
+    // Custom club and outing orders (/custom)
+    {
+      matcher: "/store/custom-quotes",
+      methods: ["POST"],
+      middlewares: [validateAndTransformBody(StoreCreateCustomQuote)],
+    },
+    {
+      matcher: "/admin/custom-quotes/:id",
+      methods: ["POST"],
+      middlewares: [validateAndTransformBody(AdminUpdateCustomQuote)],
+    },
     // First-party analytics
     { matcher: "/admin/analytics/funnel", methods: ["POST"], middlewares: [validateAndTransformBody(AdminFunnelQuery)] },
     { matcher: "/admin/analytics/trends", methods: ["POST"], middlewares: [validateAndTransformBody(AdminTrendsQuery)] },
