@@ -272,8 +272,9 @@ reassurance, details.
    shareable, attributable URL [TD 9/11; MG 2/2 colourway URLs]. The page honours `?color=` on load.
 6. **Size.**
    - **One-size** products show no size buttons: a line "**One size** · fits 21.5–23.75 in (55–60 cm)"
-     (from `metadata.fit_notes` when it states a range) and a **Fit guide** link to
-     `/fit-guide#<handle>` [MG: Goorin's single "One Size", Melin's guide link].
+     (the range is read from `metadata.fit_notes` when it states one, e.g. the trucker's 21.5–24 in;
+     otherwise the store-wide range) and a **Fit guide** link to `/fit-guide#<handle>` [MG: Goorin's
+     single "One Size", Melin's guide link].
    - **Sized** products show S/M and L/XL buttons (grid, 48px) with low-stock counts under the
      size, struck-through sold-out sizes, a **Size chart** dialog (`metadata.size_chart`) and the
      Fit guide link on the same row [TD 10/11].
@@ -287,9 +288,9 @@ reassurance, details.
 10. **Fit profile** (when `metadata.fit_profile` exists): two 3-step scales, **Crown height** (Low ·
     Mid · Tall) and **Structure** (Unstructured · Semi · Structured), the active step filled ink
     [MG: Goorin's crown/structure scales, Melin's depth bars].
-11. **Accordions** [TD 10/11]: **Details** (description, then a spec list from `metadata.details`:
-    Crown, Brim, Closure, Fabric, Care, kept separate from mood copy [MG]), **Fit** (open by
-    default: fit notes), **Shipping & returns**.
+11. **Accordions** [TD 10/11]: **Details**, open by default (description, then a spec list from
+    `metadata.details` in a fixed order: Crown, Brim, Closure, Fabric, Care, kept separate from mood
+    copy [MG]), **Fit** (fit notes and a fit-guide link), **Shipping & returns**.
 12. **Complete the look** [TD 8/11]: up to 4 other hats, preferring other shapes.
 13. **Pinned buy bar** on mobile once the CTA scrolls away [TD 7/11; MG 2/2].
 
@@ -342,7 +343,8 @@ payment captured at checkout. Inputs sit on `bg-paper` with `ink-faint` borders.
 The landing page for cold social traffic [LP §2, §5]. Same modules as v2 (hook, problem, stance,
 proof, offer with a working buy box, participation, closing action), restyled with the v3 tokens.
 The hook image is `/hats/story-crush.jpg`; CTAs say "Shop the Everyday Cap" / "Get the Everyday
-Cap". The `story-headline` experiment and every `data-track` stay as they are (§10).
+Cap". The offer's image follows the colour picked in its buy box (no URL change on this page). A
+headline longer than 80 characters (the stance variant) steps down a size. The `story-headline` experiment and every `data-track` stay as they are (§10).
 
 ## 7. Assets
 

@@ -29,8 +29,12 @@
 | Aimé Leon Dore | [aimeleondore.md](aimeleondore.md) | ✅ | luxury, film-led, collabs |
 | Comfrt | [comfrt.md](comfrt.md) | ✅ | hero hoodie, core + limited colors, VIP club |
 | True Classic | [trueclassictees.md](trueclassictees.md) | ❌ blocked (Cloudflare 429 challenge) | — |
+| Melin (hats, added 2026-11-16) | [melin.md](melin.md) | ✅ | performance caps; core / seasonal / limited colours |
+| Goorin Bros (hats, added 2026-11-16) | [goorin.md](goorin.md) | ✅ | character truckers + heritage hats; weekly numbered drop |
 
 **11 of 12 sites captured.** Counts below are out of 11 unless a cell could not be measured (then "n/10" etc.).
+
+The two hat stores were added when Shelby moved to hats and are **not** in the 11-site matrix below; the hat spec cites them as **[MG]** (`web/SITE_SPEC.md`). Each file ends with its own "take / avoid" list.
 
 ## Pattern matrix
 
