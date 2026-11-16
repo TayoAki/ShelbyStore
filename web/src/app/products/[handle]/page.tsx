@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import { Suspense } from "react"
 import { Container } from "@/components/container"
 import { ContinuityBanner } from "@/components/continuity-banner"
@@ -11,7 +11,7 @@ import { SelectionProvider } from "@/components/pdp/selection"
 import { ProductCard } from "@/components/product-card"
 import { Track } from "@/components/track"
 import { Badge } from "@/components/ui/badge"
-import { getProduct, getRegion, liveReleaseIndex, listProducts } from "@/lib/data/catalog"
+import { getProduct, getRegion, liveReleaseIndex, listOffers, listProducts } from "@/lib/data/catalog"
 import { getStock } from "@/lib/data/stock"
 import { formatMoney } from "@/lib/format"
 import { POLICY } from "@/lib/policy"
@@ -23,6 +23,7 @@ import {
   isOneSize,
   meta,
   modelInfoOf,
+  offerOf,
   price,
   shapeOf,
   sizeChartOf,
@@ -57,8 +58,21 @@ async function ProductContent({
   const [{ handle }, query] = await Promise.all([params, searchParams])
   const region = await getRegion()
   if (!region) notFound()
-  const [product, releases, all] = await Promise.all([getProduct(handle, region.id), liveReleaseIndex(), listProducts(region.id)])
+  const [product, releases, all, offers] = await Promise.all([
+    getProduct(handle, region.id),
+    liveReleaseIndex(),
+    listProducts(region.id),
+    listOffers(region.id),
+  ])
   if (!product) notFound()
+  // Bundles are sold on their own landing page (SITE_SPEC §12.1).
+  const ownOffer = offerOf(product)
+  if (ownOffer) redirect(ownOffer.path)
+  // An offer built on this product (e.g. the two-pack), linked under the buy box.
+  const offer = offers.find((o) => offerOf(o)?.singleHandle === product.handle) ?? null
+  const offerPrice = offer ? price(offer).amount : null
+  const singlePrice = price(product).amount
+  const offerSaving = offerPrice !== null && singlePrice !== null ? singlePrice * 2 - offerPrice : null
 
   const release = releases[product.id] ?? null
   const isCore = product.collection?.handle === "core"
@@ -135,6 +149,21 @@ async function ProductContent({
             >
               <LiveBuyBox product={product} release={release} fitNotes={fitNotes} modelInfo={modelInfo} sizeChart={sizeChart} />
             </Suspense>
+            {offer && offerPrice !== null && (
+              <Link
+                href={offerOf(offer)!.path}
+                className="-mt-2 flex items-center justify-between gap-3 bg-paper px-4 py-3 text-[14px] hover:bg-surface"
+                data-track="pdp_offer"
+              >
+                <span>
+                  <span className="font-medium">Get two for {formatMoney(offerPrice, p.currency)}</span>
+                  {offerSaving !== null && offerSaving > 0 && (
+                    <span className="text-ink-muted"> · save {formatMoney(offerSaving, p.currency)}</span>
+                  )}
+                </span>
+                <span aria-hidden>→</span>
+              </Link>
+            )}
             {profile && (
               <div className="flex flex-col gap-3 border-t border-line pt-5">
                 <p className="text-[15px] font-semibold">How it fits</p>

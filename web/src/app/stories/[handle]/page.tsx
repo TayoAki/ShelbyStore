@@ -5,18 +5,13 @@ import { notFound } from "next/navigation"
 import { Suspense } from "react"
 import { Container } from "@/components/container"
 import { Exposure } from "@/components/exposure"
-import { BuyBox } from "@/components/pdp/buy-box"
-import { SelectedImage, SelectionProvider } from "@/components/pdp/selection"
+import { ProductOffer } from "@/components/lp/product-offer"
 import { Track } from "@/components/track"
 import { ButtonLink } from "@/components/ui/button"
 import { ATTRIBUTION_COOKIE, parseAttribution } from "@/lib/attribution"
 import { getRegion, listCoreProducts } from "@/lib/data/catalog"
 import { getSeries } from "@/lib/data/content"
-import { getStock } from "@/lib/data/stock"
 import { getVariant } from "@/lib/experiments"
-import { formatMoney } from "@/lib/format"
-import { colorThumbs, imagesFor, imageUrl, meta, modelInfoOf, price, sizeChartOf } from "@/lib/product"
-import type { Product } from "@/lib/types"
 
 /** The A/B test on this page's headline (Admin → Analytics → Experiments). */
 const HEADLINE_EXPERIMENT = "story-headline"
@@ -146,7 +141,7 @@ async function StoryContent({ params }: { params: PageProps<"/stories/[handle]">
       </section>
 
       {/* 5. Offer: a working buy box, so the decision happens here */}
-      {product && <Offer product={product} />}
+      {product && <ProductOffer product={product} source="story" />}
 
       {/* 6. Participation + 7. closing action */}
       <section className="py-12 lg:py-20">
@@ -168,40 +163,4 @@ async function StoryContent({ params }: { params: PageProps<"/stories/[handle]">
       </section>
     </>
   )
-}
-
-function Offer({ product }: { product: Product }) {
-  const p = price(product)
-  const thumbs = colorThumbs(product)
-  const lead = imagesFor(product, thumbs[0]?.color)[0] ?? imageUrl(product.thumbnail)
-  const byColor = Object.fromEntries(thumbs.map((t) => [t.color, imagesFor(product, t.color)[0] ?? lead ?? ""]))
-  const fitNotes = meta(product, "fit_notes")
-  const props = { product, release: null, fitNotes, modelInfo: modelInfoOf(product), sizeChart: sizeChartOf(product) }
-  return (
-    <SelectionProvider initialColor={thumbs[0]?.color ?? null} syncUrl={false}>
-    <section id="offer" className="scroll-mt-28 bg-surface py-12 lg:py-20">
-      <Container className="grid gap-8 lg:grid-cols-2 lg:gap-16">
-        <div className="relative aspect-[4/5] overflow-hidden bg-page">
-          <SelectedImage byColor={byColor} fallback={lead} alt={product.title} sizes="(min-width:1024px) 45vw, 100vw" />
-        </div>
-        <div className="flex flex-col gap-6 lg:pt-6">
-          <div className="flex flex-col gap-2">
-            <p className="text-eyebrow text-ink-muted">The core · always in stock</p>
-            <h2 className="font-display text-[32px] leading-[0.95] lg:text-[44px]">{product.title}</h2>
-            <p className="font-mono text-[15px]">{formatMoney(p.amount, p.currency)}</p>
-            {meta(product, "promise") && <p className="text-[16px] italic text-ink-muted">“{meta(product, "promise")}”</p>}
-          </div>
-          <Suspense fallback={<BuyBox {...props} stock={null} />}>
-            <LiveBuyBox {...props} />
-          </Suspense>
-        </div>
-      </Container>
-    </section>
-    </SelectionProvider>
-  )
-}
-
-async function LiveBuyBox(props: Omit<Parameters<typeof BuyBox>[0], "stock">) {
-  const stock = await getStock([props.product.id])
-  return <BuyBox {...props} stock={stock} />
 }

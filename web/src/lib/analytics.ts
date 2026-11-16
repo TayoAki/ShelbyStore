@@ -208,6 +208,28 @@ function enqueue(e: QueuedEvent) {
 
 let lastUrl: string | null = null
 
+/**
+ * The page type an event happened on, so funnels can be split by landing-page
+ * type (SITE_SPEC §12.0; the essay's page-type table).
+ */
+export function pageTypeFor(pathname: string): string {
+  if (pathname === "/") return "home"
+  if (pathname.startsWith("/products/")) return "pdp"
+  if (pathname.startsWith("/offer/")) return "offer"
+  if (pathname.startsWith("/reasons/")) return "listicle"
+  if (pathname.startsWith("/read/")) return "advertorial"
+  if (pathname === "/quiz/result") return "quiz_result"
+  if (pathname === "/quiz") return "quiz"
+  if (pathname.startsWith("/stories/")) return "story"
+  if (pathname === "/shop") return "collection"
+  if (pathname.startsWith("/drops")) return "drops"
+  if (pathname === "/fit-guide") return "fit_guide"
+  if (pathname === "/cart") return "cart"
+  if (pathname.startsWith("/checkout")) return "checkout"
+  if (pathname.startsWith("/order/")) return "order"
+  return "other"
+}
+
 export function track(event: string, props: Record<string, unknown> = {}) {
   capture(event, props)
 }
@@ -218,13 +240,14 @@ function capture(event: string, props: Record<string, unknown>, at?: { url: stri
   const id = analyticsId()
   if (!id) return
   const attribution = currentAttribution() ?? {}
-  const properties = { ...superProps(), ...props, $insert_id: uuid() }
+  const path = at ? new URL(at.url).pathname : location.pathname
+  const properties = { page_type: pageTypeFor(path), ...superProps(), ...props, $insert_id: uuid() }
   enqueue({
     event,
     distinct_id: id,
     session_id: sessionId(),
     timestamp: new Date().toISOString(),
-    path: at ? new URL(at.url).pathname : location.pathname,
+    path,
     url: at?.url ?? location.href,
     referrer: at ? at.referrer : lastUrl ?? (document.referrer || null),
     ...attribution,

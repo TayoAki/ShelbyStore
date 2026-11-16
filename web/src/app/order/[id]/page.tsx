@@ -5,7 +5,7 @@ import { Container } from "@/components/container"
 import { LineItem } from "@/components/line-item"
 import { ButtonLink } from "@/components/ui/button"
 import { formatMoney } from "@/lib/format"
-import { getRegion, listProducts } from "@/lib/data/catalog"
+import { getRegion, listCatalog } from "@/lib/data/catalog"
 import { imageUrl, variantThumbs } from "@/lib/product"
 import { sdk } from "@/lib/medusa"
 
@@ -29,7 +29,7 @@ async function OrderContent({ params }: { params: PageProps<"/order/[id]">["para
     .catch(() => null)
   if (!order) notFound()
   const region = await getRegion()
-  const thumbs = region ? variantThumbs(await listProducts(region.id)) : {}
+  const thumbs = region ? variantThumbs(await listCatalog(region.id)) : {}
   const a = order.shipping_address
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-8">

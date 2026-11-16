@@ -1,12 +1,11 @@
 import Image from "next/image"
 import Link from "next/link"
-import { Suspense } from "react"
-import { getStock } from "@/lib/data/stock"
 import { formatMoney } from "@/lib/format"
-import { colorOption, colorThumbs, imagesFor, imageUrl, isOneSize, oneSizeRange, price, stockState, variantOptions } from "@/lib/product"
+import { colorThumbs, imagesFor, imageUrl, isOneSize, oneSizeRange, price } from "@/lib/product"
 import { POLICY } from "@/lib/policy"
-import type { Product, VariantStock } from "@/lib/types"
+import type { Product } from "@/lib/types"
 import { Container } from "../container"
+import { StockList } from "../lp/stock-list"
 import { ButtonLink } from "../ui/button"
 
 /**
@@ -35,9 +34,7 @@ export function CoreBand({ products }: { products: Product[] }) {
               The cap we never let run out. Here&apos;s today&apos;s count.
             </p>
           </div>
-          <Suspense fallback={<Rows product={product} stock={null} />}>
-            <LiveRows product={product} />
-          </Suspense>
+          <StockList product={product} />
           <div className="flex flex-col gap-4 border-t border-line pt-5">
             <p className="text-[14px]">
               <span className="font-medium">{product.title}</span>
@@ -57,64 +54,5 @@ export function CoreBand({ products }: { products: Product[] }) {
         </div>
       </Container>
     </section>
-  )
-}
-
-async function LiveRows({ product }: { product: Product }) {
-  const stock = await getStock([product.id])
-  return <Rows product={product} stock={stock} />
-}
-
-function Rows({ product, stock }: { product: Product; stock: VariantStock | null }) {
-  const colorTitle = colorOption(product)
-  const thumbs = colorThumbs(product)
-  return (
-    <ul className="flex flex-col border-t border-line" aria-busy={stock === null || undefined}>
-      {thumbs.map(({ color, image }) => {
-        // Sum the colour's sizes (one row per colour; one-size caps have one variant each).
-        const variants = (product.variants ?? []).filter((v) => colorTitle && variantOptions(v)[colorTitle] === color)
-        const counts = stock ? variants.map((v) => stock[v.id]) : []
-        const untracked = counts.some((n) => n === null)
-        const available = counts.reduce<number>((sum, n) => sum + (typeof n === "number" ? n : 0), 0)
-        const state = stock === null ? null : untracked ? "untracked" : stockState(available)
-        return (
-          <li key={color} className="border-b border-line">
-            <Link
-              href={`/products/${product.handle}?color=${encodeURIComponent(color)}`}
-              className="flex items-center gap-4 py-3 hover:bg-surface-2/40"
-              data-track="core_product"
-            >
-              <span className="relative h-12 w-10 shrink-0 overflow-hidden bg-page">
-                {image && <Image src={image} alt="" fill sizes="40px" className="object-cover" />}
-              </span>
-              <span className="flex-1 text-[15px] font-medium">{color}</span>
-              {state === null ? (
-                <span className="h-4 w-24 animate-pulse rounded-[2px] bg-surface-2" aria-hidden />
-              ) : (
-                <span
-                  className={`font-mono text-[13px] ${
-                    state === "sold_out" ? "text-ink-muted" : state === "low" ? "text-low" : "text-ok"
-                  }`}
-                >
-                  <span
-                    aria-hidden
-                    className={`mr-1.5 inline-block h-1.5 w-1.5 rounded-full align-middle ${
-                      state === "sold_out" ? "bg-ink-faint" : state === "low" ? "bg-low" : "bg-ok"
-                    }`}
-                  />
-                  {state === "untracked"
-                    ? "In stock"
-                    : state === "sold_out"
-                      ? "Restocking"
-                      : state === "low"
-                        ? `Only ${available} left`
-                        : `${available} in stock`}
-                </span>
-              )}
-            </Link>
-          </li>
-        )
-      })}
-    </ul>
   )
 }

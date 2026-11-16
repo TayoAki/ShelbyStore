@@ -8,11 +8,11 @@ import { QuickAdd } from "@/components/quick-add"
 import { ButtonLink } from "@/components/ui/button"
 import { cartLines } from "@/lib/cart-view"
 import { retrieveCart } from "@/lib/data/cart"
-import { getRegion, listProducts } from "@/lib/data/catalog"
+import { getRegion, listCatalog, listOffers, listProducts } from "@/lib/data/catalog"
 import { getStock } from "@/lib/data/stock"
 import { formatMoney } from "@/lib/format"
 import { POLICY } from "@/lib/policy"
-import { colorThumbs, imagesFor, imageUrl, isOneSize, price, shapeOf, variantOptions, variantThumbs } from "@/lib/product"
+import { colorThumbs, imagesFor, imageUrl, isOneSize, offerOf, price, shapeOf, variantOptions, variantThumbs } from "@/lib/product"
 import type { Cart, Product } from "@/lib/types"
 
 export const metadata: Metadata = { title: "Bag" }
@@ -74,19 +74,45 @@ async function CartContent() {
 async function CompleteTheLook({ cart }: { cart: Cart }) {
   const region = await getRegion()
   if (!region) return null
-  const products = await listProducts(region.id)
+  const [products, offers] = await Promise.all([listProducts(region.id), listOffers(region.id)])
   const inBag = new Set((cart.items ?? []).map((i) => i.product_id))
+  // A single in the bag that has an offer built on it (e.g. the two-pack) gets
+  // that offer first (SITE_SPEC §12.6). Not shown once the offer is in the bag.
+  const offer =
+    offers.find((o) => {
+      const single = products.find((p) => p.handle === offerOf(o)?.singleHandle)
+      return single && inBag.has(single.id) && !inBag.has(o.id)
+    }) ?? null
   const bagShapes = new Set(products.filter((p) => inBag.has(p.id)).map((p) => shapeOf(p)?.handle))
   const candidates = products
     .filter((p) => !inBag.has(p.id))
     .sort((a, b) => Number(bagShapes.has(shapeOf(a)?.handle)) - Number(bagShapes.has(shapeOf(b)?.handle)))
     .slice(0, 2)
-  if (!candidates.length) return null
+  if (!candidates.length && !offer) return null
   const stock = await getStock(candidates.map((p) => p.id))
+  const single = offer ? products.find((p) => p.handle === offerOf(offer)?.singleHandle) : null
+  const offerPrice = offer ? price(offer).amount : null
+  const singlePrice = single ? price(single).amount : null
+  const saving = offerPrice !== null && singlePrice !== null ? singlePrice * 2 - offerPrice : null
 
   return (
     <section className="flex flex-col gap-4">
-      <h2 className="font-display text-[26px] leading-none lg:text-[32px]">Complete the look</h2>
+      {offer && single && offerPrice !== null && (
+        <Link
+          href={offerOf(offer)!.path}
+          className="flex flex-col gap-1 border border-ink p-4 hover:bg-paper sm:flex-row sm:items-center sm:justify-between"
+          data-track="cart_offer"
+        >
+          <span className="text-[15px]">
+            <span className="font-medium">Want two? {offer.title}: {formatMoney(offerPrice, cart.currency_code)}</span>
+            {saving !== null && saving > 0 && (
+              <span className="text-ink-muted"> · {formatMoney(saving, cart.currency_code)} less than two singles</span>
+            )}
+          </span>
+          <span className="text-[13px] underline underline-offset-4">Pick your two →</span>
+        </Link>
+      )}
+      {candidates.length > 0 && <h2 className="font-display text-[26px] leading-none lg:text-[32px]">Complete the look</h2>}
       <ul className="grid gap-3 sm:grid-cols-2">
         {candidates.map((p) => (
           <Suggestion key={p.id} product={p} stock={stock} />
@@ -134,5 +160,5 @@ function Suggestion({ product, stock }: { product: Product; stock: Record<string
 /** Colour-correct bag thumbnails from the cached catalog. */
 async function lineThumbs() {
   const region = await getRegion()
-  return region ? variantThumbs(await listProducts(region.id)) : {}
+  return region ? variantThumbs(await listCatalog(region.id)) : {}
 }

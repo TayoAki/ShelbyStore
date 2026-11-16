@@ -7,7 +7,7 @@ import { ButtonLink } from "@/components/ui/button"
 import { listShippingOptions } from "@/lib/actions/checkout"
 import { cartLines } from "@/lib/cart-view"
 import { retrieveCart } from "@/lib/data/cart"
-import { getRegion, listProducts } from "@/lib/data/catalog"
+import { getRegion, listCatalog } from "@/lib/data/catalog"
 import { formatMoney } from "@/lib/format"
 import { POLICY } from "@/lib/policy"
 import { variantThumbs } from "@/lib/product"
@@ -97,5 +97,5 @@ function Row({ label, value, strong = false }: { label: string; value: string; s
 /** Colour-correct bag thumbnails from the cached catalog. */
 async function lineThumbs() {
   const region = await getRegion()
-  return region ? variantThumbs(await listProducts(region.id)) : {}
+  return region ? variantThumbs(await listCatalog(region.id)) : {}
 }

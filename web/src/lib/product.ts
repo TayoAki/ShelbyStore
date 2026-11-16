@@ -198,17 +198,44 @@ export function isLowStock(product: Product, stock: VariantStock | undefined): b
   return counts.length > 0 && counts.every((n) => n <= LOW_STOCK)
 }
 
-/** variant id → the first photo of that variant's colour, for bag and order lines. */
+/**
+ * variant id → the first photo of that variant's colour, for bag and order
+ * lines. A variant with its own images (e.g. a two-pack's first colour) uses those.
+ */
 export function variantThumbs(products: Product[]): Record<string, string> {
   const out: Record<string, string> = {}
   for (const product of products) {
     const title = colorOption(product)
     for (const v of product.variants ?? []) {
-      const img = imagesFor(product, title ? variantOptions(v)[title] : null)[0]
+      const own = imageUrl((v as WithImages).images?.[0]?.url)
+      const img = own ?? imagesFor(product, title ? variantOptions(v)[title] : null)[0]
       if (img) out[v.id] = img
     }
   }
   return out
+}
+
+// --- Offers (SITE_SPEC §12.1) -------------------------------------------------
+
+export type OfferMeta = { path: string; singleHandle: string | null; compareAt: number | null }
+
+/** An offer product (e.g. the two-pack): sold on its own landing page, not in the catalog. */
+export function offerOf(product: Product): OfferMeta | null {
+  const md = (product.metadata ?? {}) as Record<string, unknown>
+  if (md.offer !== true) return null
+  return {
+    path: typeof md.offer_path === "string" ? md.offer_path : `/offer/${product.handle}`,
+    singleHandle: typeof md.single_handle === "string" ? md.single_handle : null,
+    compareAt: typeof md.compare_at === "number" ? md.compare_at : null,
+  }
+}
+
+export const isOffer = (product: Product) => offerOf(product) !== null
+
+/** metadata.uses: what the hat is for, as the quiz asks it (everyday, running, sun, cold). */
+export function usesOf(product: Product): string[] {
+  const v = (product.metadata as Record<string, unknown> | null)?.uses
+  return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []
 }
 
 /**

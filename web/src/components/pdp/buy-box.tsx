@@ -23,6 +23,12 @@ type Props = {
   fitNotes: string | null
   modelInfo: string | null
   sizeChart: SizeChart | null
+  /** Preselected options, e.g. the quiz result's colour and size (only values the product has). */
+  initialSelection?: Record<string, string>
+  /** Where the add happened, sent with add_to_cart (e.g. "quiz", "listicle"). */
+  source?: string
+  /** "Not sure? Take the 30-second fit quiz" under the fit row (off on the quiz result). */
+  showQuizLink?: boolean
 }
 
 /**
@@ -31,7 +37,7 @@ type Props = {
  * show the fit range and a fit-guide link instead of size buttons; sized hats
  * show S/M and L/XL with live availability.
  */
-export function BuyBox({ product, stock, release, fitNotes, modelInfo, sizeChart }: Props) {
+export function BuyBox({ product, stock, release, fitNotes, modelInfo, sizeChart, initialSelection, source, showQuizLink = true }: Props) {
   const groups = useMemo(() => optionGroups(product), [product])
   const sizeGroup = groups.find((g) => /size/i.test(g.title))
   const colorGroup = groups.find((g) => /colou?r/i.test(g.title))
@@ -46,6 +52,9 @@ export function BuyBox({ product, stock, release, fitNotes, modelInfo, sizeChart
     if (colorGroup) init[colorGroup.title] = color && colorGroup.values.includes(color) ? color : colorGroup.values[0]
     // One-size hats need no size pick.
     if (sizeGroup?.values.length === 1) init[sizeGroup.title] = sizeGroup.values[0]
+    for (const [k, v] of Object.entries(initialSelection ?? {})) {
+      if (groups.some((g) => g.title === k && g.values.includes(v))) init[k] = v
+    }
     return init
   })
   const [added, setAdded] = useState(false)
@@ -87,6 +96,7 @@ export function BuyBox({ product, stock, release, fitNotes, modelInfo, sizeChart
           price: p.amount,
           currency: p.currency,
           release_id: release?.id,
+          source,
         })
       } else {
         setError(result.error)
@@ -229,6 +239,15 @@ export function BuyBox({ product, stock, release, fitNotes, modelInfo, sizeChart
             </div>
           </fieldset>
         )
+      )}
+
+      {showQuizLink && (
+        <p className="-mt-3 text-[13px] text-ink-muted">
+          Not sure?{" "}
+          <Link href="/quiz" className="text-ink underline underline-offset-4 hover:text-ink-muted" data-track="pdp_quiz">
+            Take the 30-second fit quiz
+          </Link>
+        </p>
       )}
 
       <div aria-live="polite" className="min-h-5 text-[14px]">

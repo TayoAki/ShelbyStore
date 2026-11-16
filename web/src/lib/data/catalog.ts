@@ -1,7 +1,7 @@
 import "server-only"
 import { cacheLife, cacheTag } from "next/cache"
 import { sdk } from "../medusa"
-import { imageUrl } from "../product"
+import { imageUrl, isOffer } from "../product"
 import type { Category, Product, Region, StoreRelease } from "../types"
 
 /**
@@ -62,7 +62,12 @@ export async function listCoreProducts(regionId: string): Promise<Product[]> {
   }
 }
 
-export async function listProducts(regionId: string): Promise<Product[]> {
+/**
+ * Every published product, offers included (e.g. the two-pack). Use for
+ * variant lookups (bag, checkout and order thumbnails); browsing surfaces use
+ * listProducts.
+ */
+export async function listCatalog(regionId: string): Promise<Product[]> {
   "use cache"
   cacheLife("minutes")
   cacheTag("products")
@@ -76,6 +81,16 @@ export async function listProducts(regionId: string): Promise<Product[]> {
   } catch {
     return []
   }
+}
+
+/** The hats people browse: offers live on their own landing pages (SITE_SPEC §12.1). */
+export async function listProducts(regionId: string): Promise<Product[]> {
+  return (await listCatalog(regionId)).filter((p) => !isOffer(p))
+}
+
+/** Offer products (bundles), e.g. to link a single's offer from its PDP. */
+export async function listOffers(regionId: string): Promise<Product[]> {
+  return (await listCatalog(regionId)).filter(isOffer)
 }
 
 export async function getProduct(handle: string, regionId: string): Promise<Product | null> {
