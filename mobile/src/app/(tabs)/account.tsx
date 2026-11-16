@@ -1,14 +1,16 @@
+import Ionicons from "@expo/vector-icons/Ionicons"
 import { useQuery } from "@tanstack/react-query"
 import { router } from "expo-router"
 import { useState } from "react"
 import { Pressable, StyleSheet, View } from "react-native"
 
 import { Button } from "@/components/button"
+import { SegmentedControl } from "@/components/segmented-control"
 import { Screen } from "@/components/screen"
 import { ErrorState, LoadingState } from "@/components/state-views"
 import { Text } from "@/components/text"
 import { TextField } from "@/components/text-field"
-import { colors, radius, spacing } from "@/constants/theme"
+import { colors, fonts } from "@/constants/theme"
 import { formatMoney, formatShortDate } from "@/lib/format"
 import { errorMessage, sdk } from "@/lib/medusa"
 import { useAuth } from "@/providers/auth-provider"
@@ -18,7 +20,7 @@ export default function AccountScreen() {
   return (
     <Screen edges={["top"]}>
       <View style={styles.header}>
-        <Text variant="display">Account</Text>
+        <Text style={styles.title}>Account</Text>
       </View>
       {isLoading ? <LoadingState /> : customer ? <SignedIn /> : <AuthForms />}
     </Screen>
@@ -46,18 +48,22 @@ function SignedIn() {
         <Text variant="eyebrow" tone="muted">
           Signed in
         </Text>
-        <Text variant="heading">
+        <Text style={styles.name}>
           {[customer?.first_name, customer?.last_name].filter(Boolean).join(" ") || customer?.email}
         </Text>
-        <Text tone="muted">{customer?.email}</Text>
+        <Text variant="bodySm" tone="muted">
+          {customer?.email}
+        </Text>
       </View>
 
       <View style={styles.block}>
-        <Text variant="heading">Orders</Text>
+        <Text style={styles.blockTitle}>Orders</Text>
         {orders.isLoading ? <LoadingState /> : null}
         {orders.error ? <ErrorState error={orders.error} onRetry={() => orders.refetch()} /> : null}
         {orders.data && !orders.data.length ? (
-          <Text tone="muted">No orders yet. When you buy something, it shows up here.</Text>
+          <Text variant="bodySm" tone="muted">
+            No orders yet. When you buy something, it shows up here.
+          </Text>
         ) : null}
         {orders.data?.map((order) => (
           <Pressable
@@ -66,18 +72,19 @@ function SignedIn() {
             onPress={() => router.push(`/order/${order.id}`)}
             style={({ pressed }) => [styles.orderRow, pressed && { opacity: 0.8 }]}>
             <View style={styles.flex}>
-              <Text variant="bodyStrong">Order #{order.display_id}</Text>
-              <Text variant="small" tone="muted">
+              <Text style={styles.orderNo}>Order #{order.display_id}</Text>
+              <Text style={styles.orderMeta}>
                 {formatShortDate(order.created_at as unknown as string)} · {order.items?.length ?? 0} item
                 {(order.items?.length ?? 0) === 1 ? "" : "s"} · {humanStatus(order.fulfillment_status)}
               </Text>
             </View>
-            <Text variant="bodyStrong">{formatMoney(order.total, order.currency_code)}</Text>
+            <Text variant="bodySm">{formatMoney(order.total, order.currency_code)}</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.text} />
           </Pressable>
         ))}
       </View>
 
-      <Button title="Sign out" variant="secondary" onPress={() => logout()} />
+      <Button title="Sign out" variant="light" onPress={() => logout()} />
     </View>
   )
 }
@@ -141,25 +148,19 @@ function AuthForms() {
 
   return (
     <View style={styles.body}>
-      <View style={styles.segment} accessibilityRole="tablist">
-        {(["login", "register"] as const).map((m) => (
-          <Pressable
-            key={m}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: mode === m }}
-            onPress={() => {
-              setMode(m)
-              setError(null)
-            }}
-            style={[styles.segmentItem, mode === m && styles.segmentActive]}>
-            <Text variant="bodyStrong" tone={mode === m ? "inverse" : "default"}>
-              {m === "login" ? "Sign in" : "Create account"}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      <SegmentedControl
+        options={[
+          { value: "login", label: "Sign in" },
+          { value: "register", label: "Create account" },
+        ]}
+        value={mode}
+        onChange={(m) => {
+          setMode(m)
+          setError(null)
+        }}
+      />
 
-      <Text tone="muted">
+      <Text variant="bodySm" tone="muted">
         {mode === "login"
           ? "Track orders and check out faster."
           : "Save your details, see your orders, and get first word on drops."}
@@ -204,42 +205,51 @@ function AuthForms() {
           textContentType={mode === "login" ? "password" : "newPassword"}
           onSubmitEditing={submit}
         />
-        {error ? <Text tone="danger">{error}</Text> : null}
-        <Button title={mode === "login" ? "Sign in" : "Create account"} onPress={submit} loading={submitting} />
+        {error ? <Text variant="micro" tone="error">{error}</Text> : null}
+        <Button title={mode === "login" ? "Sign in" : "Create account"} size="atc" onPress={submit} loading={submitting} />
+        <Button
+          title={mode === "login" ? "Create account" : "Sign in"}
+          variant="light"
+          onPress={() => {
+            setMode(mode === "login" ? "register" : "login")
+            setError(null)
+          }}
+        />
       </View>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: spacing.xl, paddingTop: spacing.lg, paddingBottom: spacing.xl },
-  body: { paddingHorizontal: spacing.xl, gap: spacing.xl },
-  card: {
-    padding: spacing.xl,
-    gap: spacing.xs,
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+  header: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 16 },
+  title: { fontFamily: fonts.heading, fontSize: 26, lineHeight: 39, textTransform: "uppercase", color: colors.text },
+  body: { paddingHorizontal: 16, gap: 24 },
+  card: { padding: 16, gap: 4, backgroundColor: colors.tile },
+  name: { fontFamily: fonts.heading, fontSize: 16, lineHeight: 24, color: colors.text },
+  block: { gap: 4 },
+  blockTitle: {
+    fontFamily: fonts.heading,
+    fontSize: 14,
+    lineHeight: 21,
+    letterSpacing: 1.3,
+    textTransform: "uppercase",
+    color: colors.text,
+    marginBottom: 8,
   },
-  block: { gap: spacing.md },
   orderRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.md,
-    paddingVertical: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    gap: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginHorizontal: -16,
+    backgroundColor: colors.secondary,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.line,
   },
+  orderNo: { fontFamily: fonts.heading, fontSize: 14, lineHeight: 21, color: colors.text },
+  orderMeta: { fontFamily: fonts.body, fontSize: 12, lineHeight: 18, color: colors.textMuted },
   flex: { flex: 1 },
-  segment: {
-    flexDirection: "row",
-    padding: spacing.xs,
-    borderRadius: radius.pill,
-    backgroundColor: colors.surfaceAlt,
-  },
-  segmentItem: { flex: 1, alignItems: "center", paddingVertical: spacing.sm + 2, borderRadius: radius.pill },
-  segmentActive: { backgroundColor: colors.text },
-  form: { gap: spacing.lg },
-  row: { flexDirection: "row", gap: spacing.md },
+  form: { gap: 16 },
+  row: { flexDirection: "row", gap: 12 },
 })

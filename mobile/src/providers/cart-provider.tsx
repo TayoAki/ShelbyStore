@@ -80,7 +80,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [forget, setCart])
 
   useEffect(() => {
-    load()
+    // Start after the effect returns: load() updates state once AsyncStorage answers.
+    Promise.resolve()
+      .then(load)
       .catch(() => undefined)
       .finally(() => setIsLoading(false))
   }, [load])

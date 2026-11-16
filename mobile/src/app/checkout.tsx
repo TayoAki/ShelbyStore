@@ -1,6 +1,6 @@
-import { useTrackOnce } from "@/lib/analytics"
 import type { HttpTypes } from "@medusajs/types"
 import { useQueryClient } from "@tanstack/react-query"
+import { Image } from "expo-image"
 import { router } from "expo-router"
 import { useState } from "react"
 import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from "react-native"
@@ -10,9 +10,11 @@ import { Screen } from "@/components/screen"
 import { EmptyState } from "@/components/state-views"
 import { Text } from "@/components/text"
 import { TextField } from "@/components/text-field"
-import { colors, radius, spacing } from "@/constants/theme"
+import { colors, fonts, radius } from "@/constants/theme"
+import { useTrackOnce } from "@/lib/analytics"
 import { formatMoney } from "@/lib/format"
 import { errorMessage, sdk } from "@/lib/medusa"
+import { imageUrl } from "@/lib/product"
 import { useAuth } from "@/providers/auth-provider"
 import { useCart, type Cart } from "@/providers/cart-provider"
 
@@ -82,7 +84,7 @@ export default function CheckoutScreen() {
   if (!cart || !cart.items?.length) {
     return (
       <Screen>
-        <EmptyState title="Your bag is empty" actionTitle="Shop the core" onAction={() => router.replace("/shop")} />
+        <EmptyState icon="bag-outline" title="Your Bag Is Empty" actionTitle="Shop the Everyday Cap" onAction={() => router.replace("/products/everyday-cap")} />
       </Screen>
     )
   }
@@ -178,7 +180,7 @@ export default function CheckoutScreen() {
 
           <Section
             index={1}
-            title="Contact & shipping"
+            title="Contact & address"
             active={step === "details"}
             done={step !== "details"}
             onEdit={() => setStep("details")}
@@ -252,10 +254,10 @@ export default function CheckoutScreen() {
               keyboardType="phone-pad"
               autoComplete="tel"
             />
-            <Text variant="small" tone="muted">
+            <Text variant="micro" tone="muted">
               We currently ship within the United States.
             </Text>
-            <Button title="Continue to delivery" onPress={saveDetails} loading={busy} />
+            <Button title="Continue to delivery" size="atc" onPress={saveDetails} loading={busy} />
           </Section>
 
           <Section
@@ -277,19 +279,20 @@ export default function CheckoutScreen() {
                   style={[styles.option, selected && styles.optionSelected]}>
                   <View style={[styles.radio, selected && styles.radioOn]} />
                   <View style={styles.flex}>
-                    <Text variant="bodyStrong">{option.name}</Text>
+                    <Text style={styles.optionName}>{option.name}</Text>
                     {option.type?.description ? (
-                      <Text variant="small" tone="muted">
+                      <Text variant="micro" tone="muted">
                         {option.type.description}
                       </Text>
                     ) : null}
                   </View>
-                  <Text variant="bodyStrong">{formatMoney(option.amount, currency)}</Text>
+                  <Text variant="bodySm">{formatMoney(option.amount, currency)}</Text>
                 </Pressable>
               )
             })}
             <Button
               title="Continue to payment"
+              size="atc"
               onPress={() => setStep("payment")}
               disabled={!selectedOptionId || busy}
             />
@@ -297,20 +300,21 @@ export default function CheckoutScreen() {
 
           <Section index={3} title="Payment" active={step === "payment"} done={false}>
             <View style={styles.notice}>
-              <Text variant="bodyStrong">Test payment</Text>
-              <Text variant="small" tone="muted">
-                This build uses Medusa's built-in test provider: your order is recorded, and no card is charged. Card
-                payments (e.g. Stripe) get switched on before launch.
+              <Text style={styles.optionName}>Test payment</Text>
+              <Text variant="micro" tone="muted" style={styles.noticeCopy}>
+                This build uses Medusa&apos;s built-in test provider: your order is recorded, and no card is charged.
+                Card payments (e.g. Stripe) get switched on before launch.
               </Text>
             </View>
             <Button
               title={`Place order · ${formatMoney(cart.total, currency)}`}
+              size="checkout"
               onPress={placeOrder}
               loading={busy}
             />
           </Section>
 
-          {error ? <Text tone="danger">{error}</Text> : null}
+          {error ? <Text style={styles.error}>{error}</Text> : null}
         </View>
       </Screen>
     </KeyboardAvoidingView>
@@ -335,22 +339,16 @@ function Section({
   children: React.ReactNode
 }) {
   return (
-    <View style={[styles.section, active && styles.sectionActive]}>
+    <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Text variant="heading" tone={active || done ? "default" : "muted"}>
+        <Text style={[styles.step, !(active || done) && styles.stepIdle]}>
           {index}. {title}
         </Text>
-        {done && onEdit ? (
-          <Pressable accessibilityRole="button" onPress={onEdit} hitSlop={8}>
-            <Text variant="small" style={styles.edit}>
-              Edit
-            </Text>
-          </Pressable>
-        ) : null}
+        {done && onEdit ? <Button title="Edit" variant="micro" onPress={onEdit} /> : null}
       </View>
       {active ? <View style={styles.sectionBody}>{children}</View> : null}
       {!active && done && summary ? (
-        <Text variant="small" tone="muted" numberOfLines={2}>
+        <Text variant="micro" tone="muted" numberOfLines={2}>
           {summary}
         </Text>
       ) : null}
@@ -367,29 +365,44 @@ function Summary({ cart }: { cart: Cart }) {
   ]
   return (
     <View style={styles.summary}>
-      {(cart.items ?? []).map((item) => (
-        <View key={item.id} style={styles.summaryRow}>
-          <Text variant="small" style={styles.flex} numberOfLines={1}>
-            {item.quantity} × {item.product_title ?? item.title}
-            {item.variant_title ? ` · ${item.variant_title}` : ""}
-          </Text>
-          <Text variant="small">{formatMoney(item.total, currency)}</Text>
-        </View>
-      ))}
+      {(cart.items ?? []).map((item) => {
+        const image = imageUrl(item.thumbnail)
+        return (
+          <View key={item.id} style={styles.summaryLine}>
+            <View>
+              {image ? <Image source={image} style={styles.summaryImage} contentFit="contain" /> : <View style={styles.summaryImage} />}
+              <View style={styles.qty}>
+                <Text style={styles.qtyText}>{item.quantity}</Text>
+              </View>
+            </View>
+            <View style={styles.flex}>
+              <Text variant="bodySm" numberOfLines={1}>
+                {item.product_title ?? item.title}
+              </Text>
+              {item.variant_title ? (
+                <Text variant="micro" tone="muted" numberOfLines={1}>
+                  {item.variant_title}
+                </Text>
+              ) : null}
+            </View>
+            <Text variant="bodySm">{formatMoney(item.total, currency)}</Text>
+          </View>
+        )
+      })}
       <View style={styles.divider} />
       {rows.map(([label, value]) => (
         <View key={label} style={styles.summaryRow}>
-          <Text variant="small" tone="muted">
+          <Text variant="bodySm" tone="muted">
             {label}
           </Text>
-          <Text variant="small" tone="muted">
+          <Text variant="bodySm" tone="muted">
             {value === undefined ? "—" : formatMoney(value, currency)}
           </Text>
         </View>
       ))}
       <View style={styles.summaryRow}>
-        <Text variant="bodyStrong">Total</Text>
-        <Text variant="bodyStrong">{formatMoney(cart.total, currency)}</Text>
+        <Text style={styles.total}>Total</Text>
+        <Text style={styles.total}>{formatMoney(cart.total, currency)}</Text>
       </View>
     </View>
   )
@@ -397,45 +410,46 @@ function Summary({ cart }: { cart: Cart }) {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  body: { padding: spacing.xl, gap: spacing.lg },
-  row: { flexDirection: "row", gap: spacing.md },
-  summary: {
-    padding: spacing.lg,
-    gap: spacing.sm,
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+  body: { padding: 16, gap: 16 },
+  row: { flexDirection: "row", gap: 12 },
+  summary: { padding: 16, gap: 10, backgroundColor: colors.tile },
+  summaryLine: { flexDirection: "row", alignItems: "center", gap: 12 },
+  summaryImage: { width: 64, height: 64, borderRadius: radius.addon, backgroundColor: colors.secondary },
+  qty: {
+    position: "absolute",
+    top: -6,
+    right: -6,
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
   },
-  summaryRow: { flexDirection: "row", justifyContent: "space-between", gap: spacing.md },
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border, marginVertical: spacing.xs },
-  section: {
-    padding: spacing.lg,
-    gap: spacing.md,
-    borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-  },
-  sectionActive: { backgroundColor: colors.surface, borderColor: colors.text },
+  qtyText: { fontFamily: fonts.heading, fontSize: 11, lineHeight: 13, color: colors.textInverse },
+  summaryRow: { flexDirection: "row", justifyContent: "space-between", gap: 12 },
+  divider: { height: 1, backgroundColor: colors.line, marginVertical: 4 },
+  total: { fontFamily: fonts.heading, fontSize: 18, lineHeight: 23.4, color: colors.text },
+  section: { paddingVertical: 16, gap: 16, borderBottomWidth: 1, borderBottomColor: colors.line },
   sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  sectionBody: { gap: spacing.lg },
-  edit: { textDecorationLine: "underline", fontWeight: "600" },
+  step: { fontFamily: fonts.heading, fontSize: 18, lineHeight: 23.4, letterSpacing: 1.3, textTransform: "uppercase", color: colors.text },
+  stepIdle: { color: colors.textMuted },
+  sectionBody: { gap: 16 },
   option: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.md,
-    padding: spacing.lg,
-    borderRadius: radius.md,
+    gap: 12,
+    padding: 14,
+    borderRadius: radius.button,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.line,
   },
-  optionSelected: { borderColor: colors.text },
-  radio: { width: 18, height: 18, borderRadius: 9, borderWidth: 1.5, borderColor: colors.textMuted },
-  radioOn: { borderColor: colors.text, borderWidth: 6 },
-  notice: {
-    padding: spacing.lg,
-    gap: spacing.xs,
-    borderRadius: radius.md,
-    backgroundColor: colors.accentSoft,
-  },
+  optionSelected: { borderColor: colors.primary },
+  optionName: { fontFamily: fonts.heading, fontSize: 14, lineHeight: 21, color: colors.text },
+  radio: { width: 18, height: 18, borderRadius: 9, borderWidth: 1, borderColor: colors.primary },
+  radioOn: { borderWidth: 6 },
+  notice: { padding: 14, gap: 4, borderRadius: radius.button, backgroundColor: colors.tile },
+  noticeCopy: { lineHeight: 19.5 },
+  error: { fontFamily: fonts.body, fontSize: 12, lineHeight: 18, color: colors.error },
 })

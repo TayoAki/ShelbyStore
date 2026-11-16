@@ -6,9 +6,10 @@ import { EmptyState } from "@/components/state-views"
 export default function NotFound() {
   return (
     <Screen>
-      <Stack.Screen options={{ title: "Not found" }} />
+      <Stack.Screen options={{ title: "NOT FOUND" }} />
       <EmptyState
-        title="This page doesn't exist"
+        icon="compass-outline"
+        title="This Page Doesn't Exist"
         body="The link may be old, or the drop may have moved."
         actionTitle="Go home"
         onAction={() => router.replace("/")}

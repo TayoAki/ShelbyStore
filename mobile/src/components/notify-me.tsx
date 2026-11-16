@@ -1,29 +1,35 @@
-import { track } from "@/lib/analytics"
+import Ionicons from "@expo/vector-icons/Ionicons"
 import { useState } from "react"
-import { StyleSheet, View } from "react-native"
+import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from "react-native"
 
-import { colors, spacing } from "@/constants/theme"
+import { colors, fonts, radius, type } from "@/constants/theme"
 import { useReminderList } from "@/hooks/use-reminders"
+import { track } from "@/lib/analytics"
 import { errorMessage } from "@/lib/medusa"
 import { getPushTokenSilently } from "@/lib/push"
 import { createReminder } from "@/lib/releases"
 import { useAuth } from "@/providers/auth-provider"
 
-import { Button } from "./button"
 import { Text } from "./text"
-import { TextField } from "./text-field"
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 /**
- * "Notify me" for an upcoming drop: email (prefilled when signed in) plus an Expo push
- * token when the device can provide one. Drops are the reason customers come back,
- * so this is the main conversion point before release day.
+ * "Notify me" for an upcoming drop (APP_SPEC §5.1 item 11, §5.9): a 39pt email
+ * input joined to a black button. Sends the email, plus an Expo push token
+ * when the device can provide one.
  */
-export function NotifyMe({ releaseId, compact = false }: { releaseId: string; compact?: boolean }) {
+export function NotifyMe({
+  releaseId,
+  buttonLabel = "Notify me",
+  inverse = false,
+}: {
+  releaseId: string
+  buttonLabel?: string
+  inverse?: boolean
+}) {
   const { customer } = useAuth()
   const reminders = useReminderList()
-  const [open, setOpen] = useState(false)
   const [email, setEmail] = useState(customer?.email ?? "")
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -31,27 +37,9 @@ export function NotifyMe({ releaseId, compact = false }: { releaseId: string; co
   if (reminders.has(releaseId)) {
     return (
       <View style={styles.done}>
-        <Text variant="small" tone="success" style={styles.bold}>
-          ✓ You're on the list
-        </Text>
-        <Text variant="small" tone="muted">
-          We'll let you know the moment it drops.
-        </Text>
+        <Ionicons name="checkmark-circle" size={16} color={colors.inStock} />
+        <Text style={[styles.doneText, inverse && styles.inverse]}>You&apos;re on the list. We&apos;ll tell you the moment it drops.</Text>
       </View>
-    )
-  }
-
-  if (!open) {
-    return (
-      <Button
-        title="Notify me"
-        variant="secondary"
-        size={compact ? "sm" : "md"}
-        onPress={() => {
-          setEmail((current) => current || customer?.email || "")
-          setOpen(true)
-        }}
-      />
     )
   }
 
@@ -68,7 +56,6 @@ export function NotifyMe({ releaseId, compact = false }: { releaseId: string; co
       await createReminder(releaseId, { email: trimmed, push_token: pushToken ?? undefined })
       await reminders.add(releaseId)
       track("notify_me_submitted", { release_id: releaseId })
-      setOpen(false)
     } catch (e) {
       setError(errorMessage(e))
     } finally {
@@ -77,37 +64,71 @@ export function NotifyMe({ releaseId, compact = false }: { releaseId: string; co
   }
 
   return (
-    <View style={styles.form}>
-      <TextField
-        label="Email for the drop alert"
-        value={email}
-        onChangeText={setEmail}
-        placeholder="you@example.com"
-        keyboardType="email-address"
-        autoCapitalize="none"
-        autoComplete="email"
-        textContentType="emailAddress"
-        returnKeyType="done"
-        onSubmitEditing={submit}
-        error={error ?? undefined}
-      />
-      <View style={styles.actions}>
-        <Button title="Remind me" onPress={submit} loading={submitting} size="sm" style={styles.flex} />
-        <Button title="Cancel" variant="ghost" size="sm" onPress={() => setOpen(false)} />
+    <View style={styles.wrap}>
+      <View style={styles.row}>
+        <TextInput
+          accessibilityLabel="Email for the drop alert"
+          value={email}
+          onChangeText={setEmail}
+          placeholder="Email address"
+          placeholderTextColor={colors.textMuted}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoComplete="email"
+          textContentType="emailAddress"
+          returnKeyType="done"
+          onSubmitEditing={submit}
+          style={[styles.input, inverse && styles.inputInverse]}
+        />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={buttonLabel}
+          onPress={submitting ? undefined : submit}
+          style={({ pressed }) => [styles.button, inverse && styles.buttonInverse, pressed && { opacity: 0.85 }]}>
+          {submitting ? (
+            <ActivityIndicator size="small" color={inverse ? colors.text : colors.textInverse} />
+          ) : (
+            <Text style={[type.button, styles.buttonLabel, inverse && { color: colors.text }]}>{buttonLabel}</Text>
+          )}
+        </Pressable>
       </View>
+      {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  form: { gap: spacing.md },
-  actions: { flexDirection: "row", gap: spacing.sm, alignItems: "center" },
-  flex: { flex: 1 },
-  done: {
-    gap: spacing.xxs,
-    paddingVertical: spacing.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
+  wrap: { gap: 6, alignSelf: "stretch" },
+  row: { flexDirection: "row" },
+  input: {
+    flex: 1,
+    height: 39,
+    borderWidth: 1,
+    borderRightWidth: 0,
+    borderColor: colors.primary,
+    borderTopLeftRadius: radius.button,
+    borderBottomLeftRadius: radius.button,
+    paddingHorizontal: 12,
+    paddingVertical: 0,
+    fontFamily: fonts.body,
+    fontSize: 14,
+    color: colors.text,
+    backgroundColor: colors.secondary,
   },
-  bold: { fontWeight: "700" },
+  inputInverse: { borderColor: colors.secondary },
+  button: {
+    height: 39,
+    paddingHorizontal: 16,
+    backgroundColor: colors.primary,
+    borderTopRightRadius: radius.button,
+    borderBottomRightRadius: radius.button,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  buttonInverse: { backgroundColor: colors.secondary },
+  buttonLabel: { color: colors.textInverse },
+  error: { fontFamily: fonts.body, fontSize: 12, lineHeight: 18, color: colors.error },
+  done: { flexDirection: "row", alignItems: "center", gap: 8 },
+  doneText: { fontFamily: fonts.body, fontSize: 13, lineHeight: 19.5, color: colors.text, flexShrink: 1 },
+  inverse: { color: colors.textInverse },
 })

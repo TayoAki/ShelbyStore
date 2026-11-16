@@ -197,17 +197,33 @@ async function sendUmami(payload: { url: string; name?: string; data?: Props }) 
 let currentPath = "/"
 let currentUrl = "app://shelby/"
 
+/**
+ * Every event carries `page_type` (APP_SPEC §7), the same vocabulary as the
+ * web storefront, so funnels can be split by the kind of screen.
+ */
+export function pageTypeFor(path: string): string {
+  if (path === "/" || path === "/index") return "home"
+  if (path === "/shop") return "collection"
+  if (/^\/products\/[^/]*-pack$/.test(path)) return "offer"
+  if (path.startsWith("/products/")) return "pdp"
+  if (path.startsWith("/drops")) return "drops"
+  if (path === "/cart") return "cart"
+  if (path === "/checkout") return "checkout"
+  if (path.startsWith("/order/")) return "order"
+  return "other"
+}
+
 /** Screen view. `path` is the expo-router pathname; `asset` keeps tagged landings countable. */
 export function trackScreen(path: string, query?: { asset?: string }) {
   currentPath = path
   const search = query?.asset ? `?asset=${encodeURIComponent(query.asset)}` : ""
   currentUrl = `app://shelby${path}${search}`
-  void enqueue("$screen", { ...context, screen: path }, path, currentUrl)
+  void enqueue("$screen", { ...context, screen: path, page_type: pageTypeFor(path) }, path, currentUrl)
   void sendUmami({ url: `${path}${search}` })
 }
 
 export function track(event: AnalyticsEvent, props: Props = {}) {
-  const merged = clean({ ...context, ...props })
+  const merged = clean({ ...context, page_type: pageTypeFor(currentPath), ...props })
   void enqueue(event, merged, currentPath, currentUrl)
   void sendUmami({ url: currentPath, name: event, data: merged })
 }

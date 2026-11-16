@@ -25,6 +25,8 @@ export async function getPushTokenSilently(): Promise<string | null> {
     if (Platform.OS === "android") {
       await Notifications.setNotificationChannelAsync("drops", {
         name: "Drops",
+        // Exported through a re-exported .types module the import plugin can't follow.
+        // eslint-disable-next-line import/namespace
         importance: Notifications.AndroidImportance.DEFAULT,
       })
     }

@@ -1,59 +1,33 @@
-import { StyleSheet, View } from "react-native"
+import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native"
 
-import { colors, radius, spacing } from "@/constants/theme"
-import type { ReleasePhase } from "@/lib/types"
+import { colors, fonts } from "@/constants/theme"
 
 import { Text } from "./text"
 
-const labels: Record<ReleasePhase, string> = { live: "Live now", upcoming: "Coming up", past: "Dropped" }
+export type BadgeLabel = "Limited" | "Core" | "Low Stock" | "Coming Soon"
 
-export function PhaseBadge({ phase, onImage = false }: { phase: ReleasePhase; onImage?: boolean }) {
-  const style =
-    phase === "live"
-      ? { backgroundColor: colors.accent, borderColor: colors.accent, color: colors.textInverse }
-      : phase === "upcoming"
-        ? {
-            backgroundColor: onImage ? colors.surface : "transparent",
-            borderColor: colors.text,
-            color: colors.text,
-          }
-        : { backgroundColor: colors.surfaceAlt, borderColor: colors.surfaceAlt, color: colors.textMuted }
+/** Melin's product badge: #EDEDED, square, body 15/22.5 (APP_SPEC §3). */
+export function Badge({ label, small = false, style }: { label: string; small?: boolean; style?: StyleProp<ViewStyle> }) {
   return (
-    <View style={[styles.badge, { backgroundColor: style.backgroundColor, borderColor: style.borderColor }]}>
-      {phase === "live" ? <View style={styles.dot} /> : null}
-      <Text variant="eyebrow" style={{ color: style.color }}>
-        {labels[phase]}
-      </Text>
+    <View style={[styles.badge, style]}>
+      <Text style={[styles.label, small && styles.small]}>{label}</Text>
     </View>
   )
 }
 
-export function Tag({ label, tone = "default" }: { label: string; tone?: "default" | "accent" }) {
-  return (
-    <View
-      style={[
-        styles.badge,
-        tone === "accent"
-          ? { backgroundColor: colors.accentSoft, borderColor: colors.accentSoft }
-          : { backgroundColor: colors.surface, borderColor: colors.border },
-      ]}>
-      <Text variant="eyebrow" tone={tone === "accent" ? "accent" : "default"}>
-        {label}
-      </Text>
-    </View>
-  )
+/** Absolutely placed at top 14 / left 14 over an image. */
+export function ImageBadge({ label }: { label: string }) {
+  return <Badge label={label} style={styles.onImage} />
 }
 
 const styles = StyleSheet.create({
   badge: {
-    flexDirection: "row",
-    alignItems: "center",
     alignSelf: "flex-start",
-    gap: spacing.xs,
-    borderWidth: 1,
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.sm + 2,
-    paddingVertical: spacing.xs,
+    backgroundColor: colors.mega,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
   },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.textInverse },
+  label: { fontFamily: fonts.body, fontSize: 15, lineHeight: 22.5, color: colors.text },
+  small: { fontSize: 12, lineHeight: 18 },
+  onImage: { position: "absolute", top: 14, left: 14 },
 })

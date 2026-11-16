@@ -4,10 +4,17 @@ const moneyFormatters = new Map<string, Intl.NumberFormat>()
 export function formatMoney(amount: number | null | undefined, currencyCode = "usd"): string {
   if (amount === null || amount === undefined || Number.isNaN(Number(amount))) return ""
   const code = currencyCode.toUpperCase()
-  let formatter = moneyFormatters.get(code)
+  // Whole amounts read "$38" (the web's style); others keep cents ("$38.50").
+  const whole = Number.isInteger(Number(amount))
+  const key = `${code}:${whole}`
+  let formatter = moneyFormatters.get(key)
   if (!formatter) {
-    formatter = new Intl.NumberFormat("en-US", { style: "currency", currency: code })
-    moneyFormatters.set(code, formatter)
+    formatter = new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: code,
+      ...(whole ? { minimumFractionDigits: 0, maximumFractionDigits: 0 } : {}),
+    })
+    moneyFormatters.set(key, formatter)
   }
   return formatter.format(Number(amount))
 }
@@ -49,4 +56,23 @@ export function formatCountdown(parts: CountdownParts): string {
   const pad = (n: number) => String(n).padStart(2, "0")
   if (parts.days > 0) return `${parts.days}d ${pad(parts.hours)}h ${pad(parts.minutes)}m`
   return `${pad(parts.hours)}:${pad(parts.minutes)}:${pad(parts.seconds)}`
+}
+
+/** "FRI, NOV 21 · 9:00 AM PST": drop times in the store's timezone (web §6.1.3). */
+export function formatDropDate(iso: string | null | undefined): string {
+  if (!iso) return "DATE COMING SOON"
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return "DATE COMING SOON"
+  try {
+    const day = date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "America/Los_Angeles" })
+    const time = date.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      timeZone: "America/Los_Angeles",
+      timeZoneName: "short",
+    })
+    return `${day} · ${time}`.toUpperCase()
+  } catch {
+    return formatReleaseDate(iso).toUpperCase()
+  }
 }
