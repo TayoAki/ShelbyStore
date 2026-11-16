@@ -294,6 +294,34 @@ export default async function seedShelby({ container }: ExecArgs) {
     })
   }
 
+  // --- Fit profiles (every run, only where missing) ---------------------------
+  // Crown height and structure drive the PDP fit scales and the fit guide
+  // (web SITE_SPEC §6.4.10, §6.5). Beanies have no profile. Runs before the
+  // catalog check (for existing databases) and after seeding (for new ones).
+  const fitProfiles: Record<string, { crown: string; structure: string }> = {
+    "everyday-cap": { crown: "Low", structure: "Unstructured" },
+    "corduroy-cap": { crown: "Low", structure: "Unstructured" },
+    trucker: { crown: "Mid", structure: "Structured" },
+    "performance-cap": { crown: "Mid", structure: "Semi-structured" },
+    "waxed-field-cap": { crown: "Mid", structure: "Semi-structured" },
+    "bucket-hat": { crown: "Mid", structure: "Unstructured" },
+  }
+  const ensureFitProfiles = async () => {
+    const profiled = await productModuleService.listProducts({ handle: Object.keys(fitProfiles) })
+    for (const product of profiled) {
+      const metadata = (product.metadata ?? {}) as Record<string, unknown>
+      if (metadata.fit_profile) continue
+      await updateProductsWorkflow(container).run({
+        input: {
+          selector: { id: product.id },
+          update: { metadata: { ...metadata, fit_profile: fitProfiles[product.handle] } },
+        },
+      })
+      logger.info(`Set the fit profile on ${product.handle}.`)
+    }
+  }
+  await ensureFitProfiles()
+
   // --- Hat catalog (once) -----------------------------------------------------
   const existing = await productModuleService.listProducts({ handle: "everyday-cap" })
   if (existing.length) {
@@ -781,5 +809,6 @@ export default async function seedShelby({ container }: ExecArgs) {
     },
   })
 
+  await ensureFitProfiles()
   logger.info("Finished seeding Shelby hats.")
 }
