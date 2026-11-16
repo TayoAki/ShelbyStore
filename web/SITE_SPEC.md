@@ -1,9 +1,15 @@
-# Shelby storefront: complete site specification (v5, Shelby hats in the Allbirds theme)
+# Shelby storefront: complete site specification (v6, one golf rope cap on the Allbirds theme)
 
-The single source of truth for building `web/`. **v5 keeps Shelby's v4 hat-store structure and every
-function, and reskins it in the visual theme and motion of allbirds.com.** The builder never looks
-at allbirds.com (or at Melin); every value needed is in this file. The Expo app follows the same
-theme from `mobile/APP_SPEC.md` v5.
+The single source of truth for building `web/`. **v6 = Part G (the golf layer and the single Rope
+Cap, below) on top of v5 (Shelby's structure reskinned in the visual theme and motion of
+allbirds.com, §1–§11) and Appendix A (v4 functions).** Precedence: Part G → v5 §1–§11 →
+Appendix A. The builder never looks at allbirds.com, Melin or any golf brand's site; every value
+needed is in this file. The Expo app follows the same layers from `mobile/APP_SPEC.md` v6.
+
+**v6 inputs (2026-11-16):** `reports/Golf brand rope cap positioning.md` and its notes in
+`research_notes/Golf brand rope cap positioning/` (golf brand landscape, visual identity measured
+from 13 live sites, the rope cap market, single-product merchandising, channels). The Allbirds
+capture below is v5's and is unchanged.
 
 **How it was captured (2026-11-16)**, with the user's site-clone workflow:
 - **Firecrawl** (all four skill operations):
@@ -36,6 +42,922 @@ Value notation: `desktop / mobile` when they differ. px at 1440 and 390 wide. Br
 Tailwind's: **md = 768px**, **lg = 1024px**, xl = 1280px, 2xl = 1536px.
 
 ---
+
+# Part G: v6, the golf layer and the single Rope Cap (overrides v5 where they conflict)
+
+Source for every decision in Part G: `reports/Golf brand rope cap positioning.md` ("the report"),
+section "Shelby's plan" unless another section is named. Part G is written in the skill's
+structure (overview, tokens, globals, Tailwind, components, section-by-section, assets,
+integrations, build, open questions). **Precedence:** Part G → v5 §1–§11 → Appendix A. v5's
+Allbirds tokens, components and motion stay the visual base. Appendix A's data sources,
+`data-track` names, `page_type` values, experiments and evidence rules stay binding, except where
+Part G changes structure (G.6.0 lists every renamed, new and retired label).
+
+## G.1 Project overview
+
+| | |
+|---|---|
+| Brand | **shelby**, a hat-led golf brand. Name pending a trademark search (G.11). |
+| What it sells | **One product: The Rope Cap.** Four core colours always in stock at **$48**; numbered limited editions ("holes") at **$52**; two bundles, **The Pair** ($88, any two core colours, $44 a cap) and **The Foursome** ($152, $38 a cap); custom club and outing orders at **$40 a cap**, 24 minimum (quoted, G.6.10). Every price is a research-recommended demo value (G.11). |
+| Who it is for | People who play and the larger crowd around the game: the range regular, the simulator league, the muni foursome, the friend who never keeps score (report, "Positioning"). |
+| Positioning line | **Shelby makes one rope cap, properly**: washed cotton, a mid crown that sits right, a rope worth looking at, and a new numbered colour when the golf season turns. |
+| Segment | Hat-led brand with modern-golf styling (Malbon, Students, Metalwood are the reference brands, never copied), on v5's calm Allbirds base. |
+| Stack | Unchanged from v5 §1. One added font (Libre Caslon Text, `next/font/google`), one small backend module (custom quotes, G.6.10). No new npm dependency on web. |
+| Mobile | `mobile/APP_SPEC.md` v6 Part G mirrors this part. |
+
+### G.1.1 Which source governs what in v6
+
+| Concern | Source |
+|---|---|
+| Catalog, prices, bundles, shipping threshold, holes and dates, page inventory and routes | **Part G** |
+| Golf tokens (green, midnight, sage, rope colours), the serif face, scorecard, rope rule, ticker, edition badge, hole card | **Part G** |
+| Every other visual value and every motion | **v5 §2–§6** (Part G names which v5 component each new element reuses) |
+| Data plumbing, server/client split, caching, events, experiments, evidence rules, continuity | **Appendix A**, with Part G's renames |
+
+### G.1.2 The scorecard metaphor (whole-site system)
+
+One metaphor runs through the site (report, "Positioning"):
+
+| Golf word | Shelby meaning | Where |
+|---|---|---|
+| **Hole** | One numbered release on the 2027 calendar. Hole 1 is the core launch. | The Card, ticker, PDP badges, home band |
+| **The Card** | The drop archive and calendar (was "Drops"), route `/card` | Nav, footer, G.6.7 |
+| **The tee sheet** | The waitlist / notify list for the next hole (was "Get drop alerts" / "Notify me") | Every notify form |
+| **The scorecard** | The PDP spec table, ruled like a scorecard | G.5.2, PDP, home, fit guide |
+
+The metaphor is used as structure and labels only. No golf puns anywhere.
+
+### G.1.3 Voice rules (binding)
+
+- Allbirds-plain and warm, with dry wit (Students-style). Short sentences. "We" and "you".
+- **Never:** puns ("fore", "hole in one", "par for the course", "tee-rific", "drive" wordplay…);
+  "since 19xx" or any heritage a new brand cannot back; "members only", "exclusive", "elite";
+  claims about specific 1980s players or tour sightings (unverified history, report "Three
+  revivals").
+- **No tournament, tour or club marks** in product names, copy, image alt text or metadata: no
+  Masters, Augusta, Azalea Bowl, PGA, PGA Tour, LIV, Ryder Cup, U.S. Open, The Open, St Andrews,
+  Pebble Beach, Pinehurst or any club name or logo. Calendar moments are described neutrally:
+  "the first major week", "the national championship weekend", "the links major", "the team match
+  in September", "the holidays". "Azalea", "Cypress", "Haar", "Away Match" and "Winter Rules" are
+  colour and edition names, not marks.
+- UI strings stay US English ("Color", "Bag"). Casing per v5 §1.3.
+
+### G.1.4 Avoid (from the report's "Avoid" row and the golf visual-identity research)
+
+1. Discount popups or any modal over the hero.
+2. Anton-style shouting: condensed all-caps display headlines. Headlines stay sentence case (v5 §1.3).
+3. Pun graphics, crossed clubs, golf-ball dimple textures, flag clip art, argyle, tartan.
+4. Crest pastiche, faux badges, "est." dates, laurel wreaths.
+5. Specific 1980s player claims or retro-tour imagery.
+6. Saturated party prints. The palette is v5 neutrals plus G.2.1's golf tokens only.
+7. A free-shipping progress bar that lies: it shows only the real $85 threshold (G.6.8).
+8. Fake scarcity: no countdown without a real `release_at`, no "only N left" without live stock, no
+   "selling fast", no invented edition numbers (G.1.5).
+
+### G.1.5 Evidence rules added in v6 (with v5 §1.4, all still apply)
+
+- **Ticker:** real data only (G.5.3). An item with no data source is not shown.
+- **Edition counts:** "Edition of 200" comes from the edition product's `metadata.edition.size`;
+  "N left" is live sellable stock. The site never assigns a buyer a specific number ("No. 041"); the
+  order page says only that the number is printed inside (G.6.9), and only for products whose
+  `metadata.edition.numbered_inside` is `true` (a production requirement, G.11).
+- **Countdowns:** only to a release's real `release_at` (v4 rule), or to the announced date of
+  Holes 5–6 from `src/lib/holes.ts` (labelled "Announced", no countdown until a release exists).
+- **Credibility strip:** hidden until `src/lib/credibility.ts` holds at least one item, and every item
+  needs a `source` (a URL or a dated note). No press logos, quotes or counts are invented.
+- **Crown height:** "about 11–11.5 cm" is the product spec (`metadata.crown_cm`), stated as a target
+  spec until the factory sample is measured (G.11).
+
+---
+
+## G.2 Design tokens (additions; v5 §2 stays)
+
+### G.2.1 Colour
+
+| Token | CSS variable | Value | Use |
+|---|---|---|---|
+| Golf green | `--color-golf-green` | `#1E3B2F` | **One band per page** (G.6 names it), the `link` text colour, selected states (G.2.2) |
+| Golf green hover | `--color-golf-green-hover` | `#104734` | Hover on golf-green fills and links |
+| Golf tint | `--color-golf-tint` | `#EEF5E8` | Colour-tile backdrops (G.6.2), quiet green panels |
+| Midnight | `--color-midnight` | `#03143b` | **Activated** (was "not used" in v5): headings on The Card and hole pages, the edition badge |
+| Sage | `--color-sage` | `#B9B78D` | Colour-tile backdrops (G.6.2) |
+| In stock (unchanged) | `--color-green` | `#10714e` | In-stock dot and text only. **Never** used as golf green, and golf green is never used for stock. |
+
+**Rope Cap colourways** (swatches render crown + rope, G.5.6). Hexes are design values for the
+swatches, not measured from the photos.
+
+| Colourway | Group | Crown | Crown hex | Rope | Rope hex | Strap |
+|---|---|---|---|---|---|---|
+| Tour White | Core | White | `#F4F2EE` | Navy | `#1F2A44` | Self-fabric, antique-brass slide |
+| Clubhouse Navy | Core | Navy | `#26314A` | White | `#F4F2EE` | same |
+| Pine | Core | Forest | `#1E3B2F` | Cream | `#EDE6D6` | same |
+| Fescue | Core | Stone | `#C9C1AE` | Navy | `#1F2A44` | same |
+| Azalea | Limited, Hole 2 | White | `#F4F2EE` | Azalea pink | `#D8648A` | Tan leather, brass buckle |
+| Cypress | Limited, Hole 3 | Coastal green | `#2E4B4A` | Sand | `#CDBB98` | Tan leather, brass buckle |
+| Haar | Limited, Hole 4 | Fog grey | `#A7ABA8` | Cream | `#EDE6D6` | Tan leather, brass buckle |
+
+`--color-rope-*` variables carry the rope hexes: `--color-rope-navy #1F2A44`, `--color-rope-white
+#F4F2EE`, `--color-rope-cream #EDE6D6`, `--color-rope-azalea #D8648A`, `--color-rope-sand #CDBB98`.
+The swatch lookup (`src/lib/swatches.ts`) adds the seven colourways by name and returns
+`{ crown, rope }`.
+
+### G.2.2 Selected states move to golf green
+
+| Element (v5 reference) | v5 | v6 |
+|---|---|---|
+| Selected swatch ring (§2.3) | `0 0 0 1px #212121` | `0 0 0 1px #1E3B2F` |
+| Segmented control active segment (§6.3) | `bg-black text-natural-white-60` | `bg-golf-green text-white` |
+| Quiz option selected (§6.13) | `bg-black text-white border-black` | `bg-golf-green text-white border-golf-green` |
+| `.tab-title` active / hover underline (§3) | `#212121` | `#1E3B2F` |
+| `.checkbox:checked::before` (§3) | `#212121` | `#1E3B2F` |
+| Quiz progress fill, fit-scale active segment (§6.4.3 item 11) | `bg-black` | `bg-golf-green` |
+| `link` variant text (§5) | inherits | `#1E3B2F`, hover `#104734`, underline thickness 2px on hover (v5 rule) |
+
+**Unchanged:** every CTA button (`btn-secondary` `#212121`), the footer (`#212121`), the
+announcement / ticker bar (`#212121`), size buttons, badges, stock colours.
+
+**One golf-green band per page.** A "band" is a full-width or rounded section whose background is
+`--color-golf-green`. Each page gets exactly one (named in G.6). Text on it is white; buttons on it
+are `btn-primary` (white) or `btn-outline-white`; links are white.
+
+### G.2.3 Typography
+
+**Serif role filled.** v5 §11 item 9 is resolved: Allbirds' Self Modern role becomes **Libre Caslon
+Text** (a free Google Font, loaded directly per the skill's rule for Google Fonts):
+
+| Role | Font | Load | Variable | Class |
+|---|---|---|---|---|
+| Serif (v5 "serif-role": PDP title, tile titles, pill quotes, article H1s) and **kickers** | **Libre Caslon Text** 400, normal + italic | `next/font/google` `Libre_Caslon_Text`, `weight: ["400"]`, `style: ["normal", "italic"]` | `--font-caslon` → `--font-serif` | `font-serif` |
+| Display, sans, mono | unchanged from v5 §2.2 | | | |
+
+Fallbacks for `--font-serif`: `ui-serif, Georgia, serif`. `font-display: swap`. Never synthesize a
+bold: Caslon is only ever weight 400.
+
+**v6 type additions and overrides** (all other rows of v5 §2.2 stand)
+
+| Role | Font | Size / line-height | Style | Tracking | Case | Colour |
+|---|---|---|---|---|---|---|
+| PDP title (overrides v5) | serif | 30/36 / 24/32 | **italic** | normal | Title | `#212121` |
+| Serif tile title (overrides v5) | serif | 40/48 / 30/38 | italic | normal | Title | per tile (G.6.2) |
+| Pill quote (overrides v5) | serif | 24/40 (lg) · 18/32 (md) · 16/24 | italic | normal | Sentence | white |
+| Article H1 (overrides v5 §6.12) | serif | 40/48 (md) · 30/38 | normal | −.005em | Sentence | `#212121` |
+| **Kicker** (new) | serif | 18/26 / 16/24 | italic | normal | Sentence | inherits (`#575757` on light, `#EEF5E8` on golf green) |
+| **Scorecard label** (new) | mono 500 | 11/16 | normal | **.2em** (2.2px) | UPPER | `#212121` |
+| **Scorecard number** (new) | mono 500 | 12/16 | `tabular-nums` | .1em | | `#575757` |
+| **Edition line** (new) | mono 500 | 12/16 | `tabular-nums` | .15em (1.8px) | UPPER | `#03143b` |
+| **Ticker** (new) | mono 400 | 11/16 / 10/16 | `tabular-nums` | .2em | UPPER | white |
+| **Hole number** (new) | display 400 | 40/48 / 32/40 | `tabular-nums` | −.01em | | `#03143b` (white on golf green) |
+| **Card heading** (new, The Card H1 and hole titles) | display 400 | 30/36 / 24/32 | normal | normal | Sentence | `#03143b` |
+
+### G.2.4 Spacing, radius, layout additions
+
+- **Scorecard grid:** number column 44px, label column 140px (md) / 104px, value column `1fr`; rows
+  min-height 44px; cell padding 12px 14px; outer radius 12px (`rounded-xl`, v5 token) on a 1px
+  `#212121` border; inner rules 1px `#212121` horizontal, 1px `rgba(33,33,33,.2)` vertical.
+- **Rope rule:** 4px tall, radius 9999px, full width of its container; stripe period 8px (G.5.4).
+- **Ticker bar:** height 32px (one line, all widths); item gap 32px; separator dot 4px.
+- **Hole card:** see G.5.5. **Edition badge:** height 24px, padding 0 10px, radius 9999px, 1px border.
+- **Colour tile inner disc:** a white circle at 72% of the tile width, centred at 46% from the top
+  (G.6.2).
+
+### G.2.5 Motion additions (v5 §2.4 stays; same easing tokens; same reduced-motion rules)
+
+| # | Effect | Element | Trigger | Property: from → to | Duration · ease · delay |
+|---|---|---|---|---|---|
+| M34 | Ticker crawl | Ticker track (two copies of the item list) | always, while in view | `translateX(0)` → `translateX(-50%)` | **linear**, duration = one copy's width ÷ **40px/s** (set as `--ticker-duration` from a ResizeObserver; minimum 20s), infinite. `animation-play-state: paused` on `:hover` / `:focus-within`. |
+| M35 | Scorecard rows | Scorecard `tr` (`data-reveal-child`) | the scorecard's band reveal (M1) | opacity 0 → 1 | 0.8 · sine.out · `--i × 0.05` (M7 stagger) |
+| M36 | Rope rule draw | Rope rule | its container's reveal (M1) | `scaleX(0)` → `scaleX(1)`, `transform-origin: left` | 0.8 · power3.out · 0.2 (`ELEMENT.SCROLL_BAR`) |
+| M36a | Rope rule colour | Rope rule stripes | colourway change | background crossfade via an opacity swap of two stacked layers | 0.2 · sine.in-out (M11 timing) |
+| M37 | Hole card lift | Hole card (G.5.5) on hover-capable devices | `:hover` | image `scale 1 → 1.04`; card `translateY(0) → translateY(-4px)` | 0.6 · power3.in-out (`ELEMENT.HOVER.DEFAULT`) |
+| M38 | Swatch rope band | Swatch rope band (G.5.6) | select | band `scaleX(.6) → scaleX(1)` | 0.2 · ease-in-out (M13 timing) |
+
+**Reduced motion:** M34 stops (static first item with the v5 announcement chevrons, G.5.3); M35
+rows render visible; M36 renders full width; M37 and M38 are instant.
+
+---
+
+## G.3 Global styles (append to v5 §3 `globals.css`)
+
+```css
+@theme inline {
+  --font-serif: var(--font-caslon), ui-serif, Georgia, serif; /* overrides v5 §3 */
+
+  --color-golf-green: #1E3B2F;
+  --color-golf-green-hover: #104734;
+  --color-golf-tint: #EEF5E8;
+  --color-midnight: #03143b;
+  --color-sage: #B9B78D;
+  --color-rope-navy: #1F2A44;
+  --color-rope-white: #F4F2EE;
+  --color-rope-cream: #EDE6D6;
+  --color-rope-azalea: #D8648A;
+  --color-rope-sand: #CDBB98;
+
+  --animate-ticker: ticker var(--ticker-duration, 60s) linear infinite;
+}
+
+@layer components {
+  /* G.2.2 selected states */
+  .swatch[aria-checked="true"] { box-shadow: 0 0 0 1px var(--color-golf-green); }
+  .tab-title[aria-selected="true"], .tab-title:hover { border-bottom-color: var(--color-golf-green); }
+  .checkbox::before { box-shadow: inset 1em 1em var(--color-golf-green); }
+  .link { color: var(--color-golf-green); text-decoration: underline; text-underline-offset: 2px; }
+  @media (hover: hover) { .link:hover { color: var(--color-golf-green-hover); text-decoration-thickness: 2px; } }
+  .band-golf { background: var(--color-golf-green); color: #fff; }
+  .band-golf .link { color: #fff; }
+
+  /* G.2.3 */
+  .kicker { font-family: var(--font-serif); font-style: italic; font-size: 1rem; line-height: 1.5rem; }
+  @media (min-width: 48rem) { .kicker { font-size: 1.125rem; line-height: 1.625rem; } }
+  .label-score { font-family: var(--font-mono); font-weight: 500; font-size: 11px; line-height: 1rem; letter-spacing: .2em; text-transform: uppercase; }
+  .edition { font-family: var(--font-mono); font-weight: 500; font-size: .75rem; line-height: 1rem; letter-spacing: .15em; text-transform: uppercase; font-variant-numeric: tabular-nums; color: var(--color-midnight); }
+
+  /* G.5.2 scorecard */
+  .scorecard { width: 100%; border: 1px solid var(--color-black); border-radius: .75rem; overflow: hidden; background: #fff; border-collapse: separate; border-spacing: 0; }
+  .scorecard th, .scorecard td { padding: 12px 14px; vertical-align: middle; text-align: left; }
+  .scorecard tr + tr > * { border-top: 1px solid var(--color-black); }
+  .scorecard tr > * + * { border-left: 1px solid rgba(33, 33, 33, .2); }
+  .scorecard thead th { background: var(--color-golf-green); color: #fff; }
+
+  /* G.5.4 rope rule */
+  .rope-rule {
+    height: 4px; border-radius: 9999px; transform-origin: left;
+    background: repeating-linear-gradient(135deg, var(--rope) 0 4px, var(--crown) 4px 8px);
+    box-shadow: inset 0 0 0 1px rgba(33, 33, 33, .15);
+  }
+
+  /* G.5.5 edition badge */
+  .badge-edition { display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 9999px; border: 1px solid var(--color-midnight); background: #fff; }
+}
+
+@keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-ticker { animation: none !important; transform: none !important; }
+}
+```
+
+Body class string and selection are unchanged (v5 §3).
+
+---
+
+## G.4 Tailwind config and fonts
+
+Tailwind stays CSS-first (v5 §4). `src/app/layout.tsx` adds the serif:
+
+```tsx
+import { IBM_Plex_Mono, Inter, Libre_Caslon_Text, Plus_Jakarta_Sans } from "next/font/google"
+const caslon = Libre_Caslon_Text({ subsets: ["latin"], weight: ["400"], style: ["normal", "italic"], variable: "--font-caslon", display: "swap" })
+// <html lang="en" className={`${inter.variable} ${jakarta.variable} ${plexMono.variable} ${caslon.variable}`}>
+```
+
+---
+
+## G.5 Components
+
+### G.5.1 Buttons
+v5 §5 unchanged. Add `link` colours from G.2.2. On a golf-green band use `btn-primary` (white fill,
+`#212121` text, hover `#212121` fill + white text) and `btn-outline-white`.
+
+### G.5.2 Scorecard spec table (`src/components/scorecard.tsx`, server)
+- `<table class="scorecard">` with `<caption class="sr-only">The Rope Cap specs</caption>`.
+- **Head row** (golf green, white): three `th`: "NO." · "SPEC" · the product title in `.kicker`
+  (e.g. *The Rope Cap*), all `.label-score` except the title.
+- **Body rows**, numbered like holes, in this fixed order; a row whose value is missing is dropped
+  and the numbering closes up:
+
+  | No. | Label | Value source |
+  |---|---|---|
+  | 01 | CROWN | `details.Crown` (e.g. "Mid profile, about 11–11.5 cm, lightly structured front") |
+  | 02 | PANELS | `details.Panels` |
+  | 03 | ROPE | `details.Rope`, plus " · [rope colour]" for the selected colourway |
+  | 04 | BRIM | `details.Brim` |
+  | 05 | CLOSURE | `details.Closure` |
+  | 06 | FABRIC | `details.Fabric` |
+  | 07 | SWEATBAND | `details.Sweatband` |
+  | 08 | FIT | "One size · 21.5–23.75 in (55–60 cm)" (`POLICY.oneSize`) |
+  | 09 | ORIGIN | `details.Origin` (absent until the factory is chosen, G.11; the row is dropped) |
+  | 10 | EDITION | limited editions only: "Edition of [size] · [N] left" (`.edition`) |
+
+- Cells: number `td` `.label-score` `tabular-nums` `#575757` (44px column); label `th scope="row"`
+  `.label-score`; value `td` Inter 14/20 `#212121`.
+- Mobile: same table, label column 104px, value wraps.
+- Motion: the band reveals (M1); rows stagger in (M35).
+
+### G.5.3 Ticker (`announcement-bar.tsx`, replaces the v5 crossfade content; keeps v5 §6.0.1's box)
+- Box: v5 §6.0.1 (`sticky top-0 z-[85] bg-black text-white`), fixed at **32px** (one line on every
+  width; the v5 46px two-line state is gone). Sets `--global-banner-height: 32px`.
+- Track: `flex w-max animate-ticker`, the item list rendered **twice** (`aria-hidden` on the copy).
+  Each item: `.label-score`-style text in the **Ticker** type role (G.2.3), white, with
+  `tabular-nums`; items separated by a 4px `bg-white/60` dot with 32px gaps.
+- **Items (real data only, in this order; each hidden when its source is empty):**
+  1. Next hole: "HOLE [n] · [NAME] · [DD MON YYYY] · [h:mm A] PT" from the soonest upcoming release
+     (`release_at`, `STORE_TIMEZONE`) and its product's `metadata.edition.hole`.
+  2. Each **live** numbered edition: "[NAME] · [N] OF [size] LEFT" (live stock; `size` from
+     `metadata.edition.size`).
+  3. Each **upcoming** numbered edition: "[NAME] · EDITION OF [size]".
+  4. Core: "THE ROPE CAP · $[price] · [k] CORE COLORS IN STOCK" (live price; `k` = core colourways
+     with stock > 0).
+  5. Policy: "FREE SHIPPING ON $85+" and "30-DAY RETURNS" (`POLICY`).
+- Items 1–3 link to `/card/[handle]` (`data-track="ticker_item"`); item 4 to `/products/rope-cap`.
+- Motion M34; pause on hover / focus. **Reduced motion:** no crawl; one item at a time with v5's
+  prev/next chevrons (no autoplay).
+- `aria-label="Shelby leaderboard"`, `role="region"`; the duplicate copy is `aria-hidden`.
+
+### G.5.4 Rope rule (`src/components/rope-rule.tsx`, client)
+- A `div.rope-rule` with `style={{ "--crown": crownHex, "--rope": ropeHex }}` from the selected
+  colourway (G.2.1). Stripes: `repeating-linear-gradient(135deg, rope 0 4px, crown 4px 8px)`, the
+  look of braided cord. The 1px inset ring keeps white-on-white stripes visible.
+- Placement: PDP buy card between the price row and the colour picker (G.6.3); offer page under each
+  picker (G.6.5); hole cards under the title (G.5.5).
+- Motion M36 on reveal, M36a on colour change (two stacked layers; the new one fades in).
+- `role="presentation"`.
+
+### G.5.5 Hole card (`src/components/hole-card.tsx`)
+- v5 product-card box (`rounded-2xl bg-white`, M9) with:
+  - top row `flex justify-between p-4`: **hole number** "HOLE 02" (`.label-score`) and the status
+    badge (v5 `.badge`): `LIVE` · `UPCOMING` · `ANNOUNCED` · `SOLD OUT` · `ENDED`;
+  - image `aspect-square` `object-contain` on white (the edition's `-1`), or for announced holes with
+    no product a `bg-golf-tint` square with the hole number in the **Hole number** role, centred;
+  - body `p-4 flex flex-col gap-1`: the edition name in `.kicker` (e.g. *Azalea*), the date
+    `.label-score` "05 APR 2027 · 10:00 AM PT", the rope rule (G.5.4), the edition line
+    `.badge-edition .edition` "EDITION OF 200" (or "143 OF 200 LEFT" when live), price Inter 12/16
+    500;
+  - CTA row: live → `btn btn-secondary btn-small` "SHOP [NAME]"; upcoming → `btn btn-outline-black
+    btn-small` "JOIN THE TEE SHEET" (opens the inline tee-sheet form, G.5.7); announced → no button,
+    `#575757` Inter 12/16 "Announced. Details closer to the date."; sold out / ended → "SOLD OUT"
+    badge, card stays visible (sold-out state left visible, report "The Card").
+  - `data-track="card_hole"`. Motion M37 on hover-capable devices.
+
+### G.5.6 Swatch with rope band (extends v5 §6.4.3 item 5 and §6.2 swatches)
+- The fill is the **crown** hex; a **rope band** crosses the lower third: an absolutely positioned
+  bar at `top: 62%`, height **3px** (36px swatch) / **2px** (20px card swatch), inset 18% left and
+  right, radius 9999px, filled with the rope hex, `transform-origin: center` (M38 on select).
+- Light crowns (Tour White, Azalea, Haar, Fescue) keep v5's `inset-ring` so they show on white.
+- Selected ring: golf green (G.2.2). Sold out: v5 `.crossed-bg` over the swatch.
+- Limited-edition swatches that belong to another product (G.6.3 item 6) are links styled as
+  swatches, with a 10px mono date under upcoming ones.
+
+### G.5.7 Tee sheet form (replaces "Notify me" / "Get drop alerts" copy; v5 §6.0.8 form box)
+- Same pill input + `btn-primary` box as v5 §6.0.8. Label (mono eyebrow) "JOIN THE TEE SHEET";
+  placeholder "Email for Hole [n], [Name]"; button "JOIN"; success Inter 12/16 "You're on the tee
+  sheet for Hole [n]. We'll email you when it goes live." Function and `data-track="notify_me"`
+  unchanged (Appendix A §6.0.6: the next upcoming release).
+
+### G.5.8 Credibility strip (`src/components/credibility-strip.tsx`, server)
+- Renders only when `CREDIBILITY.length > 0` (`src/lib/credibility.ts`, exported as an **empty
+  array** in v6). Item type `{ label: string; href?: string; source: string }`.
+- Box: `mx-2.5 my-10 rounded-2xl bg-white px-5 py-6 flex flex-wrap items-center justify-center
+  gap-x-10 gap-y-4`; eyebrow `.label-score` "AS SEEN" + items as `.label-score` text (links when
+  `href`). No logos.
+
+### G.5.9 Bundle row (replaces v5's "Make It Two" row, §6.4.3 item 4)
+- Two rows stacked, each the v5 row box (`rounded-2xl bg-natural-white-25 p-3 flex items-center
+  gap-3`):
+  1. 56px thumbnail (two `-1` photos side by side), Inter 12/16 500 UPPERCASE "THE PAIR · $88",
+     12/16 `#575757` "Any two colors, $44 each." (`pdp_offer` → `/offer/the-pair`).
+  2. 56px thumbnail (2×2 of the four core `-1` photos), "THE FOURSOME · $152", "Four caps, $38
+     each." (`pdp_foursome` → `/offer/the-pair#foursome`).
+- Prices and per-cap figures are live (`price ÷ caps`), hidden if the bundle is unavailable.
+
+---
+
+## G.6 Section-by-section (v6)
+
+### G.6.0 Routes, redirects and tracking changes
+
+**Routes (v6):**
+
+| Route | Page | `page_type` |
+|---|---|---|
+| `/` | Home | home |
+| `/shop` | The Rope Cap collection (colourways + editions + bundles) | collection |
+| `/products/rope-cap` | The Rope Cap PDP | pdp |
+| `/products/rope-cap-azalea`, `-cypress`, `-haar` | Edition PDPs | pdp |
+| `/offer/the-pair` (and `/offer/the-foursome`, same template, Foursome first) | Offer | offer |
+| `/card`, `/card/[handle]` | The Card and hole pages | drops (value kept for continuity) |
+| `/custom` | Custom club and outing orders | custom (**new value**) |
+| `/fit-guide` | Fit guide (one cap) | fit_guide |
+| `/reasons/rope-cap` | Listicle | listicle |
+| `/read/the-rope-cap` | Advertorial | advertorial |
+| `/quiz`, `/quiz/result` | Color and bundle finder | quiz, quiz_result |
+| `/stories/crown-test` | Story (new series) | story |
+| `/cart`, `/checkout`, `/order/[id]`, `/help/shipping-returns` | unchanged | unchanged |
+
+**Permanent redirects (308)** in `next.config.ts` `redirects()`:
+`/drops` → `/card`; `/drops/:handle` → `/card/:handle`; `/products/everyday-cap`,
+`/products/trucker`, `/products/ribbed-beanie`, `/products/performance-cap`,
+`/products/corduroy-cap`, `/products/bucket-hat`, `/products/waxed-field-cap`,
+`/products/everyday-two-pack` → `/products/rope-cap`; `/offer/everyday-two-pack` →
+`/offer/the-pair`; `/reasons/everyday-cap` → `/reasons/rope-cap`; `/read/one-cap` →
+`/read/the-rope-cap`; `/stories/crush-test` → `/stories/crown-test`. Old order pages keep working
+(they read order lines, not products).
+
+**Tracking labels.** Every Appendix A label whose function survives keeps its name.
+
+| Change | Labels |
+|---|---|
+| **Kept** (same function) | `hero_shop_core`, `hero_shop_drop` (hole CTA), `shop_by_color`, `core_product`, `home_quiz`, `home_reasons`, `home_story`, `series_story`, `story_episode`, `fit_guide`, `nav_drops` (THE CARD item), `nav_explore`, `nav_quiz`, `search_result`, `search_submit`, `recently_viewed`, `quick_add`, `add_to_cart`, `sticky_add_to_cart`, `pdp_offer` (The Pair row), `pdp_quiz`, `pdp_also_like`, `notify_me` (tee sheet), `drop_hero` (hole page hero), `cart_complete_look`, `cart_offer`, `cart_checkout`, `checkout_details`, `place_order`, `story_shop`, `story_see_proof`, `story_close_cta`, `continuity_story`, `fit_guide_quiz`, `fit_guide_shop`, all `offer_*`, `listicle_*`, `advertorial_*`, `quiz_*` |
+| **New** | `hero_shop_pair`, `home_pair`, `home_foursome`, `home_scorecard`, `color_pill`, `pdp_foursome`, `pdp_edition_link`, `ticker_item`, `card_hole`, `nav_shop`, `nav_custom`, `footer_custom`, `custom_submit`, `offer_foursome_add`, `quiz_bundle` |
+| **Retired** (no shapes, no FEATURED menu) | `shape_tile`, `nav_shape`, `shape_pill`, `nav_featured`, `announcement_drop` (→ `ticker_item`) |
+
+**Events added:** `custom_quote_submitted` {quantity, colors, needed_by}. Page views carry
+`page_type: "custom"` on `/custom`. All other events unchanged.
+
+### G.6.1 Global chrome (v5 §6.0 with these changes)
+- **Announcement bar → ticker** (G.5.3).
+- **Header nav items (desktop), in order:** **SHOP** (mega, `nav_shop`) · **THE CARD** (mega,
+  `nav_drops`, with v5's 6px dot after the label while a hole is live) · **CUSTOM** (link →
+  `/custom`, `nav_custom`) · **QUIZ** (link → `/quiz`, `nav_quiz`) · **EXPLORE** (mega,
+  `nav_explore`). FEATURED is removed.
+- **Mega panels** (v5 §6.0.3 frame and motion):
+
+  | Panel | Columns | Cards |
+  |---|---|---|
+  | SHOP | **CORE COLORS** (Tour White, Clubhouse Navy, Pine, Fescue → `/products/rope-cap?color=`); **LIMITED** (each live or upcoming edition with its date → its PDP); **BUNDLES** (The Pair $88, The Foursome $152) | `rope-cap-tour-white-1`, the Pair thumbnail, `rope-lifestyle-hero` |
+  | THE CARD | **NOW** (live holes), **NEXT** (the next hole + date), **THE CARD** (→ `/card`) | up to 3 hole images |
+  | EXPLORE | **EXPLORE** (The Crown Test, Fit Guide, Why The Rope Cap, Custom Orders, Shipping & Returns) | `rope-brim.jpg` |
+
+- **Search:** v5 behaviour over the published catalog (colourways are search terms: the index holds
+  one entry per colourway of The Rope Cap plus each edition and both bundles). Placeholders rotate:
+  `Search`, `Search "navy"`, `Search "pine"`, `Search "pair"`, `Search "azalea"`.
+- **Mobile menu rows:** SHOP ›, THE CARD ›, CUSTOM, QUIZ, EXPLORE ›. Footer card: Recently Viewed (N),
+  Fit Guide, Custom Orders, Shipping & Returns.
+- **Footer columns** (v5 §6.0.8 box): **Help** (Shipping & Returns, Fit Guide, Custom Orders
+  `footer_custom`, Your Bag) · **Shop** (The Rope Cap, The Pair, The Foursome, Limited Editions →
+  `/shop?group=limited`) · **The Card** (Now, Next, All Holes) · **Shelby** (The Crown Test, Why The
+  Rope Cap, Quiz). The drop-alerts form becomes the **tee sheet** (G.5.7).
+- **Value tiles** (v5 §6.0.9 box), true facts:
+  1. **ONE SIZE, ADJUSTABLE**: "The strap fits 21.5–23.75 in (55–60 cm). The crown sits mid, about
+     11–11.5 cm." + `link` "Fit guide".
+  2. **ALWAYS IN STOCK**: "Four core colors that never run out. We show the live count for each."
+  3. **FREE SHIPPING ON $85+**: "Any two caps ship free. Under $85, standard shipping is $6. 30-day
+     returns."
+- **Wordmark and favicon:** unchanged (v5 §7.4).
+
+### G.6.2 Home `/` (replaces v5 §6.1's section list; boxes and motion are v5's)
+
+| # | Section | v5 pattern reused | Golf-green band? |
+|---|---|---|---|
+| 1 | Hero | §6.1.1 hero | no |
+| 2 | Pick a color | §6.1.2 category row (pill morph M5) | no |
+| 3 | The next hole | §6.1.3 brand pill | **yes (the home band)** |
+| 4 | The build | §6.1.4 material ring | no |
+| 5 | One, two or four | §6.1.5 promo tiles (3-up) | no |
+| 6 | In stock today | §6.1.6 | no |
+| 7 | From The Crown Test | §6.1.7 stories carousel | no |
+| 8 | About Shelby | §6.1.8 expanding pill | no |
+| 9 | Credibility strip | G.5.8 (hidden while empty) | no |
+| 10 | Stories | §6.1.9 | no |
+| — | Value tiles, footer | G.6.1 | |
+
+1. **Hero** (v5 §6.1.1 box, M3):
+   - images `/hats/rope-lifestyle-hero.jpg` (desktop) / `/hats/rope-lifestyle-hero-mobile.jpg`
+     (mobile, `object-position: 50% 35%`);
+   - eyebrow mono "THE ROPE CAP · HOLE 1 · OUT NOW" (+ " · HOLE [n] [DD MON]" when a hole is upcoming
+     within 60 days);
+   - `<h1>` display 24/32 tracking .025em: "One rope cap. Made properly.";
+   - kicker (G.2.3) under the H1, white: *Mid crown. Washed cotton. A rope worth looking at.*;
+   - product line Inter 14/20: "The Rope Cap · $48 · 4 colors" (live price, live colour count);
+   - buttons (`grid gap-2 grid-cols-2`): `btn-primary` "SHOP THE ROPE CAP" (`hero_shop_core`) and
+     `btn-primary` "THE PAIR · $88" (`hero_shop_pair`). Product and price are in the first screen.
+2. **Pick a color** (`#colors`; v5 category row, reveal M2, titles M4, morph M5):
+   - section header `flex justify-between px-5`: `.tab-title` "PICK A COLOR" (selected) and `link`
+     12/16 "Not sure? Take the 30-second quiz" (`home_quiz`);
+   - one tile per **core** colourway (4), `aspect-[0.77] rounded-[20px]`, backgrounds alternate
+     **sage `#B9B78D`** (Tour White, Pine) and **golf tint `#EEF5E8`** (Clubhouse Navy, Fescue);
+   - **photo:** inside a white disc (`absolute left-[14%] top-[10%] w-[72%] aspect-square
+     rounded-full bg-white shadow-[0_.85rem_1rem_rgba(0,0,0,0.25)] overflow-hidden`) with the
+     colourway's `-1` `object-contain` at 86%; the hover image is the `-3` side view (M5a). **Never
+     `cutout`/multiply a Rope Cap photo**: light crowns would take the tile colour;
+   - centre stack (M5c/M5d): title `h2.btn.btn-outline-black` (Tour White, Fescue tiles use
+     `btn-outline-black`; all tiles use dark text because both backdrops are light); CTA
+     `btn btn-outline-black w-full` "SHOP [COLOR]" → `/products/rope-cap?color=` (`shop_by_color`);
+   - mobile: v5 centred-slide carousel.
+3. **The next hole** (`#hole`; v5 §6.1.3 brand pill geometry and M27; **golf-green band**):
+   - container background `bg-golf-green` (no photo); the pill SVG strokes stay white;
+   - centre: a 200px (md 240px) white disc with the next edition's `-1` photo `object-contain`, the
+     floating-image shadow, above the text;
+   - eyebrow mono 12/20 tracking .1em `#EEF5E8`: "HOLE 2 · 05 APR 2027 · 10:00 AM PT" (real
+     `release_at`) or "HOLE [n] · LIVE NOW";
+   - title: **Hole number** role "02" (white) + `.kicker` *Azalea* (white);
+   - body Inter 14/20 white: the edition promise (`metadata.promise`), e.g. "White crown, azalea
+     rope, tan leather strap. An edition of 200.";
+   - v5 countdown digits (white) when upcoming; `btn btn-primary` "JOIN THE TEE SHEET" (opens G.5.7
+     inline) or "SHOP AZALEA" when live (`hero_shop_drop`);
+   - marquee strings (true facts): "HOLE 2", "AZALEA", "EDITION OF 200", "05 APR 2027", "$52",
+     "LEATHER STRAP";
+   - hidden when no hole is live or upcoming.
+4. **The build** (`#build`; v5 material ring M26, background `/hats/rope-clubhouse.jpg` +
+   `bg-black/30`):
+   - centre: the Tour White `-5` rope macro in the white circle (M26d); under the ring (mobile) or
+     beside it: display 24/32 white "What it's made of", `btn btn-primary` "SEE THE SCORECARD" →
+     `/products/rope-cap#scorecard` (`home_scorecard`);
+   - callouts (titles = scorecard labels, bodies = `details`): **CROWN** (Crown), **ROPE** (Rope),
+     **BRIM** (Brim), **CLOSURE** (Closure).
+5. **One, two or four** (`#bundles`; v5 promo tiles, `md:grid-cols-3`, M6/M7):
+   - tile backgrounds: single = sage, pair = golf tint, foursome = sage;
+   - images in white discs (as item 2): single = Tour White `-1`; pair = Clubhouse Navy and Pine `-1`
+     side by side in a white pill (`rounded-full`, aspect 2:1); foursome = the four core `-1` photos
+     in a 2×2 grid inside a white rounded square;
+   - titles serif italic (G.2.3): *The Rope Cap*, *The Pair*, *The Foursome*; under each, mono 12/20
+     `#212121`: "$48", "$88 · $44 A CAP", "$152 · $38 A CAP" (live);
+   - buttons `btn-outline-black`: "SHOP ONE" (`core_product`), "SHOP THE PAIR" (`home_pair`),
+     "SHOP THE FOURSOME" (`home_foursome` → `/offer/the-pair#foursome`).
+6. **In stock today** (v5 §6.1.6): the four core colourways with G.5.6 swatches and live counts.
+7. **From The Crown Test** (v5 §6.1.7): the new series (G.8); card images: episodes 1 and 3
+   `rope-brim.jpg`, 2 and 4 `rope-cap-tour-white-3.jpg` / `rope-cap-pine-3.jpg` contain on white.
+8. **About Shelby** (v5 §6.1.8 pill window, image `/hats/rope-brim.jpg`): quote (serif italic,
+   G.2.3) "We make one rope cap. We kept the crown lower than most, washed the cotton until it felt
+   broken in, and put a rope on it worth looking at. Each season gets a new numbered color."; button
+   `btn-secondary` "WHY THE ROPE CAP" → `/reasons/rope-cap` (`home_reasons`).
+9. **Credibility strip** (G.5.8), hidden while empty.
+10. **Stories** (v5 §6.1.9): "The Crown Test" (`/stories/crown-test`, `rope-brim.jpg`) and "Fit
+    Guide" (`/fit-guide`, `rope-cap-tour-white-3.jpg` contain on white).
+
+### G.6.3 Product page `/products/[handle]` (v5 §6.4 with these changes)
+1. **Gallery** (v5 §6.4.2): selected colourway's photos. Tour White has 6 angles (`-1` ¾ front, `-2`
+   back, `-3` side, `-4` top, `-5` rope macro, `-6` underside); every other core colour and Azalea
+   have 3; Cypress and Haar have 1. Badge: `CORE`, or the edition badge (G.5.5 `.badge-edition`)
+   "HOLE 2 · EDITION OF 200".
+2. **Title:** serif **italic** 30/36 / 24/32 (G.2.3): "The Rope Cap" (editions: "The Rope Cap,
+   Azalea").
+3. **Sub-line** (mono): "ONE SIZE · CORE COLOR" or "HOLE 2 · LIMITED EDITION · RELEASES 05 APR 2027"
+   (or "· RELEASED 05 APR 2027" once live).
+4. **Price row:** price Inter 18/28 500; the v5 price pill now reads "+ ANY TWO SHIP FREE" (true at
+   the $85 threshold; editions too).
+5. **Rope rule** (G.5.4), the selected colourway.
+6. **Color** (v5 item 5 with **Core / Limited groups**, Appendix A §6.4.7 rule now applies):
+   - segmented control (G.2.2 colours) "ALL · CORE · LIMITED" filters the swatch groups
+     (`color_pill`);
+   - group **CORE**: the four colourways of The Rope Cap (in-page variants, write `?color=`);
+   - group **LIMITED**: each live or upcoming edition as a linked swatch (G.5.6) to its own PDP
+     (`pdp_edition_link`), upcoming ones captioned with the mono date "05 APR";
+   - on an edition PDP the groups are the same, with the edition selected and the core swatches
+     linking back to `/products/rope-cap?color=`;
+   - label row: mono "COLOR:" + name + `#575757` "(Core)" / "(Hole 2, edition of 200)", and the rope
+     line Inter 12/16 `#575757` "Navy rope".
+7. **Size:** the one-size line (v5) "One size · fits 21.5–23.75 in (55–60 cm)" + `link` "Fit guide".
+8. **Crown-height scale:** v5's fit-scale component (golf-green active segment), label "CROWN
+   HEIGHT", steps LOW · **MID** · TALL, value "Mid · about 11–11.5 cm" (`metadata.crown_cm`). The
+   structure scale stays (Semi-structured).
+9. **Add to bag** (v5 item 8): "ADD TO BAG – $48" (editions "ADD TO BAG – $52"); upcoming editions
+   show `btn-outline-black` "JOIN THE TEE SHEET" instead (no add-to-bag before `release_at`).
+10. Under the CTA: `POLICY.shipping`, the live stock line; editions add the edition line
+    (`.edition`) "EDITION OF 200 · 143 LEFT" and `POLICY.limitedRun` (G.7.3).
+11. **Bundle rows** (G.5.9): core colourways only.
+12. Quiz link: `link` "Not sure which color? Take the 30-second quiz" (`pdp_quiz`).
+13. **Scorecard band** (`#scorecard`; **the PDP golf-green band**): `band-golf m-2.5 my-10
+    rounded-xl md:rounded-3xl p-5 md:p-10`, `grid gap-8 md:grid-cols-[1fr_1.2fr]`:
+    - left: eyebrow mono `#EEF5E8` "THE SCORECARD", display 30/36 white "Every spec, on one card.",
+      kicker *Ruled like the card in your back pocket.*, and the `-3` side photo in a white rounded
+      square (`rounded-2xl`, contain);
+    - right: the scorecard (G.5.2) for the selected colourway.
+    - This replaces v5's details band "SPECS" block; the details band keeps THE DETAILS and CARE &
+      RETURNS.
+14. **Material ring** (v5 §6.4.7): background `rope-clubhouse.jpg`, centre the colourway's `-1`.
+15. **You may also like** (v5 §6.4.8): the other core colourways (as colourway cards, G.6.4) and the
+    live editions; never other products (there are none).
+16. Brand pill (v5 §6.4.10) with the Crown Test series; sticky buy bar (v5 §6.4.4).
+
+### G.6.4 Collection `/shop` (v5 §6.3 with these changes)
+1. **Banner:** image `rope-lifestyle-hero.jpg`; breadcrumb "Home / The Rope Cap"; H1 display "The
+   Rope Cap"; description Inter 14/20 "One cap, four core colors, a numbered edition each season.";
+   count "4 core colors · [n] limited".
+2. **Filter bar:** the shape control becomes the **group control** "ALL · CORE · LIMITED · BUNDLES"
+   (`?group=`, `color_pill`). The Filter button and panel are removed (one size; colours are the
+   cards). Sort keeps Featured · Newest.
+3. **Grid** (`grid-cols-2 md:grid-cols-4`), one **colourway card** per core colour of The Rope Cap
+   (v5 product card with the colour fixed: title "The Rope Cap", colour line "Tour White · Navy
+   rope", the G.5.6 swatch row showing all four core colours with this one selected, live price,
+   v5 quick add "ADD TO BAG · $48"), then each live or upcoming edition (badge "HOLE 2"; upcoming
+   cards show "JOIN THE TEE SHEET" in the quick-add row), then sold-out editions with their badge.
+4. **Bundles band** (**the collection's golf-green band**): `band-golf mx-2.5 my-10 rounded-3xl p-5
+   md:p-10`, heading display 24/32 white "Two or four", then two white cards side by side: The Pair
+   and The Foursome (image, serif italic title, live price and per-cap price, `btn-secondary` "SHOP
+   THE PAIR" / "SHOP THE FOURSOME", `home_pair` / `home_foursome` with `page_type: collection`).
+5. Value tiles, footer.
+
+### G.6.5 Offer `/offer/the-pair` (v5 §6.10 and Appendix A §12.1, re-pointed)
+- **Data:** `the-pair` (16 inventory-kit variants: First cap × Second cap over the four core
+  colours) at $88; `the-foursome` (5 kit variants: "4 × Tour White", "4 × Clubhouse Navy", "4 ×
+  Pine", "4 × Fescue" (`required_quantity` 4) and "One of each" (1 of each colour)) at $152. Both
+  `metadata.offer: true`, `single_handle: "rope-cap"`, `offer_path`. Anchors are live: Pair $96
+  struck (2 × single), Foursome $192 struck (4 × single); each hidden if the saving is not positive.
+- **Above the fold** (v5 §6.10): gallery of the two chosen colourways; buy card title from the
+  **`offer-headline` experiment** (control "Two rope caps. $88." / variant `saving` "Save $8 on two
+  rope caps."), sub-line "THE PAIR · CORE COLORS", price row "$88" + struck "$96" + pill "SAVE $8",
+  rope rules under each picker, "FIRST CAP:" / "SECOND CAP:" pickers (G.5.6), live kit stock, CTA
+  "ADD THE PAIR – $88" (`offer_add`), policy lines (both caps ship free: "$88 qualifies for free
+  shipping").
+- **Step-up: The Foursome** (`#foursome`; **the offer page's golf-green band**): `band-golf`
+  rounded-3xl, kicker *For the group trip, the outing or Father's Day.*, display "Four caps, $38
+  each.", a v5 segmented control "FOUR OF ONE COLOR · ONE OF EACH" (G.2.2), a single picker for the
+  first mode, price "$152" + struck "$192" + "SAVE $40", CTA `btn-primary` "ADD THE FOURSOME –
+  $152" (`offer_foursome_add`). `/offer/the-foursome` renders the same page scrolled to this band.
+- **Then** (v5): what's included (Two caps · One size each · the scorecard summary · Free shipping),
+  why two (A light one and a dark one · One for the bag, one for the car · You already know the
+  fit), proof (in stock today rows; the Crown Test stance linked, `offer_story`), FAQ (Will it fit?
+  · Can I pick the same color twice? · Returns · Shipping · "Is this a sale?" → "No. Singles stay
+  $48; two are $88 and four are $152, every day."), closing brand pill (`offer_close_cta`), sticky
+  bar "ADD THE PAIR – $88" (`offer_sticky_add`).
+
+### G.6.6 Listicle `/reasons/rope-cap` (v5 §6.11, Appendix A §12.2, re-pointed)
+- Hero image `rope-cap-tour-white-1.jpg` on white; eyebrow "6 REASONS · THE ROPE CAP"; H1 "Six
+  things that make this rope cap different"; dek "Every reason comes with the fact behind it, so you
+  can check it on this page."
+- Reasons, each with its fact (dropped if the fact's source is empty):
+  1. **A crown that sits mid, not tall.** Fact: the crown-height scale + `crown_cm`. Image
+     `rope-cap-pine-3.jpg`.
+  2. **Washed cotton, broken in on day one.** Fact: `details.Fabric`. Image
+     `rope-cap-tour-white-1.jpg`.
+  3. **A rope worth looking at.** Fact: `details.Rope`. Image `rope-cap-tour-white-5.jpg`.
+  4. **A strap that adjusts without a plastic snap.** Fact: `details.Closure` + the one-size range.
+     Image `rope-cap-tour-white-2.jpg`.
+  5. **Four colors that never run out.** Fact: live stock per core colour. Image four `-1` photos.
+  6. **Two ship free, and you get 30 days.** Fact: `POLICY` (threshold and returns). Image
+     `rope-clubhouse.jpg`.
+- CTAs after reasons 3 and 6 "SHOP THE ROPE CAP" (`listicle_mid_cta`, `listicle_end_cta`); buy
+  block with the BuyBox + `link` "Or two for $88" (`listicle_offer`); sticky "SHOP THE ROPE CAP –
+  $48" (`listicle_sticky`). **Golf-green band:** the buy block.
+
+### G.6.7 The Card `/card` and `/card/[handle]` (replaces v5 §6.6 visuals and Appendix A §6.6 copy)
+- **`/card`:**
+  - Banner (v5 §6.3 banner) image `rope-clubhouse.jpg`; H1 (Card heading role, white on the photo)
+    "The Card"; description "Six numbered holes in 2027. Hole 1 is the core cap. Each hole after it
+    is one numbered color, released on its date and not remade." (G.7.3 commitment, G.11).
+  - **Next-hole band** (**the Card's golf-green band**): `band-golf mx-2.5 my-10 rounded-3xl p-5
+    md:p-10 grid md:grid-cols-2 gap-8`: left the edition `-1` in a white disc; right eyebrow mono
+    "NEXT · HOLE [n]", the Hole-number role "0[n]" + kicker name, the date mono, the v5 countdown
+    (white digits), the edition line ("EDITION OF 200"), the tee-sheet form (G.5.7).
+  - **The card grid:** a scorecard-styled header row (`.label-score`) "HOLE · NAME · DATE · EDITION
+    · STATUS" above `grid gap-2.5 md:grid-cols-3 px-2.5` of hole cards (G.5.5) for Holes 1–6, in
+    hole order. Sold-out and ended holes stay in place with their badge (the archive is the card).
+  - Tabs (v5) are removed: one card, all holes.
+- **Holes 1–6 (data):** Holes 1–4 come from releases (G.8); Holes 5–6 from `src/lib/holes.ts`
+  (announced, no product, no countdown):
+
+  | Hole | Name | Date (Pacific) | Moment (neutral wording) | Edition, price |
+  |---|---|---|---|---|
+  | 1 | The Rope Cap (core) | Live now | Season opener | Core, open run, $48 |
+  | 2 | Azalea | Mon 5 Apr 2027, 10:00 AM PT (`2027-04-05T17:00:00Z`) | First major week | 200, $52 |
+  | 3 | Cypress | Tue 1 Jun 2027, 10:00 AM PT (`2027-06-01T17:00:00Z`) | Father's Day / national championship weekend | 200, $52 |
+  | 4 | Haar | Mon 12 Jul 2027, 10:00 AM PT (`2027-07-12T17:00:00Z`) | The links major | 200, $52 |
+  | 5 | Away Match (a pair of colours) | Mon 13 Sep 2027, 10:00 AM PT (`2027-09-13T17:00:00Z`) | The team match in September | Announced |
+  | 6 | Winter Rules (corduroy) | Mon 8 Nov 2027, 10:00 AM PT (`2027-11-08T18:00:00Z`, PST) | The holidays | Announced |
+
+- **`/card/[handle]`** (v5 drop page): hero with the edition image, eyebrow "HOLE [n] · [phase]",
+  H1 in the Card heading role (Midnight `#03143b` when on the white article sheet), the story
+  article, "What to look for" (proof), then by phase: upcoming → countdown + tee sheet; live → the
+  edition PDP buy card centred; ended → "This hole has been played." + the core cap. `drop_viewed`,
+  `drop_hero`.
+
+### G.6.8 Cart drawer, `/cart`, checkout (v5 §6.7–§6.8 with these changes)
+- **Free-shipping progress** (now true; replaces v5's "No progress bar"): under the drawer header, a
+  `px-5 py-3` block: Inter 12/16 "Add $[85 − subtotal] for free shipping." or "Free shipping
+  unlocked." (with `CheckCircle` 16px golf green); a track `h-[7px] rounded-[4px] bg-natural-white`
+  with a golf-green fill `origin-left`, `scaleX = min(subtotal / 85, 1)`, animated with M21. Same
+  block on `/cart`. The threshold is read from `POLICY.freeShippingThreshold` (85) and must match the
+  Medusa shipping-price rule (G.9).
+- **Header policy line:** `POLICY.announcement` "Free shipping on $85+ · 30-day returns".
+- **Bundle row** in the drawer when a single core Rope Cap is in the bag (G.5.9, `cart_offer`);
+  complete-the-look suggestions become other core colourways ("ADD · $48", `cart_complete_look`).
+- **Lines:** variant meta "Pine / One Size"; Pair lines "Navy + Pine"; Foursome lines "4 × Pine" or
+  "One of each"; editions add the edition badge "HOLE 2".
+- **Checkout:** shipping options show the live Medusa price ($0 for Standard at $85+). No other
+  change.
+
+### G.6.9 Order `/order/[id]`
+v5 §6.8. For edition lines with `metadata.edition.numbered_inside`, add Inter 12/16 `#575757`:
+"Your edition number is printed inside the cap." Never a specific number.
+
+### G.6.10 Custom orders `/custom` (new; `page_type: "custom"`)
+- **Hero** (v5 §6.1.1 box, image `rope-clubhouse.jpg`): eyebrow "CUSTOM", H1 "Rope caps for your club
+  or outing", kicker *Your logo above the rope. Twenty-four caps or more.*, button `btn-primary` "GET
+  A QUOTE" → `#quote`.
+- **Facts band** (**the custom page's golf-green band**): `band-golf mx-2.5 my-10 rounded-3xl p-5
+  md:p-10`, a scorecard (G.5.2, white table on green) titled *Custom orders* with rows: 01 MINIMUM
+  "24 caps" · 02 PER COLOR "In twelves" · 03 PRICE "$40 a cap" · 04 SET-UP "Quoted with your
+  artwork" · 05 TIMING "2–4 weeks after artwork approval" · 06 COLORS "Tour White, Clubhouse Navy,
+  Pine, Fescue" · 07 MARK "Your logo, embroidered above the rope".
+- **How it works:** v5 value tiles ×3: "01 SEND YOUR LOGO", "02 APPROVE A PROOF", "03 WE MAKE AND
+  SHIP" with one sentence each.
+- **Quote form** (`#quote`, white `rounded-3xl mx-2.5 p-6 md:p-10`, max-width 720px centred; v5 input
+  and label styles from §6.8):
+  - fields: name*, email*, club or organisation*, quantity* (number ≥ 24), colours (four rows, each a
+    quantity in steps of 12, total must equal quantity), needed by (date, optional), artwork link
+    (URL, optional), notes (textarea, optional), and a hidden honeypot `company_website`;
+  - submit `btn btn-secondary btn-atc` "REQUEST A QUOTE" (`custom_submit`); success replaces the form
+    with display 24/32 "Thanks, [first name]. We'll reply within two business days." (no promise
+    beyond that line; G.11);
+  - client and server validation (zod): 24 minimum, multiples of 12 per colour, valid email, URL.
+- **FAQ** (v5 accordion): Can I use my club's logo? (only with permission, the requester confirms a
+  checkbox "I have the right to use this artwork" — required) · Is there a set-up fee? (quoted) · Can
+  I mix colors? (yes, in twelves) · How long does it take? (2–4 weeks after approval).
+- **Backend** (spec for the builder):
+  - module `custom-quote` (DML model `custom_quote`: id, name, email, organisation, quantity, colors
+    json, needed_by date nullable, artwork_url nullable, notes text nullable, status enum `new ·
+    quoted · won · lost` default `new`, source json nullable for attribution, timestamps);
+  - `POST /store/custom-quotes` (publishable key, zod-validated, honeypot rejects silently, rate
+    limited per IP to 5 per hour with the existing Redis);
+  - admin: a route `/app/custom-quotes` (Medusa admin extension, list with status select and detail
+    drawer) and an `admin` API `GET/POST /admin/custom-quotes[/:id]`;
+  - on create, emit `custom_quote.created`; a subscriber sends an email through the existing
+    notification module (`local-email` or SendGrid) to `CUSTOM_QUOTES_EMAIL` (env, optional; logs
+    when unset) and records the analytics event `custom_quote_submitted`.
+
+### G.6.11 Fit guide `/fit-guide` (v5 §6.5, reduced to one cap)
+1. Banner H1 "How it fits"; description "One size. The strap fits 21.5–23.75 in (55–60 cm). The
+   crown sits mid, about 11–11.5 cm."
+2. **Crown band** (**the fit guide's golf-green band**): the crown-height scale large (track 12px,
+   three steps LOW · MID · TALL, MID active in white on green), the `-3` side photo of Tour White in
+   a white disc, and one sentence: "Most rope caps sit tall. Ours sits mid."
+3. How to measure + the one-row size table (One size · 21.5–23.75 in · 55–60 cm · 6⅞–7½).
+4. The scorecard (G.5.2).
+5. Quiz band (v5 §6.1.4 ring) with "Find your color" (`fit_guide_quiz`). Value tiles, footer.
+
+### G.6.12 Advertorial `/read/the-rope-cap` (v5 §6.12, Appendix A §12.3, re-pointed)
+- AdLabel "ADVERTISEMENT · FROM SHELBY"; kicker "FIELD NOTES"; H1 (serif, G.2.3) "Most rope caps sit
+  too tall. We made one that doesn't."; dek "What changed, how we check it, and what it costs.";
+  byline mono "BY SHELBY · 4 MIN READ · [date]".
+- Five beats (second person, brand voice): the cap you bought last summer and why it sits like a
+  stack (problem) · why rope caps run tall (the template; no brand named) · what we changed (crown,
+  cotton, rope, strap) · how we check it (the Crown Test, linked) · the offer (single, pair).
+- Inline CTA `btn-primary` "SEE THE ROPE CAP" (`advertorial_inline`); offer card (v5) with
+  `advertorial_offer_pdp` and `link` "Or two for $88" (`advertorial_offer_pack`); disclosure "This
+  is an advertisement from Shelby, the company that makes The Rope Cap."; sticky
+  (`advertorial_sticky`). **Golf-green band:** the offer card.
+
+### G.6.13 Quiz `/quiz` and `/quiz/result` (v5 §6.13, re-pointed: a color and bundle finder)
+- Header "FIND YOUR COLOR · 30 SECONDS"; 4 steps; option buttons v5 with G.2.2 selected colours.
+- **Questions** (`src/lib/quiz.ts`, keys change):
+  1. `wear` — "Where will it get the most wear?" On the course · Range and simulator · Everyday ·
+     It's a gift.
+  2. `palette` — "Which do you reach for?" Light · Dark · Earthy · Something limited.
+  3. `count` — "How many are you buying?" Just one · Two · Four (a group or a gift set).
+  4. `crown` — "How do you like a crown?" Low · Mid · Tall · No idea.
+- **Scoring (deterministic):** colour by `palette` (Light → Tour White, Dark → Clubhouse Navy,
+  Earthy → Fescue, otherwise Pine; "Something limited" → the live edition if one is on sale, else the
+  next upcoming edition with the tee sheet, else Pine); in-stock check falls back to the next colour
+  in the order Tour White, Clubhouse Navy, Pine, Fescue. Product by `count`: one → The Rope Cap;
+  two → The Pair with the match and a contrasting second colour (Light ↔ Dark, Earthy ↔ Pine); four →
+  The Foursome "One of each" (or "4 × [match]" when `wear` is "It's a gift"). `crown` adds a "why"
+  line only: Low → "Ours sits mid, a touch higher than a low dad cap."; Mid → "Mid is exactly where
+  ours sits."; Tall → "Ours is lower than most rope caps; if you like tall, try it on and use the
+  30-day returns."; No idea → "Mid suits most heads; the fit guide shows why."
+- **Result** (v5 result layout): eyebrow "YOUR MATCH", H1 "The Rope Cap in Pine" / "The Pair: Navy
+  + Pine" / "The Foursome, one of each"; "Why it fits you" lines pair each answer with a fact; the
+  buy card preselected (`add_to_cart` `source: "quiz"`); for count = one, a bundle nudge row
+  (`quiz_bundle`). **Golf-green band:** the "Why it fits you" card. Events unchanged
+  (`quiz_started`, `quiz_answered` {step, answer}, `quiz_completed` {match}).
+
+### G.6.14 Story `/stories/crown-test` (v5 §6.9, re-pointed)
+- Hero image `rope-brim.jpg`; eyebrow "THE CROWN TEST"; H1 from the `story-headline` experiment
+  (control: the audience question "Why does every rope cap sit so tall?"; variant `stance`).
+- Modules as v5: problem (image `rope-lifestyle-hero.jpg`), stance in the pill window (serif italic),
+  proof (episodes), offer (Rope Cap buy card), **Your turn** (now the **golf-green band**: v5 value
+  tile with `band-golf`), close (brand pill "GET THE ROPE CAP", `story_close_cta`).
+
+### G.6.15 Help pages
+`/help/shipping-returns`: v5 sheet. Copy updated: free standard shipping on orders of $85 or more,
+otherwise $6; express $15; 30-day returns; numbered editions follow the same 30-day returns.
+
+---
+
+## G.7 Assets
+
+### G.7.1 Rope Cap product photos (`public/hats/`, square 1:1 on pure white, JPEG)
+| File | Angles |
+|---|---|
+| `rope-cap-tour-white-1…6.jpg` | ¾ front, back, side, top, rope macro, underside |
+| `rope-cap-clubhouse-navy-1…3.jpg`, `rope-cap-pine-1…3.jpg`, `rope-cap-fescue-1…3.jpg`, `rope-cap-azalea-1…3.jpg` | ¾ front, back, side |
+| `rope-cap-cypress-1.jpg`, `rope-cap-haar-1.jpg` | ¾ front only |
+
+Render `object-contain` on white (cards, gallery) or inside white discs on coloured tiles (G.6.2).
+**Never** `cutout` (multiply) a Rope Cap photo.
+
+### G.7.2 Lifestyle (`public/hats/`)
+`rope-lifestyle-hero.jpg` (16:9), `rope-lifestyle-hero-mobile.jpg` (4:5), `rope-clubhouse.jpg`
+(4:5), `rope-brim.jpg` (4:5). All are AI-generated stand-ins without logos (G.11). The v4/v5 hat
+photos stay in the folder for old orders but are not used by any v6 page.
+
+### G.7.3 Policy lines (`src/lib/policy.ts`)
+```ts
+announcement: "Free shipping on $85+ · 30-day returns",
+shipping: "Free shipping on $85+ · Standard $6 · Express $15",
+returns: "30-day returns",
+dispatch: "Ships in 1–2 business days",
+limitedRun: "Numbered edition. We don't remake numbered colors.",
+oneSize: "fits 21.5–23.75 in (55–60 cm)",
+freeShippingThreshold: 85,
+```
+(`sized` is removed: nothing is sized.)
+
+### G.7.4 Icons
+v5 §7.3 plus Phosphor `Users` (custom page "how it works") and `Ruler` (fit guide, already in v5).
+No golf clip-art icons (no flags, clubs, balls or tees).
+
+## G.8 Data (Medusa seed; the builder implements it in `backend/src/scripts/seed.ts`, idempotent)
+
+1. **Retire** (unpublish, keep records): `everyday-cap`, `trucker`, `ribbed-beanie`,
+   `performance-cap`, `corduroy-cap`, `bucket-hat`, `waxed-field-cap`, `everyday-two-pack`.
+   Soft-delete their releases (`everyday-cap-bone`, `corduroy-cap`, `bucket-hat`, `waxed-field-cap`).
+   Deactivate the Caps, Truckers, Beanies and Bucket Hats categories. Pause the `crush-test` series.
+2. **Category** "Rope Caps" (`rope-caps`). Collection `core` holds The Rope Cap.
+3. **`rope-cap`** "The Rope Cap", published, $48, options Color (Tour White, Clubhouse Navy, Pine,
+   Fescue) × Size (One Size), SKU `ROPE-<COLOR>-OS`, `unit_cost` 10.5 (the midpoint of the report's
+   $7–14 landed estimate; demo), stock **300 per colour** (1,200, the report's launch run), images
+   per G.7.1 linked per colour. Metadata:
+   - `promise`: "One rope cap, properly: a mid crown that sits right.";
+   - `fit_notes`: "One size. The strap adjusts from 21.5 to 23.75 inches. The crown sits mid, about
+     11–11.5 cm.";
+   - `crown_cm`: "11–11.5";
+   - `fit_profile`: `{ crown: "Mid", structure: "Semi-structured" }`;
+   - `details`: Crown "Mid profile, about 11–11.5 cm, lightly structured front" · Panels "Five, with a
+     seamless front" · Rope "Braided cotton cord, about 3–5 mm, in a contrast color" · Brim
+     "Pre-curved with a slight retro flat, 7 cm (2.75 in)" · Closure "Self-fabric strap with an
+     antique-brass slide" · Fabric "100% cotton twill, garment-washed" · Sweatband
+     "Moisture-wicking" · Care "Spot clean. Reshape and air dry.";
+   - `rope`: `{ "Tour White": "Navy", "Clubhouse Navy": "White", "Pine": "Cream", "Fescue": "Navy" }`;
+   - `edition`: `{ hole: 1 }`.
+4. **Editions** (each its own product, $52, one colour, One Size, leather strap; `unit_cost` 12):
+   - `rope-cap-azalea` "The Rope Cap, Azalea": stock 200; metadata `edition: { hole: 2, size: 200,
+     numbered_inside: true }`, `rope: { Azalea: "Azalea pink" }`, `promise` "White crown, azalea
+     rope, tan leather strap. An edition of 200.", `details` as the core with Closure "Tan leather
+     strap with a brass buckle";
+   - `rope-cap-cypress` (Hole 3, 200, "Coastal green crown, sand rope, tan leather strap.");
+   - `rope-cap-haar` (Hole 4, 200, "Fog grey crown, cream rope, tonal brim, tan leather strap.");
+   - status draft until their release goes live.
+5. **Bundles** `the-pair` ($88, 16 kit variants) and `the-foursome` ($152, 5 kit variants), as in
+   G.6.5, `unit_cost` = sum of the singles' unit costs.
+6. **Releases** (playbook walkthrough, all through the existing workflows):
+   - `hole-1-rope-cap` "Hole 1: The Rope Cap" (major, linked to `rope-cap`): goes live now through
+     `goLiveReleaseWorkflow`;
+   - `rope-cap-azalea` "Hole 2: Azalea" (light) scheduled `2027-04-05T17:00:00Z`, all checks ready;
+   - `rope-cap-cypress` "Hole 3: Cypress" (major) scheduled `2027-06-01T17:00:00Z`, editorial asset
+     not yet approved (would be held if due today);
+   - `rope-cap-haar` "Hole 4: Haar" (light) scheduled `2027-07-12T17:00:00Z`, stock 0 to show the
+     "held for stock" path (its 200 arrive later; the Card shows "Upcoming").
+   - Holes 5–6 are not releases (G.6.7 `holes.ts`).
+7. **Shipping:** add to the existing Standard option a conditional price `{ currency_code: "usd",
+   amount: 0, rules: [{ attribute: "item_total", operator: "gte", value: 85 }] }` while keeping $6;
+   Express stays $15. The builder confirms Medusa 2.22's `item_total` shipping-price rule and
+   verifies $0 at $88 and $6 at $48 at checkout.
+8. **Content series** `crown-test` "The Crown Test" (demo data, flagged as before): goal "Orders of
+   The Rope Cap from people who found us on TikTok"; audience "People whose rope caps sit like a
+   stack on their head"; stance "We measure the crown of every rope cap we sign off. Ours sits at
+   11–11.5 cm."; audience question "Why does every rope cap sit so tall?"; proof "A ruler on the
+   crown of a typical tall rope cap and on ours, side by side, then both worn."; format "Before /
+   after reveal"; beats; participation prompt "Show us the tallest cap you own, ruler optional.";
+   four episodes with sample metrics and one unpublished next batch ("The sweat-line wash test").
+   Landing path `/stories/crown-test`. Competitor brands are never named.
+9. **Experiments:** `offer-headline` copy updated (G.6.5), same split and minimum. `story-headline`
+   unchanged.
+
+## G.9 Third-party integrations
+Unchanged from v5 §8. The custom-quote email uses the existing notification module. No reviews,
+BNPL, SMS or popups (G.1.4).
+
+## G.10 Build instructions
+1. Append G.3 to `globals.css`; add the Caslon font (G.4); update `policy.ts` (G.7.3).
+2. New components: `scorecard.tsx`, `rope-rule.tsx`, `hole-card.tsx`, `credibility-strip.tsx`,
+   `bundle-rows.tsx`, ticker in `announcement-bar.tsx`, swatch rope band in the shared swatch;
+   `src/lib/holes.ts`, `src/lib/credibility.ts`, `src/lib/swatches.ts` (colourways).
+3. Routes: `/card`, `/card/[handle]`, `/custom`, `/offer/[handle]` handles `the-pair` /
+   `the-foursome`, `/reasons/rope-cap`, `/read/the-rope-cap`, `/stories/crown-test` (data-driven);
+   redirects (G.6.0).
+4. Backend: the seed (G.8), the custom-quote module, routes, admin page and subscriber (G.6.10).
+5. Verify: backend typecheck; seed twice (idempotent); `next build` + eslint; Playwright at
+   390×664 and 1440×900 on every v6 route; computed styles for G.2 tokens (golf green, Caslon italic
+   on the PDP title, the scorecard borders, the ticker height 32px); the ticker crawl speed (40px/s)
+   and pause on hover; reduced-motion run; add to bag from PDP, edition (live), pair, foursome, quiz
+   result; a Stripe test-card checkout at $88 showing $0 standard shipping; a custom-quote submission
+   landing in the admin list; every redirect in G.6.0 returns 308.
+
+## G.11 Open questions (v6; supersede v5 §11 items 9–10)
+1. **Prices** ($48 core, $52 editions, $88 Pair, $152 Foursome, $40 custom, $24 pro-shop wholesale)
+   are research-recommended demo values (report, "Price ladder"); confirm against real landed cost.
+2. **Free shipping at $85** is research-recommended; confirm the margin.
+3. **"We don't remake numbered colors"** is a commitment the site states for every edition; confirm
+   before launch.
+4. **Edition numbers printed inside** require the factory to number labels; until confirmed, set
+   `numbered_inside: false` and the order page line disappears.
+5. **Trademark:** "Shelby" overlaps Carroll Shelby Licensing's apparel and headwear marks; run a
+   search before embroidery. No tournament or club marks anywhere (G.1.3).
+6. **Demand is unmeasured** (no Google Trends or TikTok Shop data, report "Demand looks real"). Treat
+   launch quantities as a test.
+7. **Tariffs and landed cost** are unverified (report); confirm with a customs broker. The scorecard's
+   ORIGIN row stays hidden until the factory is chosen.
+8. **Custom set-up fee** amount and reply time; the page says "quoted" and "within two business
+   days".
+9. **Early access** for the tee sheet or the app (the report suggests a short window) is not built;
+   no drop is app-only.
+10. **Pro-shop wholesale** ($24 keystone) is not built into the store; it runs through a B2B channel.
+11. **Photography** is AI-generated stand-ins; replace with real packshots and on-course photos.
+
+---
+
+# Part V5: the Allbirds base (binding except where Part G overrides)
 
 ## 1. Project overview
 
