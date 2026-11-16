@@ -17,8 +17,8 @@ export function searchCatalog(catalog: CatalogItem[], term: string): CatalogItem
 }
 
 /**
- * The search dropdown body (SITE_SPEC §6.0.5, G.6.1): pill input with a
- * rotating placeholder, an inline SEARCH button, up to 6 results.
+ * The search body that folds down from the top flap: a keylined field with a
+ * rotating placeholder, an inline Search button, up to 6 results.
  */
 export function SearchPanel({ catalog, onNavigate }: { catalog: CatalogItem[]; onNavigate: () => void }) {
   const [term, setTerm] = useState("")
@@ -39,33 +39,33 @@ export function SearchPanel({ catalog, onNavigate }: { catalog: CatalogItem[]; o
           onChange={(e) => setTerm(e.target.value)}
           placeholder={PLACEHOLDERS[ph]}
           aria-label="Search The Rope Cap"
-          className="w-full rounded-full border border-black bg-white py-2.5 pr-24 pl-10 text-base"
+          className="field !pr-28 !pl-10"
         />
         <button type="submit" className="btn btn-outline-black btn-small absolute top-1/2 right-1 -translate-y-1/2" data-track="search_submit">
-          SEARCH
+          Search
         </button>
       </form>
       {term.trim() && (
         <div className="flex flex-col">
           {results.length ? (
             results.map((r) => (
-              <Link key={r.key} href={r.href} onClick={onNavigate} data-track="search_result" className="flex items-center gap-4 rounded-xl p-2 hover:bg-natural-white-25">
-                <span className="relative size-14 shrink-0 overflow-hidden rounded-lg bg-white">
+              <Link key={r.key} href={r.href} onClick={onNavigate} data-track="search_result" className="flex min-h-16 items-center gap-4 border-b-2 border-dashed border-ink/25 py-2 last:border-b-0 hover:bg-board">
+                <span className="relative size-14 shrink-0 overflow-hidden rounded-[4px] border-2 border-ink bg-paper">
                   {r.image && <Image src={r.image} alt="" fill sizes="56px" className="object-contain" />}
                 </span>
                 <span className="flex flex-col">
-                  <span className="text-xs leading-4 font-medium tracking-[.05em] uppercase">{r.title}</span>
-                  <span className="text-xs leading-4 text-light-charcoal">
+                  <span className="label">{r.title}</span>
+                  <span className="text-[0.9375rem] leading-5 text-ink-2">
                     {[r.meta, formatMoney(r.price, r.currency)].filter(Boolean).join(" · ")}
                   </span>
                 </span>
               </Link>
             ))
           ) : (
-            <p className="text-sm">No caps match &ldquo;{term}&rdquo;</p>
+            <p className="text-[1rem]">No caps match &ldquo;{term}&rdquo;</p>
           )}
           {results.length > 0 && (
-            <Link href="/shop" onClick={onNavigate} className="link mt-2 text-xs">
+            <Link href="/shop" onClick={onNavigate} className="link mt-3 min-h-11 text-[1rem]">
               View all results
             </Link>
           )}

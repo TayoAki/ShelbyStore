@@ -9,6 +9,7 @@ import { CORE_COLORS, editionOf } from "@/lib/rope"
 import type { Cart } from "@/lib/types"
 import { BundleRows } from "../bundle-rows"
 import { LineItem } from "../line-item"
+import { Digits } from "../digits"
 import { ButtonLink } from "../ui/button"
 import { FreeShipping } from "./free-shipping"
 import { Suggestions, type Suggestion } from "./suggestions"
@@ -17,10 +18,10 @@ import { Suggestions, type Suggestion } from "./suggestions"
 export const DRAWER_POLICY = POLICY.announcement
 
 /**
- * The bag (v5 §6.7, G.6.8): free-shipping progress, lines, the bundle rows when
- * a single core Rope Cap is in the bag, other core colourways to add, and the
- * summary. The same pieces fill the drawer and /cart. Reads the cart cookie:
- * render inside <Suspense>.
+ * The bag (Operate, in the box's vocabulary): free-shipping progress, the
+ * lines, the Pair and Foursome sleeves when a single core cap is in the bag,
+ * the other core colourways to add, and the summary. The same pieces fill the
+ * drawer and /cart. Reads the cart cookie: render inside <Suspense>.
  */
 export async function BagContents({ mode }: { mode: "drawer" | "page" }) {
   const cart = await retrieveCart()
@@ -36,17 +37,20 @@ export async function BagContents({ mode }: { mode: "drawer" | "page" }) {
 
   if (!cart || !lines.length) {
     return (
-      <div className={`flex flex-1 flex-col justify-center py-16 ${mode === "page" ? "rounded-2xl bg-white" : ""}`}>
-        <p className="mb-10 px-5 text-center text-xl leading-7">Your bag is empty.</p>
-        <ul className="flex flex-col items-center gap-y-5 px-10">
+      <div className={`flex flex-1 flex-col justify-center gap-6 px-5 py-16 ${mode === "page" ? "panel" : ""}`}>
+        <div className="flex flex-col gap-2">
+          <p className="panel-title !text-[2.5rem]">Your bag is empty.</p>
+          <p className="text-[1rem] text-ink-2">One cap is $48. Any two ship free.</p>
+        </div>
+        <ul className="flex flex-col gap-3">
           <li className="w-full">
             <ButtonLink href="/products/rope-cap" block track="cart_empty_shop">
-              SHOP THE ROPE CAP
+              Shop the Rope Cap
             </ButtonLink>
           </li>
           <li className="w-full">
-            <ButtonLink href="/offer/the-pair" block>
-              SHOP THE PAIR
+            <ButtonLink href="/offer/the-pair" variant="outline-black" block>
+              Shop the Pair
             </ButtonLink>
           </li>
         </ul>
@@ -72,14 +76,14 @@ export async function BagContents({ mode }: { mode: "drawer" | "page" }) {
     return (
       <>
         <div className="min-h-0 flex-1 overflow-y-auto pb-6">{body}</div>
-        <div className="shrink-0 border-t border-natural-white-60 bg-white p-5">{summary}</div>
+        <div className="shrink-0 border-t-2 border-ink bg-paper p-5">{summary}</div>
       </>
     )
   }
   return (
-    <div className="gap-2.5 md:grid md:grid-cols-[1fr_360px]">
-      <div className="overflow-hidden rounded-2xl bg-white pb-6">{body}</div>
-      <div className="mt-2.5 h-fit rounded-2xl bg-white p-5 md:mt-0">{summary}</div>
+    <div className="grid items-start gap-4 md:grid-cols-[minmax(0,1fr)_380px] md:gap-6">
+      <div className="panel overflow-hidden pb-6">{body}</div>
+      <div className="panel p-5 md:sticky md:top-24">{summary}</div>
     </div>
   )
 }
@@ -87,15 +91,17 @@ export async function BagContents({ mode }: { mode: "drawer" | "page" }) {
 function Summary({ cart, subtotal }: { cart: Cart; subtotal: number }) {
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between text-sm leading-5 font-medium">
-        <span>Subtotal</span>
-        <span>{formatMoney(subtotal, cart.currency_code)}</span>
+      <div className="flex items-baseline justify-between">
+        <span className="label">Subtotal</span>
+        <span className="text-[2rem] leading-none">
+          <Digits value={formatMoney(subtotal, cart.currency_code)} />
+        </span>
       </div>
-      <p className="text-xs leading-4 text-light-charcoal">Shipping is chosen at checkout: free on $85+, otherwise standard $6 · express $15.</p>
+      <p className="text-[0.9375rem] leading-6 text-ink-2">Shipping is chosen at checkout: free on $85+, otherwise standard $6, express $15.</p>
       <ButtonLink href="/checkout" size="atc" className="mt-2" track="cart_checkout">
-        CHECKOUT
+        Checkout
       </ButtonLink>
-      <p className="text-center text-xs leading-4">Guest checkout. No account needed.</p>
+      <p className="text-center text-[0.9375rem] text-ink-2">Guest checkout. No account needed.</p>
     </div>
   )
 }
@@ -130,7 +136,7 @@ async function Extras({ cart }: { cart: Cart }) {
   return (
     <>
       {hasSingle && (
-        <div className="mx-5 mt-4">
+        <div className="mx-5 mt-5">
           <BundleRows pair={c.pair} foursome={c.foursome} trackPair="cart_offer" trackFoursome="cart_offer" />
         </div>
       )}

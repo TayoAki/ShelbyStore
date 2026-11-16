@@ -92,11 +92,11 @@ export function RecentlyViewedButton({ catalog }: { catalog: CatalogItem[] }) {
 export function ViewedDrawer({ open, onClose, items }: { open: boolean; onClose: () => void; items: CatalogItem[] }) {
   return (
     <SideDrawer open={open} onClose={onClose} label="Previously viewed">
-      <div className="flex items-center justify-between border-b border-natural-white px-5 py-4">
-        <p className="text-xs leading-4 font-medium uppercase">Previously viewed ({items.length})</p>
+      <div className="flex items-center justify-between border-b-2 border-ink px-5 py-4">
+        <p className="panel-title !text-[1.75rem]">Previously viewed</p>
         <DrawerClose onClose={onClose} />
       </div>
-      <div className="grid flex-1 grid-cols-2 content-start gap-2.5 overflow-y-auto p-5">
+      <div className="grid flex-1 grid-cols-2 content-start gap-3 overflow-y-auto p-5">
         {items.map((i) => (
           <MiniCard key={i.key} item={i} track="recently_viewed" />
         ))}
@@ -105,14 +105,16 @@ export function ViewedDrawer({ open, onClose, items }: { open: boolean; onClose:
   )
 }
 
-/** Count badge on header icons (§6.0.2): hidden at 0, M32 fade. */
+/** Count on header icons, printed in digit slots. */
 export function CountBadge({ count }: { count: number }) {
   return (
     <span
       aria-hidden
-      className={`absolute top-2.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full bg-black text-[9px] font-medium text-white transition-opacity duration-50 ease-[var(--ease-sine-in)] ${count ? "opacity-100" : "opacity-0"}`}
+      className="digits digits-cells ml-1 text-[13px]"
     >
-      {count}
+      {String(count).split("").map((d, i) => (
+        <span key={i}>{d}</span>
+      ))}
     </span>
   )
 }
@@ -120,14 +122,14 @@ export function CountBadge({ count }: { count: number }) {
 /** A small product card (no quick add) for drawers. */
 export function MiniCard({ item, track }: { item: CatalogItem; track?: string }) {
   return (
-    <Link href={item.href} data-track={track} className="group flex flex-col overflow-hidden rounded-2xl bg-white">
-      <span className="relative aspect-square">
+    <Link href={item.href} data-track={track} className="group flex flex-col overflow-hidden rounded-[4px] border-2 border-ink bg-paper">
+      <span className="relative aspect-square border-b-2 border-ink">
         {item.image && <Image src={item.image} alt="" fill sizes="200px" className="object-contain" />}
       </span>
       <span className="flex flex-col gap-0.5 p-3">
-        <span className="text-xs leading-4 font-medium tracking-[.05em] uppercase">{item.title}</span>
-        <span className="text-xs leading-4 text-light-charcoal">{item.meta}</span>
-        <span className="text-xs leading-4 font-medium">{formatMoney(item.price, item.currency)}</span>
+        <span className="label">{item.title}</span>
+        <span className="text-[0.9375rem] leading-5 text-ink-2">{item.meta}</span>
+        <span className="text-[1rem] leading-6 font-semibold tabular-nums">{formatMoney(item.price, item.currency)}</span>
       </span>
     </Link>
   )

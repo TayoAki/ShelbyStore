@@ -5,9 +5,9 @@ import { notifyMe, type NotifyState } from "@/lib/actions/notify"
 import { track } from "@/lib/analytics"
 
 /**
- * The tee sheet (SITE_SPEC G.5.7): the waitlist for the next hole. Same pill
- * input + white button box as v5 §6.0.8; function unchanged (a reminder on the
- * release). `tone` picks the light (on white) or dark (on green/black) look.
+ * The tee sheet: the waitlist for a numbered hole (a reminder on the real
+ * release). A keylined field with its printed JOIN block beside it; `tone`
+ * picks the look on paper (light) or on an ink panel (dark).
  */
 export function TeeSheetForm({
   releaseHandle,
@@ -29,19 +29,19 @@ export function TeeSheetForm({
   const id = `tee-${releaseHandle}`
   if (state?.ok)
     return (
-      <p className={`text-xs leading-4 ${tone === "dark" ? "text-white" : "text-black"}`} role="status">
+      <p className="text-[0.9375rem] leading-6" role="status">
         You&apos;re on the tee sheet for Hole {hole}. We&apos;ll email you when it goes live.
       </p>
     )
   return (
     <form action={action} className="flex flex-col gap-3">
       {label && (
-        <label htmlFor={id} className={`eyebrow ${tone === "dark" ? "text-white" : "text-black"}`}>
-          JOIN THE TEE SHEET
+        <label htmlFor={id} className="label">
+          Join the tee sheet
         </label>
       )}
       <input type="hidden" name="release_id" value={releaseHandle} />
-      <div className="relative max-w-[384px]">
+      <div className="flex max-w-[420px] gap-2">
         <input
           id={id}
           name="email"
@@ -50,19 +50,19 @@ export function TeeSheetForm({
           autoComplete="email"
           placeholder={`Email for Hole ${hole}, ${name}`}
           aria-label={label ? undefined : `Email for Hole ${hole}, ${name}`}
-          className="h-[42px] w-full rounded-full border border-black bg-white px-3 py-2.5 pr-20 text-base text-black placeholder:text-gray-500"
+          className={`field min-w-0 flex-1 ${tone === "dark" ? "!border-white/70" : ""}`}
         />
         <button
           type="submit"
           data-track="notify_me"
           disabled={pending}
-          className="btn btn-primary absolute top-1/2 right-1 -translate-y-1/2 font-bold text-black active:opacity-[.85]"
+          className={`btn ${tone === "dark" ? "btn-on-ink" : "btn-secondary"}`}
         >
-          JOIN
+          Join
         </button>
       </div>
       {state?.error && (
-        <p className={`text-xs ${tone === "dark" ? "text-white" : "text-red"}`} role="alert">
+        <p className="text-[0.9375rem]" role="alert">
           {state.error}
         </p>
       )}

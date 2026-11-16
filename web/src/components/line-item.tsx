@@ -31,42 +31,42 @@ export function LineItem({ line, editable = true }: { line: Line; editable?: boo
   const set = (q: number) => startTransition(async () => void (await updateLineItem(line.id, q)))
   const href = line.handle ? `/products/${line.handle}` : null
   return (
-    <li className={`flex gap-3 border-b border-natural-white-60 px-5 py-4 ${pending ? "opacity-60" : ""}`}>
-      <span className="relative block size-[85px] shrink-0 overflow-hidden rounded-[20px] bg-natural-white-25">
+    <li className={`flex gap-3 border-b-2 border-dashed border-crease px-5 py-4 ${pending ? "opacity-60" : ""}`}>
+      <span className="window relative block size-[88px] shrink-0 !rounded-[16px]">
         {line.thumbnail && <Image src={line.thumbnail} alt="" fill sizes="85px" className="object-contain" />}
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <div className="flex items-start justify-between gap-2">
           {href ? (
-            <Link href={href} className="text-xs leading-4 font-medium tracking-[.05em] uppercase hover:underline">
+            <Link href={href} className="label hover:underline">
               {line.title}
             </Link>
           ) : (
-            <span className="text-xs leading-4 font-medium tracking-[.05em] uppercase">{line.title}</span>
+            <span className="label">{line.title}</span>
           )}
-          {line.badge && <span className="badge-edition edition shrink-0 !h-5 !px-2 !text-[10px]">{line.badge}</span>}
+          {line.badge && <span className="badge-edition edition shrink-0 !h-5 !px-2 !text-[11px]">{line.badge}</span>}
         </div>
-        {line.variant && <p className="truncate text-xs leading-4 text-light-charcoal">{line.variant}</p>}
+        {line.variant && <p className="truncate text-[0.875rem] leading-5 text-light-charcoal">{line.variant}</p>}
         <div className="mt-auto flex items-center justify-between gap-3">
           {editable ? (
-            <div className="flex h-8 items-center rounded-full border border-stroke">
-              <button type="button" aria-label="Decrease quantity" className="flex size-8 items-center justify-center" disabled={pending} onClick={() => set(line.quantity - 1)}>
+            <div className="flex h-10 items-center rounded-[4px] border-2 border-ink">
+              <button type="button" aria-label="Decrease quantity" className="flex size-10 items-center justify-center" disabled={pending} onClick={() => set(line.quantity - 1)}>
                 <Minus size={12} />
               </button>
-              <span className="min-w-4 text-center text-xs leading-4 font-medium" aria-live="polite">
+              <span className="min-w-4 text-center text-[0.875rem] leading-5 font-medium" aria-live="polite">
                 {line.quantity}
               </span>
-              <button type="button" aria-label="Increase quantity" className="flex size-8 items-center justify-center" disabled={pending} onClick={() => set(line.quantity + 1)}>
+              <button type="button" aria-label="Increase quantity" className="flex size-10 items-center justify-center" disabled={pending} onClick={() => set(line.quantity + 1)}>
                 <Plus size={12} />
               </button>
             </div>
           ) : (
-            <span className="text-xs leading-4 text-light-charcoal">Qty {line.quantity}</span>
+            <span className="text-[0.875rem] leading-5 text-light-charcoal">Qty {line.quantity}</span>
           )}
-          <span className="text-xs leading-4 font-medium">{formatMoney(line.unitPrice * line.quantity, line.currency)}</span>
+          <span className="text-[0.875rem] leading-5 font-medium">{formatMoney(line.unitPrice * line.quantity, line.currency)}</span>
         </div>
         {editable && (
-          <button type="button" className="link w-fit text-xs" disabled={pending} onClick={() => set(0)}>
+          <button type="button" className="link w-fit text-[0.875rem]" disabled={pending} onClick={() => set(0)}>
             Remove
           </button>
         )}

@@ -109,13 +109,15 @@ export async function Header() {
   )
 }
 
-/** Count badge on the bag icon; hidden at 0 (§6.0.2). */
+/** Bag count in a digit slot; hidden at 0. */
 async function BagBadge() {
   const count = itemCount(await retrieveCart())
   if (!count) return null
   return (
-    <span className="absolute top-2.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full bg-black text-[9px] font-medium text-white">
-      {count}
+    <span className="digits digits-cells text-[13px]">
+      {[...String(count)].map((d, i) => (
+        <span key={i}>{d}</span>
+      ))}
       <span className="sr-only"> items in bag</span>
     </span>
   )

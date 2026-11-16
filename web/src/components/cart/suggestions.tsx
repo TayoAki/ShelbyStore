@@ -27,16 +27,16 @@ export function Suggestions({ items }: { items: Suggestion[] }) {
   if (!items.length) return null
   return (
     <section className="mt-6">
-      <h3 className="mb-3 px-5 font-mono text-xs leading-4 tracking-[.1em] uppercase">Complete the look</h3>
+      <h3 className="label mb-3 px-5">Complete the look</h3>
       <ul className="scrollbar-hidden flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-5">
         {items.map((item) => (
           <li key={item.key} className="w-[calc((100%-20px)/2.4)] shrink-0 snap-start">
-            <div className="flex flex-col gap-2 rounded-2xl bg-natural-white-25 p-3">
-              <Link href={item.href} className="relative block aspect-square overflow-hidden rounded-xl bg-white">
+            <div className="flex flex-col gap-2 rounded-[4px] border-2 border-ink bg-paper p-3">
+              <Link href={item.href} className="window relative block aspect-square !rounded-[16px]">
                 {item.image && <Image src={item.image} alt="" fill sizes="160px" className="object-contain" />}
               </Link>
-              <p className="text-xs leading-4 font-medium tracking-[.05em] uppercase">{item.color ?? item.title}</p>
-              <p className="text-xs leading-4">{formatMoney(item.price, item.currency)}</p>
+              <p className="label">{item.color ?? item.title}</p>
+              <p className="text-[0.875rem] leading-5">{formatMoney(item.price, item.currency)}</p>
               {item.variantId ? (
                 <button
                   type="button"
