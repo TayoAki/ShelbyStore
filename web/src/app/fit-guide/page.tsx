@@ -41,6 +41,12 @@ export default async function FitGuidePage() {
             Most Shelby hats are one size: the adjustable strap or snap fits heads from 21.5 to 23.75 in (55–60 cm).{" "}
             {POLICY.sized}.
           </p>
+          <p className="text-[15px]">
+            Rather answer four questions?{" "}
+            <Link href="/quiz" className="underline underline-offset-4 hover:text-ink-muted" data-track="fit_guide_quiz">
+              Take the 30-second fit quiz
+            </Link>
+          </p>
         </Container>
       </section>
 

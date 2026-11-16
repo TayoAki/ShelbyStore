@@ -20,8 +20,17 @@ export async function Footer() {
       title: "Shop",
       links: [["All hats", "/shop"], ...shapes.map((s) => [s.name, `/shop?shape=${s.handle}`] as [string, string]), ["Drops", "/drops"]],
     },
-    { title: "Help", links: [["Fit guide", "/fit-guide"], ["Shipping & returns", "/help/shipping-returns"], ["Your bag", "/cart"]] },
-    { title: "Shelby", links: series.slice(0, 2).map((s) => [s.title, `/stories/${s.handle}`] as [string, string]) },
+    {
+      title: "Help",
+      links: [["Fit guide", "/fit-guide"], ["Fit quiz", "/quiz"], ["Shipping & returns", "/help/shipping-returns"], ["Your bag", "/cart"]],
+    },
+    {
+      title: "Shelby",
+      links: [
+        ...series.slice(0, 2).map((s) => [s.title, `/stories/${s.handle}`] as [string, string]),
+        ["Why the Everyday Cap", "/reasons/everyday-cap"],
+      ],
+    },
   ]
   return (
     <footer className="mt-20 bg-ink py-16 text-page">

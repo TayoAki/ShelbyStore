@@ -4,6 +4,7 @@ import { CoreBand } from "@/components/home/core-band"
 import { DropsBand } from "@/components/home/drops-band"
 import { FitStrip } from "@/components/home/fit-strip"
 import { Hero } from "@/components/home/hero"
+import { QuizBand } from "@/components/home/quiz-band"
 import { SeriesBand } from "@/components/home/series-band"
 import { ShapeTiles } from "@/components/home/shape-tiles"
 import { getRegion, listCategories, listCoreProducts, listProducts, listReleases } from "@/lib/data/catalog"
@@ -12,7 +13,7 @@ import { shapesFrom } from "@/lib/shapes"
 
 /**
  * Home (SITE_SPEC §6.1): hero with the core cap and its price above the fold,
- * shop by shape, the live-count proof band, drops with a real countdown, the
+ * shop by shape, the fit-quiz entry, the live-count proof band, drops with a real countdown, the
  * content series, and the fit promise.
  */
 export default async function HomePage() {
@@ -35,6 +36,7 @@ export default async function HomePage() {
       </Suspense>
       <Hero core={core[0] ?? null} live={live} />
       <ShapeTiles shapes={shapesFrom(categories, all)} next={next} />
+      <QuizBand />
       <CoreBand products={core} />
       <DropsBand live={live} upcoming={upcoming} />
       <SeriesBand series={series[0] ?? null} />

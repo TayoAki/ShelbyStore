@@ -11,7 +11,7 @@ import { Wordmark } from "./wordmark"
 
 /**
  * Sticky header (SITE_SPEC §6.0). Desktop: Shop ▾ (shape tiles) · Drops · Fit
- * guide · Stories. Mobile: a visible, scrollable row of shapes and links instead
+ * guide · Fit quiz · Stories. Mobile: a visible, scrollable row of shapes and links instead
  * of a hamburger (NN/g: hidden navigation costs discoverability).
  */
 export async function Header() {
@@ -41,6 +41,9 @@ export async function Header() {
               {liveDot}
             </NavLink>
             <NavLink href="/fit-guide">Fit guide</NavLink>
+            <NavLink href="/quiz" track="nav_quiz">
+              Fit quiz
+            </NavLink>
             {story && <NavLink href={`/stories/${story.handle}`}>Stories</NavLink>}
           </nav>
           <span className="lg:hidden" />
@@ -68,6 +71,9 @@ export async function Header() {
           {liveDot}
         </NavLink>
         <NavLink href="/fit-guide">Fit guide</NavLink>
+        <NavLink href="/quiz" track="nav_quiz">
+          Fit quiz
+        </NavLink>
       </nav>
     </header>
   )
