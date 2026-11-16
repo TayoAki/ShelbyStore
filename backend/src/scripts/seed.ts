@@ -42,6 +42,47 @@ const DAY = 24 * 60 * 60 * 1000
 const STOREFRONT = (process.env.STOREFRONT_URL || "http://localhost:3000").replace(/\/$/, "")
 const img = (file: string) => `${STOREFRONT}/hats/${file}`
 
+/** Square product shots per colourway: -1 three-quarter front, -2 back (or side), -3 side (or top-down). */
+const angles = (slug: string, n = 3) => Array.from({ length: n }, (_, i) => `${slug}-${i + 1}.jpg`)
+
+/**
+ * Images per colour, in gallery order (web/public/hats/README.md). The first
+ * run seeds them; every run adds any that are missing and links each to its
+ * colour's variants (see ensureGalleryImages).
+ */
+const COLOR_IMAGES: Record<string, Record<string, string[]>> = {
+  "everyday-cap": {
+    "Washed Black": angles("everyday-cap-black", 6),
+    Navy: angles("everyday-cap-navy"),
+    Bone: angles("everyday-cap-bone"),
+    Olive: angles("everyday-cap-olive"),
+  },
+  trucker: {
+    Black: angles("trucker-black"),
+    "Bone / Brown": angles("trucker-bone"),
+  },
+  "ribbed-beanie": {
+    Charcoal: angles("beanie-charcoal"),
+    Rust: angles("beanie-rust"),
+    Cream: angles("beanie-cream"),
+  },
+  "performance-cap": {
+    Black: angles("performance-cap-black"),
+    Stone: angles("performance-cap-stone"),
+  },
+  "corduroy-cap": {
+    Tobacco: angles("corduroy-cap-tobacco"),
+    Forest: angles("corduroy-cap-forest"),
+  },
+  "bucket-hat": {
+    Sand: angles("bucket-hat-sand"),
+    Black: angles("bucket-hat-black"),
+  },
+  "waxed-field-cap": {
+    Olive: angles("waxed-field-cap-olive"),
+  },
+}
+
 /** Release date `days` from now at 17:00 UTC (10am Pacific). */
 const dropDate = (days: number) => {
   const d = new Date(Date.now() + days * DAY)
@@ -104,6 +145,7 @@ export default async function seedShelby({ container }: ExecArgs) {
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
   const link = container.resolve(ContainerRegistrationKeys.LINK)
   const query = container.resolve(ContainerRegistrationKeys.QUERY)
+  const pg = container.resolve(ContainerRegistrationKeys.PG_CONNECTION)
   const fulfillmentModuleService = container.resolve(Modules.FULFILLMENT)
   const salesChannelModuleService = container.resolve(Modules.SALES_CHANNEL)
   const storeModuleService = container.resolve(Modules.STORE)
@@ -335,6 +377,53 @@ export default async function seedShelby({ container }: ExecArgs) {
   }
   await ensureFitProfiles()
 
+  // --- Gallery images (every run, only what's missing) ------------------------
+  // Adds any photo angle in COLOR_IMAGES that a product doesn't have yet,
+  // keeping existing images (and their variant links) by id, then links every
+  // photo to its colour's variants. Safe to run on the live database.
+  const ensureGalleryImages = async () => {
+    const fields = ["id", "handle", "images.id", "images.url", "images.rank", "variants.id", "variants.images.id", "variants.options.value", "variants.options.option.title"]
+    const load = async () =>
+      (await query.graph({ entity: "product", fields, filters: { handle: Object.keys(COLOR_IMAGES) } })).data as any[]
+    let products = await load()
+    let changed = false
+    for (const product of products) {
+      const desired = Object.values(COLOR_IMAGES[product.handle]).flat().map(img)
+      const existing = [...(product.images ?? [])].sort((a: any, b: any) => (a.rank ?? 0) - (b.rank ?? 0))
+      const missing = desired.filter((u) => !existing.some((i: any) => i.url === u))
+      if (!missing.length) continue
+      const ordered = [
+        ...desired.map((u) => existing.find((i: any) => i.url === u) ?? { url: u }),
+        ...existing.filter((i: any) => !desired.includes(i.url)),
+      ].map((i: any) => (i.id ? { id: i.id, url: i.url } : { url: i.url }))
+      await updateProductsWorkflow(container).run({ input: { selector: { id: product.id }, update: { images: ordered } } })
+      logger.info(`Added ${missing.length} photo angles to ${product.handle}.`)
+      changed = true
+    }
+    if (changed) products = await load()
+    // `variants.images` also lists product images linked to no variant, so read
+    // the actual links from their table to know what is linked already.
+    const variantIds = products.flatMap((p: any) => (p.variants ?? []).map((v: any) => v.id))
+    const links: { variant_id: string; image_id: string }[] = variantIds.length
+      ? await pg("product_variant_product_image").select("variant_id", "image_id").whereIn("variant_id", variantIds).whereNull("deleted_at")
+      : []
+    for (const product of products) {
+      const byColor = COLOR_IMAGES[product.handle]
+      for (const variant of product.variants ?? []) {
+        const color = (variant.options ?? []).find((o: any) => o.option?.title === "Color")?.value
+        const urls = (byColor[color] ?? []).map(img)
+        const want = (product.images ?? []).filter((i: any) => urls.includes(i.url)).map((i: any) => i.id)
+        const have = new Set(links.filter((l) => l.variant_id === variant.id).map((l) => l.image_id))
+        const add = want.filter((id: string) => !have.has(id))
+        if (add.length) {
+          await batchVariantImagesWorkflow(container).run({ input: { variant_id: variant.id, add } })
+          logger.info(`Linked ${add.length} photos to ${product.handle} (${color}).`)
+        }
+      }
+    }
+  }
+  await ensureGalleryImages()
+
   // --- Hat catalog (once) -----------------------------------------------------
   const existing = await productModuleService.listProducts({ handle: "everyday-cap" })
   if (existing.length) {
@@ -366,44 +455,11 @@ export default async function seedShelby({ container }: ExecArgs) {
     coreCollection = collections[0]
   }
 
-  /** Images per colour, in gallery order. Product-level images not listed here show for every colour. */
-  const colorImages: Record<string, Record<string, string[]>> = {
-    "everyday-cap": {
-      "Washed Black": ["everyday-cap-black-1.jpg", "everyday-cap-black-2.jpg", "everyday-cap-black-3.jpg"],
-      Navy: ["everyday-cap-navy-1.jpg"],
-      Bone: ["everyday-cap-bone-1.jpg"],
-      Olive: ["everyday-cap-olive-1.jpg"],
-    },
-    trucker: {
-      Black: ["trucker-black-1.jpg", "trucker-black-2.jpg"],
-      "Bone / Brown": ["trucker-bone-1.jpg"],
-    },
-    "ribbed-beanie": {
-      Charcoal: ["beanie-charcoal-1.jpg"],
-      Rust: ["beanie-rust-1.jpg"],
-      Cream: ["beanie-cream-1.jpg"],
-    },
-    "performance-cap": {
-      Black: ["performance-cap-black-1.jpg"],
-      Stone: ["performance-cap-stone-1.jpg"],
-    },
-    "corduroy-cap": {
-      Tobacco: ["corduroy-cap-tobacco-1.jpg"],
-      Forest: ["corduroy-cap-forest-1.jpg"],
-    },
-    "bucket-hat": {
-      Sand: ["bucket-hat-sand-1.jpg"],
-      Black: ["bucket-hat-black-1.jpg"],
-    },
-    "waxed-field-cap": {
-      Olive: ["waxed-field-cap-olive-1.jpg"],
-    },
-  }
   const imagesOf = (handle: string, extra: string[] = []) => {
-    const files = [...Object.values(colorImages[handle]).flat(), ...extra]
+    const files = [...Object.values(COLOR_IMAGES[handle]).flat(), ...extra]
     return { thumbnail: img(files[0]), images: files.map((f) => ({ url: img(f) })) }
   }
-  const colorsOf = (handle: string) => Object.keys(colorImages[handle])
+  const colorsOf = (handle: string) => Object.keys(COLOR_IMAGES[handle])
 
   const capDetails = {
     Crown: "Six panels, unstructured, low profile",
@@ -621,7 +677,7 @@ export default async function seedShelby({ container }: ExecArgs) {
     filters: { id: products.map((p) => p.id) },
   })
   for (const product of seeded as any[]) {
-    const byColor = colorImages[product.handle] ?? {}
+    const byColor = COLOR_IMAGES[product.handle] ?? {}
     for (const variant of product.variants ?? []) {
       const color = (variant.options ?? []).find((o: any) => o.option?.title === "Color")?.value
       const files = byColor[color] ?? []
