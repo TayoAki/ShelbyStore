@@ -1,6 +1,6 @@
-import { SofiaSans_400Regular, SofiaSans_500Medium, SofiaSans_600SemiBold, SofiaSans_700Bold } from "@expo-google-fonts/sofia-sans"
-import { SofiaSansExtraCondensed_700Bold, SofiaSansExtraCondensed_800ExtraBold } from "@expo-google-fonts/sofia-sans-extra-condensed"
-import { SofiaSansSemiCondensed_600SemiBold, SofiaSansSemiCondensed_700Bold } from "@expo-google-fonts/sofia-sans-semi-condensed"
+import { Monomakh_400Regular } from "@expo-google-fonts/monomakh"
+import { Montserrat_500Medium, Montserrat_600SemiBold, Montserrat_700Bold } from "@expo-google-fonts/montserrat"
+import { Roboto_400Regular, Roboto_400Regular_Italic, Roboto_500Medium, Roboto_700Bold } from "@expo-google-fonts/roboto"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { useFonts } from "expo-font"
 import * as Notifications from "expo-notifications"
@@ -28,25 +28,24 @@ if (Platform.OS !== "web") {
 }
 
 export default function RootLayout() {
-  // APP_SPEC v7: one superfamily, as a box's print is set. Extra Condensed for
-  // model names and numerals, Semi Condensed for labels, Sofia Sans for copy.
-  // Keep the splash until all load.
+  // APP_SPEC v8: Monomakh section titles, Montserrat product and page titles,
+  // Roboto for everything else. Keep the splash until all eight faces load.
   const [loaded, error] = useFonts({
-    SofiaSans_400Regular,
-    SofiaSans_500Medium,
-    SofiaSans_600SemiBold,
-    SofiaSans_700Bold,
-    SofiaSansSemiCondensed_600SemiBold,
-    SofiaSansSemiCondensed_700Bold,
-    SofiaSansExtraCondensed_700Bold,
-    SofiaSansExtraCondensed_800ExtraBold,
+    Monomakh_400Regular,
+    Montserrat_500Medium,
+    Montserrat_600SemiBold,
+    Montserrat_700Bold,
+    Roboto_400Regular,
+    Roboto_400Regular_Italic,
+    Roboto_500Medium,
+    Roboto_700Bold,
   })
   useEffect(() => {
     if (loaded || error) SplashScreen.hideAsync().catch(() => undefined)
   }, [loaded, error])
   if (!loaded && !error) return null
 
-  const plain = { headerShown: false, contentStyle: { backgroundColor: colors.page } }
+  const plain = { headerShown: false, contentStyle: { backgroundColor: colors.bg } }
   return (
     <QueryClientProvider client={queryClient}>
       <CartProvider>
@@ -58,12 +57,12 @@ export default function RootLayout() {
             <StatusBar style="dark" />
             <Stack
               screenOptions={{
-                headerStyle: { backgroundColor: colors.page },
-                headerTintColor: colors.black,
+                headerStyle: { backgroundColor: colors.bg },
+                headerTintColor: colors.text,
                 headerShadowVisible: false,
                 headerBackButtonDisplayMode: "minimal",
-                headerTitleStyle: { fontFamily: fonts.label, fontSize: 15 },
-                contentStyle: { backgroundColor: colors.page },
+                headerTitleStyle: { fontFamily: fonts.heading, fontSize: 16 },
+                contentStyle: { backgroundColor: colors.bg },
               }}>
               <Stack.Screen name="(tabs)" options={{ headerShown: false, title: "Shelby" }} />
               <Stack.Screen name="products/[handle]" options={plain} />
@@ -72,8 +71,9 @@ export default function RootLayout() {
               <Stack.Screen name="custom" options={plain} />
               <Stack.Screen name="drops/index" options={plain} />
               <Stack.Screen name="drops/[handle]" options={plain} />
-              <Stack.Screen name="checkout" options={{ title: "CHECKOUT" }} />
-              <Stack.Screen name="order/[id]" options={{ title: "ORDER", headerBackVisible: false, gestureEnabled: false }} />
+              <Stack.Screen name="+not-found" options={plain} />
+              <Stack.Screen name="checkout" options={{ title: "Checkout" }} />
+              <Stack.Screen name="order/[id]" options={{ title: "Order", headerBackVisible: false, gestureEnabled: false }} />
             </Stack>
           </AddedSheetProvider>
         </AuthProvider>

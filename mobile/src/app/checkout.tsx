@@ -1,17 +1,18 @@
 import type { HttpTypes } from "@medusajs/types"
 import { useQueryClient } from "@tanstack/react-query"
-import { Image } from "expo-image"
+import Ionicons from "@expo/vector-icons/Ionicons"
 import { router } from "expo-router"
 import { useState } from "react"
 import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from "react-native"
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated"
 
-import { Box, Digits, Face } from "@/components/box"
 import { Button } from "@/components/button"
 import { Screen } from "@/components/screen"
 import { EmptyState } from "@/components/state-views"
 import { Text } from "@/components/text"
-import { TextField } from "@/components/text-field"
-import { colors, fonts } from "@/constants/theme"
+import { ErrorBox, TextField } from "@/components/text-field"
+import { Tile } from "@/components/tile"
+import { colors, dur, ease, fonts, layout, motion } from "@/constants/theme"
 import { useCatalog } from "@/hooks/use-products"
 import { useTrackOnce } from "@/lib/analytics"
 import { formatMoney } from "@/lib/format"
@@ -67,6 +68,12 @@ function validate(form: Form): Partial<Record<keyof Form, string>> {
   return errors
 }
 
+/**
+ * Checkout (APP_SPEC v8 V8.5 §8, web E.6.5): a collapsible #F6F6F6 order
+ * summary bar, then Contact, Delivery and Payment, each a titled step with
+ * 44pt fields, shipping radio cards and Continue / Place Order. The
+ * `checkout_started` event and the Medusa flow are unchanged.
+ */
 export default function CheckoutScreen() {
   const { cart, setCart, reset } = useCart()
   const { customer } = useAuth()
@@ -175,145 +182,126 @@ export default function CheckoutScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <Screen header={false} under="safe" contentStyle={{ paddingTop: 10 }}>
-        <View style={styles.wrap}>
-          <Box>
-            <Summary cart={cart} />
+      <Screen header={false} under="safe">
+        <Summary cart={cart} />
+        <View style={styles.body}>
+          <Section
+            index={1}
+            title="Contact"
+            active={step === "details"}
+            done={step !== "details"}
+            onEdit={() => setStep("details")}
+            summary={`${form.email} · ${form.address_1}, ${form.city} ${form.province} ${form.postal_code}`}>
+            <TextField
+              label="Email"
+              value={form.email}
+              onChangeText={set("email")}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoComplete="email"
+              error={fieldErrors.email}
+            />
+            <Text variant="labelCaps" style={styles.subhead}>
+              Shipping address
+            </Text>
+            <View style={styles.row}>
+              <TextField
+                label="First name"
+                value={form.first_name}
+                onChangeText={set("first_name")}
+                autoComplete="given-name"
+                error={fieldErrors.first_name}
+                style={styles.flex}
+              />
+              <TextField
+                label="Last name"
+                value={form.last_name}
+                onChangeText={set("last_name")}
+                autoComplete="family-name"
+                error={fieldErrors.last_name}
+                style={styles.flex}
+              />
+            </View>
+            <TextField label="Address" value={form.address_1} onChangeText={set("address_1")} autoComplete="address-line1" error={fieldErrors.address_1} />
+            <TextField label="Apt, suite (optional)" value={form.address_2} onChangeText={set("address_2")} autoComplete="address-line2" />
+            <TextField label="City" value={form.city} onChangeText={set("city")} error={fieldErrors.city} />
+            <View style={styles.row}>
+              <TextField
+                label="State"
+                value={form.province}
+                onChangeText={set("province")}
+                autoCapitalize="characters"
+                maxLength={2}
+                placeholder="CA"
+                error={fieldErrors.province}
+                style={styles.flex}
+              />
+              <TextField
+                label="ZIP"
+                value={form.postal_code}
+                onChangeText={set("postal_code")}
+                keyboardType="number-pad"
+                autoComplete="postal-code"
+                error={fieldErrors.postal_code}
+                style={styles.flex}
+              />
+            </View>
+            <TextField label="Phone (optional)" value={form.phone} onChangeText={set("phone")} keyboardType="phone-pad" autoComplete="tel" />
+            <Text variant="meta" tone="muted">
+              We currently ship within the United States.
+            </Text>
+            <Button title="Continue" variant="secondary" onPress={saveDetails} loading={busy} />
+          </Section>
 
-            <Section
-              index={1}
-              title="Contact & address"
-              active={step === "details"}
-              done={step !== "details"}
-              onEdit={() => setStep("details")}
-              summary={`${form.email} · ${form.address_1}, ${form.city} ${form.province} ${form.postal_code}`}>
-              <TextField
-                label="Email"
-                value={form.email}
-                onChangeText={set("email")}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoComplete="email"
-                error={fieldErrors.email}
-              />
-              <View style={styles.row}>
-                <TextField
-                  label="First name"
-                  value={form.first_name}
-                  onChangeText={set("first_name")}
-                  autoComplete="given-name"
-                  error={fieldErrors.first_name}
-                  style={styles.flex}
-                />
-                <TextField
-                  label="Last name"
-                  value={form.last_name}
-                  onChangeText={set("last_name")}
-                  autoComplete="family-name"
-                  error={fieldErrors.last_name}
-                  style={styles.flex}
-                />
-              </View>
-              <TextField
-                label="Address"
-                value={form.address_1}
-                onChangeText={set("address_1")}
-                autoComplete="address-line1"
-                error={fieldErrors.address_1}
-              />
-              <TextField
-                label="Apt, suite (optional)"
-                value={form.address_2}
-                onChangeText={set("address_2")}
-                autoComplete="address-line2"
-              />
-              <TextField label="City" value={form.city} onChangeText={set("city")} error={fieldErrors.city} />
-              <View style={styles.row}>
-                <TextField
-                  label="State"
-                  value={form.province}
-                  onChangeText={set("province")}
-                  autoCapitalize="characters"
-                  maxLength={2}
-                  placeholder="CA"
-                  error={fieldErrors.province}
-                  style={styles.flex}
-                />
-                <TextField
-                  label="ZIP"
-                  value={form.postal_code}
-                  onChangeText={set("postal_code")}
-                  keyboardType="number-pad"
-                  autoComplete="postal-code"
-                  error={fieldErrors.postal_code}
-                  style={styles.flex}
-                />
-              </View>
-              <TextField
-                label="Phone (optional)"
-                value={form.phone}
-                onChangeText={set("phone")}
-                keyboardType="phone-pad"
-                autoComplete="tel"
-              />
+          <Section
+            index={2}
+            title="Delivery"
+            active={step === "delivery"}
+            done={step === "payment"}
+            onEdit={() => setStep("delivery")}
+            summary={cart.shipping_methods?.[0]?.name ?? ""}>
+            {options.map((option) => {
+              const selected = option.id === selectedOptionId
+              return (
+                <Pressable
+                  key={option.id}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected }}
+                  onPress={() => chooseOption(option.id)}
+                  disabled={busy}
+                  style={[styles.option, selected && styles.optionSelected]}>
+                  <View style={[styles.radio, selected && styles.radioOn]}>{selected ? <View style={styles.radioDot} /> : null}</View>
+                  <View style={styles.flex}>
+                    <Text style={styles.optionName}>{option.name}</Text>
+                    {option.type?.description ? (
+                      <Text variant="meta" tone="muted">
+                        {option.type.description}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <Text style={styles.amount}>{option.amount === 0 ? "Free" : formatMoney(option.amount, currency)}</Text>
+                </Pressable>
+              )
+            })}
+            <Button title="Continue" variant="secondary" onPress={() => setStep("payment")} disabled={!selectedOptionId || busy} />
+          </Section>
+
+          <Section index={3} title="Payment" active={step === "payment"} done={false}>
+            <View style={styles.notice}>
+              <Text style={styles.optionName}>Test payment</Text>
               <Text variant="meta" tone="muted">
-                We currently ship within the United States.
+                This build uses Medusa&apos;s built-in test provider: your order is recorded, and no card is charged. Card payments (e.g.
+                Stripe) get switched on before launch.
               </Text>
-              <Button title="Continue to delivery" size="atc" onPress={saveDetails} loading={busy} />
-            </Section>
+            </View>
+            <Button title={`Place Order · ${formatMoney(cart.total, currency)}`} variant="primary" onPress={placeOrder} loading={busy} />
+          </Section>
 
-            <Section
-              index={2}
-              title="Delivery"
-              active={step === "delivery"}
-              done={step === "payment"}
-              onEdit={() => setStep("delivery")}
-              summary={cart.shipping_methods?.[0]?.name ?? ""}>
-              {options.map((option) => {
-                const selected = option.id === selectedOptionId
-                return (
-                  <Pressable
-                    key={option.id}
-                    accessibilityRole="radio"
-                    accessibilityState={{ selected }}
-                    onPress={() => chooseOption(option.id)}
-                    disabled={busy}
-                    style={[styles.option, selected && styles.optionSelected]}>
-                    <View style={[styles.radio, selected && styles.radioOn]} />
-                    <View style={styles.flex}>
-                      <Text style={styles.optionName}>{option.name}</Text>
-                      {option.type?.description ? (
-                        <Text variant="meta" tone="muted">
-                          {option.type.description}
-                        </Text>
-                      ) : null}
-                    </View>
-                    <Text variant="priceSm">{option.amount === 0 ? "Free" : formatMoney(option.amount, currency)}</Text>
-                  </Pressable>
-                )
-              })}
-              <Button title="Continue to payment" size="atc" onPress={() => setStep("payment")} disabled={!selectedOptionId || busy} />
-            </Section>
-
-            <Section index={3} title="Payment" active={step === "payment"} done={false}>
-              <View style={styles.notice}>
-                <Text style={styles.optionName}>Test payment</Text>
-                <Text variant="meta" tone="muted" style={styles.noticeCopy}>
-                  This build uses Medusa&apos;s built-in test provider: your order is recorded, and no card is charged. Card payments (e.g.
-                  Stripe) get switched on before launch.
-                </Text>
-              </View>
-              <Button title={`Place order · ${formatMoney(cart.total, currency)}`} size="atc" onPress={placeOrder} loading={busy} />
-            </Section>
-
-            {error ? (
-              <Face>
-                <Text style={styles.error} accessibilityLiveRegion="polite">
-                  {error}
-                </Text>
-              </Face>
-            ) : null}
-          </Box>
+          {error ? (
+            <View accessibilityLiveRegion="polite">
+              <ErrorBox message={error} />
+            </View>
+          ) : null}
         </View>
       </Screen>
     </KeyboardAvoidingView>
@@ -338,11 +326,10 @@ function Section({
   children: React.ReactNode
 }) {
   return (
-    <Face>
+    <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Digits value={String(index).padStart(2, "0")} variant="digitsSm" style={!active && !done ? styles.dim : null} />
-        <Text variant="cardHeading" accessibilityRole="header" style={[styles.flex, !active && !done && styles.dim]}>
-          {title}
+        <Text variant="titleCard" accessibilityRole="header" style={[styles.flex, !active && !done && styles.dim]}>
+          {index}. {title}
         </Text>
         {done && onEdit ? <Button title="Edit" variant="link" onPress={onEdit} /> : null}
       </View>
@@ -352,92 +339,116 @@ function Section({
           {summary}
         </Text>
       ) : null}
-    </Face>
+    </View>
   )
 }
 
+/** The #F6F6F6 summary bar: "Show order summary · $96.00", the chevron turns (M19) and the lines open below. */
 function Summary({ cart }: { cart: Cart }) {
   const catalog = useCatalog()
+  const [open, setOpen] = useState(false)
+  const turn = useSharedValue(0)
+  const chevron = useAnimatedStyle(() => ({ transform: [{ rotate: `${turn.value * 180}deg` }] }))
   const currency = cart.currency_code
   const rows: [string, number | undefined][] = [
     ["Subtotal", cart.item_subtotal],
     ["Shipping", cart.shipping_methods?.length ? cart.shipping_total : undefined],
     ["Tax", cart.tax_total],
   ]
+  const toggle = () => {
+    const next = !open
+    setOpen(next)
+    turn.set(withTiming(next ? 1 : 0, { duration: dur.rotate, easing: ease.out, reduceMotion: motion.reduceMotion }))
+  }
   return (
-    <Face>
-      <Text variant="panelTitle" accessibilityRole="header">
-        Checkout
-      </Text>
-      {(cart.items ?? []).map((item) => {
-        const image = lineImage(catalog.data, item)
-        return (
-          <View key={item.id} style={styles.summaryLine}>
-            <View style={styles.summaryWindow}>
-              {image ? <Image source={image} style={styles.summaryImage} contentFit="contain" /> : null}
-            </View>
-            <View style={styles.flex}>
-              <Text variant="cardTitle" numberOfLines={1}>
-                {item.product_title ?? item.title}
+    <View style={styles.summary}>
+      <Pressable accessibilityRole="button" accessibilityState={{ expanded: open }} onPress={toggle} style={styles.summaryBar}>
+        <Text variant="bodyPdp" style={styles.flex}>
+          {open ? "Hide" : "Show"} order summary
+        </Text>
+        <Animated.View style={chevron}>
+          <Ionicons name="chevron-down" size={16} color={colors.text} />
+        </Animated.View>
+        <Text style={styles.amount}>{formatMoney(cart.total, currency)}</Text>
+      </Pressable>
+      {open ? (
+        <View style={styles.summaryBody}>
+          {(cart.items ?? []).map((item) => {
+            const image = lineImage(catalog.data, item)
+            return (
+              <View key={item.id} style={styles.summaryLine}>
+                <View style={styles.summaryTile}>
+                  <Tile source={image} aspectRatio={1} style={styles.whiteTile} />
+                </View>
+                <View style={styles.flex}>
+                  <Text style={styles.optionName} numberOfLines={1}>
+                    {item.product_title ?? item.title}
+                  </Text>
+                  <Text variant="meta" tone="muted" numberOfLines={1}>
+                    {item.quantity > 1 ? `${item.quantity} × ` : ""}
+                    {lineMeta(
+                      catalog.data?.find((p) => p.id === item.product_id),
+                      item
+                    )}
+                  </Text>
+                </View>
+                <Text style={styles.amount}>{formatMoney(item.total, currency)}</Text>
+              </View>
+            )
+          })}
+          <View style={styles.divider} />
+          {rows.map(([label, value]) => (
+            <View key={label} style={styles.summaryRow}>
+              <Text variant="meta" tone="muted">
+                {label}
               </Text>
-              <Text variant="meta" tone="muted" numberOfLines={1}>
-                {item.quantity > 1 ? `${item.quantity} × ` : ""}
-                {lineMeta(
-                  catalog.data?.find((p) => p.id === item.product_id),
-                  item
-                )}
-              </Text>
+              <Text variant="meta">{value === undefined ? "—" : label === "Shipping" && value === 0 ? "Free" : formatMoney(value, currency)}</Text>
             </View>
-            <Text variant="priceSm">{formatMoney(item.total, currency)}</Text>
+          ))}
+          <View style={[styles.summaryRow, styles.totalRow]}>
+            <Text variant="labelCaps">Total</Text>
+            <Text style={styles.total}>{formatMoney(cart.total, currency)}</Text>
           </View>
-        )
-      })}
-      <View style={styles.divider} />
-      {rows.map(([label, value]) => (
-        <View key={label} style={styles.summaryRow}>
-          <Text variant="body" tone="muted">
-            {label}
-          </Text>
-          <Text variant="body" tone="muted">
-            {value === undefined ? "—" : label === "Shipping" && value === 0 ? "Free" : formatMoney(value, currency)}
-          </Text>
         </View>
-      ))}
-      <View style={[styles.summaryRow, styles.totalRow]}>
-        <Text variant="label">Total</Text>
-        <Digits value={formatMoney(cart.total, currency)} variant="digitsSm" />
-      </View>
-    </Face>
+      ) : null}
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  wrap: { marginHorizontal: 12 },
+  body: { paddingHorizontal: layout.edge, paddingBottom: 48 },
   row: { flexDirection: "row", gap: 12 },
-  dim: { opacity: 0.55 },
+  dim: { opacity: 0.5 },
+  subhead: { marginTop: 8 },
+  summary: { backgroundColor: colors.tile, borderBottomWidth: 1, borderBottomColor: colors.border },
+  summaryBar: { minHeight: 56, flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: layout.edge },
+  summaryBody: { paddingHorizontal: layout.edge, paddingBottom: 20, gap: 12 },
   summaryLine: { flexDirection: "row", alignItems: "center", gap: 12 },
-  summaryWindow: {
-    width: 64,
-    height: 64,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: colors.ink,
-    backgroundColor: colors.paper,
-    overflow: "hidden",
-  },
-  summaryImage: { position: "absolute", top: "8%", left: "8%", right: "8%", bottom: "8%" },
+  summaryTile: { width: 64 },
+  whiteTile: { backgroundColor: colors.white },
   summaryRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 12 },
-  totalRow: { borderTopWidth: 2, borderTopColor: colors.ink, paddingTop: 12 },
-  divider: { height: 1.5, backgroundColor: colors.ink, marginVertical: 4 },
+  totalRow: { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12 },
+  total: { fontFamily: fonts.bodyMedium, fontSize: 21.6, lineHeight: 26, color: colors.text, fontVariant: ["tabular-nums"] },
+  divider: { height: 1, backgroundColor: colors.border, marginVertical: 4 },
+  section: { paddingVertical: 24, borderBottomWidth: 1, borderBottomColor: colors.border, gap: 12 },
   sectionHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
   sectionBody: { gap: 16 },
-  option: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14, minHeight: 56, borderWidth: 2, borderColor: colors.stroke },
-  optionSelected: { borderColor: colors.ink },
-  optionName: { fontFamily: fonts.bodySemi, fontSize: 15, lineHeight: 21, color: colors.ink },
-  radio: { width: 20, height: 20, borderWidth: 2, borderColor: colors.ink },
-  radioOn: { borderWidth: 6 },
-  notice: { padding: 14, gap: 4, borderWidth: 1.5, borderColor: colors.ink, borderStyle: "dashed" },
-  noticeCopy: { lineHeight: 20 },
-  error: { fontFamily: fonts.body, fontSize: 14, lineHeight: 20, color: colors.red },
+  option: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 14,
+    minHeight: 56,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 3,
+  },
+  optionSelected: { borderColor: colors.text, backgroundColor: colors.greenFade },
+  optionName: { fontFamily: fonts.bodyMedium, fontSize: 14.4, lineHeight: 19, color: colors.text },
+  amount: { fontFamily: fonts.body, fontSize: 14.4, lineHeight: 19, color: colors.text, fontVariant: ["tabular-nums"] },
+  radio: { width: 18, height: 18, borderRadius: 9, borderWidth: 1, borderColor: colors.fieldBorder, alignItems: "center", justifyContent: "center" },
+  radioOn: { borderColor: colors.text },
+  radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.text },
+  notice: { padding: 14, gap: 4, borderWidth: 1, borderColor: colors.border, borderRadius: 3, backgroundColor: colors.tile },
 })

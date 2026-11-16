@@ -1,25 +1,30 @@
 import { router, useLocalSearchParams } from "expo-router"
-import { StyleSheet, View } from "react-native"
+import { FlatList, StyleSheet, View } from "react-native"
 
-import { Box, confirmHaptic, Digits, Face, InkText, inkFor, Window } from "@/components/box"
+import { Accordion } from "@/components/accordion"
 import { Button } from "@/components/button"
 import { Countdown } from "@/components/countdown"
+import { HoleHero } from "@/components/hole-hero"
 import { TeeSheet } from "@/components/notify-me"
+import { EditionCard } from "@/components/product-card"
 import { Screen } from "@/components/screen"
 import { ErrorState, LoadingState } from "@/components/state-views"
-import { colors } from "@/constants/theme"
+import { Text } from "@/components/text"
+import { layout } from "@/constants/theme"
 import { holeDate, useHoles } from "@/hooks/use-holes"
 import { useQuickAdd } from "@/hooks/use-quick-add"
 import { useRelease } from "@/hooks/use-releases"
 import { useTrackOnce } from "@/lib/analytics"
 import { formatMoney } from "@/lib/format"
+import { confirmHaptic } from "@/lib/haptics"
 import { pad2 } from "@/lib/holes"
+import { POLICY } from "@/lib/policy"
 
 /**
- * A hole (APP_SPEC v7 §5.5): the edition's own box. The front face is printed
- * in the edition's ink (window, name, number and edition in the meta line) and
- * carries the phase: the real countdown and tee sheet, Add to bag, or "This
- * hole has been played." The story and what to look for sit on the next face.
+ * A hole (APP_SPEC v8 V8.5 §5): the editorial block (the image is not a link),
+ * the phase's action (real countdown and tee sheet; Add To Bag; or the played
+ * line), accordions for the colour, the release and shipping, then the other
+ * holes as a rail.
  */
 export default function HoleScreen() {
   const { handle } = useLocalSearchParams<{ handle: string }>()
@@ -51,93 +56,106 @@ export default function HoleScreen() {
   const image = hole?.image ?? r.hero_image
   const product = hole?.product ?? null
   const colour = hole?.colourway ?? null
+  const others = holes.filter((h) => h.number !== number)
+  const eyebrow = [
+    number ? `Hole ${pad2(number)}` : null,
+    phase === "live" ? "Live now" : phase === "upcoming" ? "Upcoming" : phase === "sold_out" ? "Sold out" : "Played",
+    hole?.editionSize
+      ? phase === "live" && hole.left != null
+        ? `${hole.left} of ${hole.editionSize} left`
+        : `Edition of ${hole.editionSize}`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(" · ")
 
-  const ink = inkFor(colour)
-  const light = ink.ink.toUpperCase() === colors.paper
   return (
     <Screen back>
-      <View style={styles.wrap}>
-        <Box>
-          <Face ink={ink}>
-            {image ? <Window source={image} alt={`${name} rope cap`} aspectRatio={1} /> : null}
+      <HoleHero number={number} name={name} image={image} eyebrow={eyebrow} date={phase === "upcoming" ? holeDate(r.release_at) : null}>
+        {phase === "upcoming" ? (
+          <>
+            {r.release_at ? <Countdown target={r.release_at} /> : <Text variant="labelCaps">Going live shortly</Text>}
+            <TeeSheet releaseId={r.id} hole={number ?? 0} name={name} showEyebrow={false} />
+          </>
+        ) : phase === "live" && product && colour ? (
+          <>
+            {hole?.price != null ? <Text variant="priceProduct">{formatMoney(hole.price)}</Text> : null}
+            <Button
+              title="Add To Bag"
+              variant="primary"
+              loading={quick.pending !== null}
+              onPress={() => {
+                confirmHaptic()
+                void quick.addColour(product, colour, "app_card")
+              }}
+            />
+            <Button title={`Shop Hole ${pad2(number ?? 0)} · full details`} variant="link" onPress={() => router.push(`/products/${product.handle}`)} />
+          </>
+        ) : (
+          <>
+            <Text variant="titleCard">This hole has been played.</Text>
+            <Button title="Shop the Rope Cap" variant="secondary" onPress={() => router.push("/products/rope-cap")} />
+          </>
+        )}
+      </HoleHero>
+
+      <View style={styles.accordions}>
+        {r.product_promise || r.proof ? (
+          <Accordion title="The color" initiallyOpen>
             <View style={styles.gap8}>
-              <InkText variant="model" accessibilityRole="header">
-                {name}
-              </InkText>
-              <InkText variant="specLine">
-                {[
-                  number ? `No. ${pad2(number)}` : null,
-                  phase === "live" ? "Live now" : phase === "upcoming" ? "Upcoming" : phase === "sold_out" ? "Sold out" : "Played",
-                  hole?.editionSize
-                    ? phase === "live" && hole.left != null
-                      ? `${hole.left} of ${hole.editionSize} left`
-                      : `Edition of ${hole.editionSize}`
-                    : null,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </InkText>
-              {phase === "upcoming" ? <InkText variant="meta">{holeDate(r.release_at)}</InkText> : null}
+              {r.product_promise ? <Text variant="bodyPdp">{r.product_promise}</Text> : null}
+              {r.proof ? <Text variant="bodyPdp">{r.proof}</Text> : null}
             </View>
-            {phase === "upcoming" ? (
-              <View style={styles.phase}>
-                {r.release_at ? <Countdown target={r.release_at} inverse={light} /> : <InkText variant="label">Going live shortly</InkText>}
-                <TeeSheet releaseId={r.id} hole={number ?? 0} name={name} inverse={light} showEyebrow={false} />
-              </View>
-            ) : phase === "live" && product && colour ? (
-              <View style={styles.phase}>
-                <View style={styles.priceRow}>
-                  {hole?.price != null ? <Digits value={formatMoney(hole.price)} /> : null}
-                  <Button
-                    title="Add to bag"
-                    variant="ink"
-                    size="atc"
-                    style={styles.flex}
-                    loading={quick.pending !== null}
-                    onPress={() => {
-                      confirmHaptic()
-                      void quick.addColour(product, colour, "app_card")
-                    }}
-                  />
-                </View>
-                <Button title="Full details" variant="link" onPress={() => router.push(`/products/${product.handle}`)} />
-              </View>
-            ) : (
-              <View style={styles.phase}>
-                <InkText variant="cardTitle">This hole has been played.</InkText>
-                <Button title="Shop the Rope Cap" variant="ink" size="large" onPress={() => router.push("/products/rope-cap")} />
-              </View>
-            )}
-          </Face>
-          {r.story || r.product_promise || r.proof ? (
-            <Face>
-              {r.product_promise ? (
-                <InkText variant="panelTitle" accessibilityRole="header">
-                  {r.product_promise}
-                </InkText>
-              ) : null}
-              {r.story ? <InkText variant="article">{r.story}</InkText> : null}
-              {r.proof ? (
-                <View style={styles.gap8}>
-                  <InkText variant="cardTitle">What to look for</InkText>
-                  <InkText variant="bodyLong">{r.proof}</InkText>
-                </View>
-              ) : null}
-            </Face>
-          ) : null}
-          <Face>
-            <Button title="Back to The Card" variant="outlineBlack" onPress={() => router.navigate("/card")} />
-          </Face>
-        </Box>
+          </Accordion>
+        ) : null}
+        <Accordion title="The release">
+          <View style={styles.gap8}>
+            {r.story ? <Text variant="bodyPdp">{r.story}</Text> : null}
+            <Text variant="bodyPdp">
+              {r.release_at ? `${holeDate(r.release_at)}. ` : ""}
+              {hole?.editionSize ? `A numbered edition of ${hole.editionSize}. ` : ""}
+              {POLICY.limitedRun}
+            </Text>
+          </View>
+        </Accordion>
+        <Accordion title="Shipping">
+          <Text variant="bodyPdp">
+            {POLICY.shipping}. {POLICY.dispatch}. {POLICY.returns}.
+          </Text>
+        </Accordion>
+      </View>
+
+      {others.length ? (
+        <View style={styles.rail}>
+          <Text variant="headingRecs" accessibilityRole="header" style={styles.railTitle}>
+            The other holes
+          </Text>
+          <FlatList
+            data={others}
+            horizontal
+            keyExtractor={(h) => String(h.number)}
+            showsHorizontalScrollIndicator={false}
+            snapToInterval={164 + layout.gap}
+            decelerationRate="fast"
+            contentContainerStyle={styles.railList}
+            renderItem={({ item }) => <EditionCard hole={item} trackAs="card_hole" style={styles.card} />}
+          />
+        </View>
+      ) : null}
+
+      <View style={styles.back}>
+        <Button title="Back to The Card" variant="outline" onPress={() => router.navigate("/card")} />
       </View>
     </Screen>
   )
 }
 
 const styles = StyleSheet.create({
-  wrap: { marginHorizontal: 12 },
   gap8: { gap: 8 },
-  flex: { flex: 1 },
-  phase: { gap: 12 },
-  priceRow: { flexDirection: "row", alignItems: "center", gap: 14 },
+  accordions: { paddingHorizontal: layout.edge, paddingTop: 24 },
+  rail: { paddingTop: 40 },
+  railTitle: { paddingHorizontal: layout.railEdge, marginBottom: 16 },
+  railList: { paddingHorizontal: layout.railEdge, gap: layout.gap },
+  card: { width: 164 },
+  back: { paddingHorizontal: layout.edge, paddingVertical: 40 },
 })

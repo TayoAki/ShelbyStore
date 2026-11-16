@@ -1,61 +1,70 @@
-import { Platform, type TextStyle } from "react-native"
 import { Easing, ReduceMotion } from "react-native-reanimated"
+import { Platform } from "react-native"
 
 /**
- * Shelby v7: The Ball Box (APP_SPEC v7; web `.impeccable/surfaces/web-src-app-page-tsx.md`).
- * The app is a golf-ball box printed flat: coated white board, two-ink print
- * (navy base ink plus each colourway's own ink), heavy printed keylines,
- * die-cut photo windows, compressed model type. Token names are kept from v6
- * so every screen re-inks from here; values are the box world's.
- * Letter-spacing values are points (= em × font size).
+ * Shelby v8: Eastside Golf's style (APP_SPEC v8 Part V8; web SITE_SPEC v8 Part E).
+ * White screens, #F6F6F6 image tiles and bands, black announcement strip and
+ * footer band, one accent (golf green #207212) for buying. Monomakh section
+ * titles, Montserrat product and page titles, Roboto for everything else.
+ * Token names are kept from v6/v7 so every screen compiles; values are v8's.
  */
 export const colors = {
-  // the box's inks and board (new names)
-  ink: "#14213D", // base ink: text, keylines, primary blocks
-  ink2: "#3F4A64", // long-form body on board
-  ink3: "#5D667C", // meta (6.1:1 on white board)
-  board: "#FFFFFF", // board-white: every screen is the flattened box's board
-  paper: "#FFFFFF", // panels
-  wash: "#E7E9EE", // disabled fills, quiet rows
-  crease: "rgba(20, 33, 61, 0.35)", // dieline creases
-  rule: "rgba(20, 33, 61, 0.15)", // hairlines inside panels
-  stripe: "#C8302A", // sleeve red: numbered editions only
-  stripeTint: "#FBE9E7",
-  pine: "#1E3B2F",
-  pineInk: "#F1ECE0",
-  navy: "#1B2A4A",
-  fescue: "#CFC3A6",
+  // Eastside palette (web E.2.1)
+  text: "#212121",
+  textStrong: "#000000",
+  textLight: "#646464",
+  bg: "#FFFFFF",
+  tile: "#F6F6F6",
+  sand: "#EEE9E3",
+  bgBrighter: "#F2F2F2",
+  surfaceSticky: "#FCFCFC",
+  border: "#F0F0F0",
+  hairline: "#F7F7F7",
+  track: "#EEEEEE",
+  fieldBorder: "#8C8C8C",
+  green: "#207212",
+  greenPressed: "#1A5C0F",
+  greenDeep: "#0B3305",
+  greenFade: "rgba(32, 114, 18, 0.05)",
+  ink: "#000000",
+  tabActive: "#141414",
+  charcoalPressed: "#3B3B3B",
+  blackPressed: "#1A1A1A",
+  onInk: "#F7F7F7",
+  onInkPressed: "rgba(247, 247, 247, 0.7)",
+  linkPressed: "rgba(33, 33, 33, 0.7)",
+  underlay: "rgba(0, 0, 0, 0.4)",
+  heroOverlay: "rgba(0, 0, 0, 0.2)",
+  error: "#721C24",
+  errorBg: "#F8D7DA",
+  errorBorder: "#F5C6CB",
+  swatchBorder: "#E9E9E9",
 
-  // v6 names, re-pointed into the box world
-  black: "#14213D",
+  // v7 keys kept as aliases so existing screens compile; remap, then delete unused ones
+  black: "#212121",
   white: "#FFFFFF",
-  naturalWhite: "#E7E9EE",
   page: "#FFFFFF",
-  naturalWhite25: "#F8F9F7",
-  charcoal: "#3F4A64",
-  muted: "#5D667C",
-  mutedFill: "rgba(20, 33, 61, 0.15)",
-  swatchRing: "rgba(20, 33, 61, 0.6)",
-  stroke: "rgba(20, 33, 61, 0.25)",
-  red: "#A3341F", // low stock only
-  green: "#1D6A44", // in stock only
-  gray200: "#E7E9EE",
-  gray300: "#C9CED8",
-  gray400: "#6B7488",
-  gray500: "#5D667C",
-  gray600: "#3F4A64",
-  neutral800: "#0B1427",
-  overlay: "rgba(11, 20, 39, 0.5)",
-  overlayMenu: "rgba(11, 20, 39, 0.3)",
-  tileVeil: "rgba(0, 0, 0, 0.15)",
-  ringFill: "rgba(20, 33, 61, 0.1)",
-  ringStroke2: "rgba(255, 255, 255, 0.7)",
-  ringStroke3: "rgba(255, 255, 255, 0.4)",
-  pillBorder: "rgba(20, 33, 61, 0.5)",
+  board: "#FFFFFF",
+  paper: "#FFFFFF",
+  wash: "#F6F6F6",
+  naturalWhite: "#F6F6F6",
+  charcoal: "#212121",
+  muted: "#646464",
+  mutedFill: "#F0F0F0",
+  stroke: "#F0F0F0",
+  rule: "#F0F0F0",
+  crease: "#F0F0F0",
+  swatchRing: "#212121",
+  overlay: "rgba(0, 0, 0, 0.4)",
+  overlayMenu: "rgba(0, 0, 0, 0.4)",
+  tileVeil: "rgba(0, 0, 0, 0)",
+  ringFill: "rgba(32, 114, 18, 0.1)",
+  pillBorder: "#212121",
+  red: "#721C24", // sold-out / error text only
+  // Ball Box inks retired: ink-as-navy, stripe, stripeTint, pine, pineInk, navy, fescue
 } as const
 
-/** v6 golf names; in the box the "golf" ink is Pine, and midnight is the base ink. */
-export const golf = { green: "#1E3B2F", greenPressed: "#142A21", tint: "#E9EEE9", midnight: "#14213D", sage: "#CFC3A6" } as const
+export const golf = { green: "#207212", greenPressed: "#1A5C0F", tint: "rgba(32, 114, 18, 0.05)", midnight: "#000000", sage: "#F6F6F6" } as const
 
 export type ColourwayGroup = "core" | "limited"
 /**
@@ -174,166 +183,213 @@ export const colourwaySlug = (name: string) =>
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
 
-/**
- * One superfamily, set the way a box's print is set: Sofia Sans Extra
- * Condensed for model names and every numeral, Semi Condensed for printed
- * labels and controls, Sofia Sans for running copy. There is no serif and no
- * mono in this world; the v6 role names point at the box faces.
- * The family carries the weight: never set fontWeight or fontStyle with these.
- */
+
 export const fonts = {
-  model: "SofiaSansExtraCondensed_800ExtraBold",
-  modelBold: "SofiaSansExtraCondensed_700Bold",
-  label: "SofiaSansSemiCondensed_700Bold",
-  labelSemi: "SofiaSansSemiCondensed_600SemiBold",
-  body: "SofiaSans_400Regular",
-  bodyMedium: "SofiaSans_500Medium",
-  bodySemi: "SofiaSans_600SemiBold",
-  bodyBold: "SofiaSans_700Bold",
-  // v6 role names
-  display: "SofiaSansExtraCondensed_800ExtraBold",
-  displayMedium: "SofiaSansExtraCondensed_700Bold",
-  displaySemi: "SofiaSansExtraCondensed_800ExtraBold",
-  serif: "SofiaSans_400Regular",
-  serifItalic: "SofiaSans_500Medium",
-  mono: "SofiaSansSemiCondensed_600SemiBold",
-  monoMedium: "SofiaSansSemiCondensed_700Bold",
+  display: "Monomakh_400Regular",
+  heading: "Montserrat_700Bold",
+  headingMedium: "Montserrat_500Medium",
+  headingSemi: "Montserrat_600SemiBold",
+  body: "Roboto_400Regular",
+  bodyItalic: "Roboto_400Regular_Italic",
+  bodyMedium: "Roboto_500Medium",
+  bodyBold: "Roboto_700Bold",
+  // v7 aliases
+  model: "Monomakh_400Regular",
+  modelBold: "Monomakh_400Regular",
+  label: "Roboto_500Medium",
+  labelSemi: "Roboto_500Medium",
+  bodySemi: "Roboto_500Medium",
+  displayMedium: "Montserrat_500Medium",
+  displaySemi: "Montserrat_700Bold",
+  serif: "Monomakh_400Regular",
+  serifItalic: "Roboto_400Regular_Italic",
+  mono: "Roboto_500Medium",
+  monoMedium: "Roboto_700Bold",
 } as const
 
 export const spacing = { xxs: 2, xs: 4, sm: 8, md: 10, lg: 16, xl: 20, xxl: 24, xxxl: 32, section: 40 } as const
 
-/**
- * The flat header bar (the box's top flap) is 52pt under the status bar with a
- * 2pt keyline; panels sit 12pt in from the screen edge with 20pt padding.
- * The v6 pill names are kept for the screens that read them.
- */
 export const layout = {
-  edge: 12,
-  text: 20,
-  panelPad: 20,
-  gap: 12,
-  keyline: 2,
-  header: 52,
+  edge: 16, // Eastside mobile page gutter
+  railEdge: 12, // rails and grids start at x = 12
+  gap: 4, // rail and tile gap
+  gridGap: 10, // two-column grid gap
+  text: 16,
+  header: 72, // Eastside mobile header
+  announcement: 36,
+  tabBar: 56,
+  stickyBar: 116, // Eastside mobile sticky add-to-cart bar (incl. "Change color" row)
+  hairline: 1,
+  // v7 keys kept: keyline 1, panelPad 16, pillHeight 72, contentTop 72, ticker 36
+  keyline: 1,
+  panelPad: 16,
   pillTop: 0,
-  pillHeight: 52,
+  pillHeight: 72,
   pillSide: 0,
-  contentTop: 52 + 12,
-  ticker: 32,
+  contentTop: 72,
+  ticker: 36,
 } as const
 
-/** Board is cut square: panels and controls have square corners; only windows are die-cut round. */
-export const radius = { xs: 0, sm: 0, md: 0, lg: 0, xl: 0, xxl: 0, xxxl: 0, tile: 0, panel: 0, pill: 0, window: 28, full: 9999 } as const
+export const radius = { xs: 3, sm: 3, md: 3, lg: 4, xl: 4, xxl: 4, xxxl: 4, tile: 0, panel: 0, pill: 20, window: 0, button: 3, tab: 4, bar: 10, full: 9999 } as const
 
 const upper = "uppercase" as const
-const tabular: TextStyle["fontVariant"] = ["tabular-nums"]
+const tabular = ["tabular-nums"] as ("tabular-nums")[]
 
-/** Text roles. Nothing below 11pt; Text keeps allowFontScaling so sizes follow the system setting. */
 export const type = {
-  // box roles
-  model: { fontFamily: fonts.model, fontSize: 56, lineHeight: 50, letterSpacing: -0.5, textTransform: upper },
-  panelTitle: { fontFamily: fonts.model, fontSize: 40, lineHeight: 38, letterSpacing: -0.2, textTransform: upper },
-  specLine: { fontFamily: fonts.label, fontSize: 15, lineHeight: 20, letterSpacing: 1.5, textTransform: upper, fontVariant: tabular },
-  digits: { fontFamily: fonts.model, fontSize: 44, lineHeight: 44, fontVariant: tabular },
-  digitsSm: { fontFamily: fonts.model, fontSize: 28, lineHeight: 28, fontVariant: tabular },
-  // v6 role names, re-set in the box faces
-  heroEyebrow: { fontFamily: fonts.label, fontSize: 13, lineHeight: 18, letterSpacing: 1, textTransform: upper },
-  hero: { fontFamily: fonts.model, fontSize: 40, lineHeight: 38, letterSpacing: -0.2, textTransform: upper },
-  section: { fontFamily: fonts.model, fontSize: 34, lineHeight: 33, letterSpacing: -0.1, textTransform: upper },
-  tile: { fontFamily: fonts.model, fontSize: 30, lineHeight: 30, textTransform: upper },
-  pdpTitle: { fontFamily: fonts.model, fontSize: 56, lineHeight: 50, letterSpacing: -0.5, textTransform: upper },
-  quote: { fontFamily: fonts.bodyMedium, fontSize: 17, lineHeight: 26 },
-  kicker: { fontFamily: fonts.body, fontSize: 17, lineHeight: 26 },
-  articleH1: { fontFamily: fonts.model, fontSize: 40, lineHeight: 38, textTransform: upper },
-  tab: { fontFamily: fonts.label, fontSize: 15, lineHeight: 20, letterSpacing: 1, textTransform: upper },
-  eyebrow: { fontFamily: fonts.label, fontSize: 13, lineHeight: 18, letterSpacing: 1, textTransform: upper },
-  subline: { fontFamily: fonts.label, fontSize: 13, lineHeight: 18, letterSpacing: 1.2, textTransform: upper },
-  label: { fontFamily: fonts.label, fontSize: 13, lineHeight: 18, letterSpacing: 1, textTransform: upper },
-  scoreLabel: { fontFamily: fonts.label, fontSize: 12, lineHeight: 16, letterSpacing: 1, textTransform: upper },
-  scoreNumber: { fontFamily: fonts.label, fontSize: 15, lineHeight: 20, letterSpacing: 0.5, fontVariant: tabular },
-  edition: { fontFamily: fonts.label, fontSize: 13, lineHeight: 18, letterSpacing: 1.3, textTransform: upper, fontVariant: tabular },
-  ticker: { fontFamily: fonts.label, fontSize: 12, lineHeight: 16, letterSpacing: 1, textTransform: upper, fontVariant: tabular },
-  holeNumber: { fontFamily: fonts.model, fontSize: 40, lineHeight: 40, fontVariant: tabular },
-  cardHeading: { fontFamily: fonts.model, fontSize: 28, lineHeight: 28, textTransform: upper },
-  menuItem: { fontFamily: fonts.label, fontSize: 17, lineHeight: 22, letterSpacing: 1, textTransform: upper },
-  cardTitle: { fontFamily: fonts.bodySemi, fontSize: 16, lineHeight: 21 },
-  cardMeta: { fontFamily: fonts.body, fontSize: 14, lineHeight: 19 },
-  price: { fontFamily: fonts.model, fontSize: 30, lineHeight: 30, fontVariant: tabular },
-  priceSm: { fontFamily: fonts.bodySemi, fontSize: 15, lineHeight: 20, fontVariant: tabular },
-  pricePill: { fontFamily: fonts.label, fontSize: 13, lineHeight: 18, letterSpacing: 1, textTransform: upper },
-  badge: { fontFamily: fonts.label, fontSize: 12, lineHeight: 14, letterSpacing: 1.2, textTransform: upper },
-  button: { fontFamily: fonts.label, fontSize: 15, lineHeight: 18, letterSpacing: 1, textTransform: upper },
-  buttonLarge: { fontFamily: fonts.label, fontSize: 17, lineHeight: 20, letterSpacing: 1.1, textTransform: upper },
-  size: { fontFamily: fonts.label, fontSize: 15, lineHeight: 18, letterSpacing: 0.9 },
-  body: { fontFamily: fonts.body, fontSize: 16, lineHeight: 24 },
-  bodyLong: { fontFamily: fonts.body, fontSize: 16, lineHeight: 25 },
-  article: { fontFamily: fonts.body, fontSize: 17, lineHeight: 27 },
-  meta: { fontFamily: fonts.body, fontSize: 14, lineHeight: 20 },
-  caption: { fontFamily: fonts.body, fontSize: 13, lineHeight: 18 },
-  announcement: { fontFamily: fonts.label, fontSize: 12, lineHeight: 16, letterSpacing: 1, textTransform: upper },
-  empty: { fontFamily: fonts.bodyMedium, fontSize: 22, lineHeight: 28 },
-  tabBar: { fontFamily: fonts.label, fontSize: 11, lineHeight: 13, letterSpacing: 0.8, textTransform: upper },
-  wordmark: { fontFamily: fonts.model, fontSize: 26, lineHeight: 28, letterSpacing: 1.6, textTransform: upper },
-  countBadge: { fontFamily: fonts.label, fontSize: 11, lineHeight: 13 },
-  countdown: { fontFamily: fonts.model, fontSize: 48, lineHeight: 48, fontVariant: tabular },
-} satisfies Record<string, TextStyle>
+  // Eastside roles (web E.2.3, mobile column)
+  displayXl: { fontFamily: fonts.display, fontSize: 28, lineHeight: 29.4 },
+  displayHero: { fontFamily: fonts.display, fontSize: 32.4, lineHeight: 38.88 },
+  displayLg: { fontFamily: fonts.display, fontSize: 22, lineHeight: 23.1, textTransform: upper },
+  displayMd: { fontFamily: fonts.display, fontSize: 22, lineHeight: 26.4, textTransform: upper },
+  displaySplash: { fontFamily: fonts.display, fontSize: 35, lineHeight: 36.75, letterSpacing: 0.35, textTransform: upper },
+  wordmark: { fontFamily: fonts.display, fontSize: 26, lineHeight: 28, letterSpacing: 1, textTransform: upper },
+  titlePage: { fontFamily: fonts.heading, fontSize: 26, lineHeight: 31.2, textTransform: upper },
+  titleProduct: { fontFamily: fonts.heading, fontSize: 18, lineHeight: 21.6 },
+  titleFeature: { fontFamily: fonts.headingMedium, fontSize: 48, lineHeight: 57.6 },
+  titleSection: { fontFamily: fonts.headingMedium, fontSize: 38.4, lineHeight: 46.08 },
+  titleBlog: { fontFamily: fonts.headingMedium, fontSize: 22.5, lineHeight: 27, textTransform: upper },
+  titleCard: { fontFamily: fonts.headingMedium, fontSize: 16.8, lineHeight: 20.16 },
+  titleDrawer: { fontFamily: fonts.heading, fontSize: 16, lineHeight: 19.2 },
+  faqQ: { fontFamily: fonts.headingMedium, fontSize: 16, lineHeight: 19.2 },
+  headingRecs: { fontFamily: fonts.bodyBold, fontSize: 18, lineHeight: 21.6, textTransform: upper },
+  eyebrow: { fontFamily: fonts.bodyBold, fontSize: 16, lineHeight: 25, letterSpacing: 1.6, textTransform: upper, color: "#207212" },
+  eyebrowSm: { fontFamily: fonts.bodyBold, fontSize: 14, lineHeight: 25, letterSpacing: 1.4, textTransform: upper, color: "#207212" },
+  bodyEastside: { fontFamily: fonts.body, fontSize: 12.6, lineHeight: 17.3 },
+  bodyPdp: { fontFamily: fonts.body, fontSize: 14.4, lineHeight: 19.73 },
+  bodyLongEastside: { fontFamily: fonts.bodyMedium, fontSize: 14.4, lineHeight: 25 },
+  bodyEditorial: { fontFamily: fonts.body, fontSize: 15, lineHeight: 21 },
+  bodySplash: { fontFamily: fonts.body, fontSize: 12, lineHeight: 18 },
+  cardTitleEastside: { fontFamily: fonts.body, fontSize: 12.6, lineHeight: 15.12, color: "#000000" },
+  priceProduct: { fontFamily: fonts.body, fontSize: 18, lineHeight: 24.75, color: "#207212", fontVariant: tabular },
+  priceCard: { fontFamily: fonts.body, fontSize: 12.6, lineHeight: 17.64, color: "#646464", fontVariant: tabular },
+  navLabel: { fontFamily: fonts.bodyMedium, fontSize: 11, lineHeight: 13.2, letterSpacing: 0.28, textTransform: upper },
+  menuRow: { fontFamily: fonts.body, fontSize: 14.4, lineHeight: 18, letterSpacing: 0.99, textTransform: upper },
+  announce: { fontFamily: fonts.body, fontSize: 12.6, lineHeight: 17.33, textTransform: upper },
+  btn: { fontFamily: fonts.body, fontSize: 16, lineHeight: 22 },
+  btnAtc: { fontFamily: fonts.bodyBold, fontSize: 16, lineHeight: 16 },
+  btnSticky: { fontFamily: fonts.body, fontSize: 18, lineHeight: 24.75 },
+  btnSm: { fontFamily: fonts.body, fontSize: 12, lineHeight: 16.5 },
+  btnKit: { fontFamily: fonts.headingSemi, fontSize: 16, lineHeight: 16 },
+  tabLabel: { fontFamily: fonts.body, fontSize: 14, lineHeight: 18, letterSpacing: 0.84 },
+  tabLabelActive: { fontFamily: fonts.bodyBold, fontSize: 14, lineHeight: 18, letterSpacing: 0.84 },
+  labelCaps: { fontFamily: fonts.bodyMedium, fontSize: 11, lineHeight: 14, letterSpacing: 1.54, textTransform: upper },
+  micro: { fontFamily: fonts.body, fontSize: 11, lineHeight: 13, letterSpacing: 0.55, textTransform: upper },
+  breadcrumb: { fontFamily: fonts.body, fontSize: 12.6, lineHeight: 17, color: "#646464" },
+  accordionTitle: { fontFamily: fonts.bodyMedium, fontSize: 18, lineHeight: 19.73, textTransform: "capitalize" as const },
+  footerHead: { fontFamily: fonts.bodyBold, fontSize: 12.6, lineHeight: 15.12, textTransform: upper },
+  note: { fontFamily: fonts.bodyItalic, fontSize: 11, lineHeight: 14.7 },
+  stripLabel: { fontFamily: fonts.body, fontSize: 12.25, lineHeight: 15.93, textTransform: upper },
+  countdown: { fontFamily: fonts.heading, fontSize: 26, lineHeight: 31.2, fontVariant: tabular },
+  countdownSm: { fontFamily: fonts.bodyMedium, fontSize: 14.4, lineHeight: 18, fontVariant: tabular },
+  holeNumeral: { fontFamily: fonts.display, fontSize: 72, lineHeight: 72 },
 
-/** Printed board barely casts a shadow: only sheets and the sticky strip lift off it. */
+  // v7 role names, remapped to the Eastside roles above (screens keep compiling)
+  model: { fontFamily: fonts.heading, fontSize: 18, lineHeight: 21.6 }, // = titleProduct
+  panelTitle: { fontFamily: fonts.display, fontSize: 22, lineHeight: 26.4, textTransform: upper }, // = displayMd
+  pdpTitle: { fontFamily: fonts.heading, fontSize: 18, lineHeight: 21.6 },
+  hero: { fontFamily: fonts.display, fontSize: 32.4, lineHeight: 38.88 },
+  section: { fontFamily: fonts.display, fontSize: 22, lineHeight: 26.4, textTransform: upper },
+  tile: { fontFamily: fonts.body, fontSize: 12.25, lineHeight: 15.93, textTransform: upper },
+  cardHeading: { fontFamily: fonts.headingMedium, fontSize: 16.8, lineHeight: 20.16 },
+  specLine: { fontFamily: fonts.body, fontSize: 12.6, lineHeight: 17.64, color: "#646464", fontVariant: tabular },
+  digits: { fontFamily: fonts.heading, fontSize: 26, lineHeight: 31.2, fontVariant: tabular },
+  digitsSm: { fontFamily: fonts.bodyMedium, fontSize: 14.4, lineHeight: 18, fontVariant: tabular },
+  holeNumber: { fontFamily: fonts.display, fontSize: 38, lineHeight: 40 },
+  heroEyebrow: { fontFamily: fonts.bodyBold, fontSize: 14, lineHeight: 25, letterSpacing: 1.4, textTransform: upper },
+  quote: { fontFamily: fonts.display, fontSize: 22, lineHeight: 28 },
+  kicker: { fontFamily: fonts.body, fontSize: 15, lineHeight: 21 },
+  tab: { fontFamily: fonts.body, fontSize: 14, lineHeight: 18, letterSpacing: 0.84 },
+  eyebrowV7: { fontFamily: fonts.bodyBold, fontSize: 14, lineHeight: 25, letterSpacing: 1.4, textTransform: upper },
+  subline: { fontFamily: fonts.body, fontSize: 12.6, lineHeight: 17.64, color: "#646464" },
+  label: { fontFamily: fonts.bodyMedium, fontSize: 11, lineHeight: 14, letterSpacing: 1.54, textTransform: upper },
+  scoreLabel: { fontFamily: fonts.bodyMedium, fontSize: 11, lineHeight: 14, letterSpacing: 1.54, textTransform: upper },
+  scoreNumber: { fontFamily: fonts.body, fontSize: 14.4, lineHeight: 19.73, fontVariant: tabular },
+  edition: { fontFamily: fonts.body, fontSize: 11, lineHeight: 13, letterSpacing: 0.55, textTransform: upper, fontVariant: tabular },
+  ticker: { fontFamily: fonts.body, fontSize: 12.6, lineHeight: 17.33, textTransform: upper },
+  menuItem: { fontFamily: fonts.body, fontSize: 14.4, lineHeight: 18, letterSpacing: 0.99, textTransform: upper },
+  cardTitle: { fontFamily: fonts.body, fontSize: 12.6, lineHeight: 15.12 },
+  cardMeta: { fontFamily: fonts.body, fontSize: 12.6, lineHeight: 17.64 },
+  price: { fontFamily: fonts.body, fontSize: 18, lineHeight: 24.75, fontVariant: tabular },
+  priceSm: { fontFamily: fonts.body, fontSize: 12.6, lineHeight: 17.64, fontVariant: tabular },
+  pricePill: { fontFamily: fonts.body, fontSize: 11, lineHeight: 13, letterSpacing: 0.55, textTransform: upper },
+  badge: { fontFamily: fonts.body, fontSize: 11, lineHeight: 13, letterSpacing: 0.55, textTransform: upper },
+  button: { fontFamily: fonts.body, fontSize: 16, lineHeight: 22 },
+  buttonLarge: { fontFamily: fonts.bodyBold, fontSize: 16, lineHeight: 16 },
+  size: { fontFamily: fonts.body, fontSize: 14.4, lineHeight: 18 },
+  body: { fontFamily: fonts.body, fontSize: 14.4, lineHeight: 19.73 },
+  bodyLong: { fontFamily: fonts.bodyMedium, fontSize: 14.4, lineHeight: 25 },
+  article: { fontFamily: fonts.bodyMedium, fontSize: 14.4, lineHeight: 25 },
+  meta: { fontFamily: fonts.body, fontSize: 12.6, lineHeight: 17.64 },
+  caption: { fontFamily: fonts.body, fontSize: 12, lineHeight: 16.5 },
+  announcement: { fontFamily: fonts.body, fontSize: 12.6, lineHeight: 17.33, textTransform: upper },
+  empty: { fontFamily: fonts.headingMedium, fontSize: 16.8, lineHeight: 20.16 },
+  tabBar: { fontFamily: fonts.bodyMedium, fontSize: 11, lineHeight: 13, letterSpacing: 0.28, textTransform: upper },
+  countBadge: { fontFamily: fonts.bodyBold, fontSize: 11, lineHeight: 13 },
+} as const
+
 export const shadow = {
-  sm: Platform.select({
-    ios: { shadowColor: "#0B1427", shadowOpacity: 0.12, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
-    android: { elevation: 2 },
-    default: { boxShadow: "0 2px 4px #0b14271f" },
+  none: {},
+  badge: Platform.select({
+    ios: { shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 3, shadowOffset: { width: 0, height: 2 } },
+    default: { elevation: 1 },
   }),
-  float: Platform.select({
-    ios: { shadowColor: "#0B1427", shadowOpacity: 0.18, shadowRadius: 12, shadowOffset: { width: 0, height: 8 } },
-    android: { elevation: 8 },
-    default: { boxShadow: "0 8px 12px #0b14272e" },
+  arrow: Platform.select({
+    ios: { shadowColor: "#000", shadowOpacity: 0.18, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
+    default: { elevation: 3 },
   }),
-  xl: Platform.select({
-    ios: { shadowColor: "#0B1427", shadowOpacity: 0.16, shadowRadius: 18, shadowOffset: { width: 0, height: -6 } },
-    android: { elevation: 16 },
-    default: { boxShadow: "0 -6px 18px #0b142729" },
+  sheet: Platform.select({
+    ios: { shadowColor: "#000", shadowOpacity: 0.06, shadowRadius: 4, shadowOffset: { width: 0, height: -2 } },
+    default: { elevation: 4 },
   }),
-}
+  // v7 keys: no shadows on cards or buttons
+  sm: {},
+  float: {},
+  xl: {},
+} as const
 
-/**
- * One motion grammar: a single beat on one exponential ease-out (web
- * `--ease-box`). Every v6 ease name points at it so nothing moves on its own clock.
- */
-const box = Easing.bezier(0.16, 1, 0.3, 1)
-const boxInOut = Easing.bezier(0.65, 0, 0.35, 1)
+const themeEase = Easing.bezier(0.215, 0.61, 0.355, 1)
 export const ease = {
-  box,
-  boxInOut,
-  sineOut: box,
-  sineIn: Easing.bezier(0.7, 0, 0.84, 0),
-  sineInOut: boxInOut,
-  power3Out: box,
-  power3In: Easing.bezier(0.7, 0, 0.84, 0),
-  power3InOut: boxInOut,
-  tailwind: box,
+  theme: themeEase, // nav, menus, chevrons
+  sweep: Easing.bezier(0.33, 0, 0, 1), // button press sweep
+  css: Easing.bezier(0.25, 0.1, 0.25, 1), // CSS `ease`: drawers, quick add
+  out: Easing.bezier(0, 0, 0.58, 1), // CSS `ease-out`: button colours, accordion fade, progress
+  in: Easing.bezier(0.42, 0, 1, 1), // CSS `ease-in`: image fade, accordion slide
+  inOut: Easing.bezier(0.42, 0, 0.58, 1), // CSS `ease-in-out`: bag sheet slide
   linear: Easing.linear,
-}
+  // v7 aliases
+  sineOut: themeEase,
+  sineIn: Easing.bezier(0.42, 0, 1, 1),
+  sineInOut: Easing.bezier(0.42, 0, 0.58, 1),
+  tailwind: themeEase,
+} as const
 
-/** The beat (web `--beat: .42s`) and the quick press beat, in ms. */
-export const BEAT = 420
+/** The v7 "beat" is retired; BEAT stays exported for old imports and equals the colour change. */
+export const BEAT = 250
 export const dur = {
-  beat: BEAT,
-  section: BEAT,
-  hover: 180,
-  hoverDelay: 0,
-  dropdown: BEAT,
-  slide: BEAT,
-  accordion: BEAT,
-  carouselFade: BEAT,
-  quickViewIn: BEAT,
-  quickViewOut: 200,
-  marquee: 10000,
-  orbitMobile: 15000,
-  sheetOverlay: BEAT,
-  sheetPanel: BEAT,
-  button: 180,
-}
+  colour: 250, // M1 colour/background/border, M3/M4 link and nav colour
+  sweep: 500, // M1 sweep
+  tab: 200, // M16
+  quickAdd: 250, // M9 (static on touch; used only by the Added sheet content)
+  image: 500, // M8/M11
+  menu: 600, // M12
+  bagSheet: 250, // M13
+  underlay: 300, // M12/M13 (delay 100)
+  underlayDelay: 100,
+  rotate: 300, // M14/M15/M19
+  accordion: 300, // M15
+  sticky: 300, // M18
+  progress: 300, // M20
+  announce: 5000, // M7 interval
+  announceFade: 500, // M7 fade (est.)
+  reducedFade: 200, // sheets under Reduce Motion
+  // v7 keys remapped
+  section: 300,
+  press: 250,
+  sheetIn: 250,
+  sheetOut: 250,
+} as const
+
+export const reduce = ReduceMotion.System
 
 export const motion = { reduceMotion: ReduceMotion.System } as const
 export const MAX_CONTENT_WIDTH = 720

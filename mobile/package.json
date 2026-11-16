@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "dependencies": {
-    "@expo-google-fonts/sofia-sans": "^0.4.3",
-    "@expo-google-fonts/sofia-sans-extra-condensed": "^0.4.2",
-    "@expo-google-fonts/sofia-sans-semi-condensed": "^0.4.3",
+    "@expo-google-fonts/monomakh": "^0.4.0",
+    "@expo-google-fonts/montserrat": "^0.4.2",
+    "@expo-google-fonts/roboto": "^0.4.3",
     "@expo/vector-icons": "^15.0.2",
     "@medusajs/js-sdk": "2.22.7",
     "@react-native-async-storage/async-storage": "2.2.0",

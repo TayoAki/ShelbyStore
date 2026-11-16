@@ -1,57 +1,73 @@
 import { Pressable, ScrollView, StyleSheet, View } from "react-native"
+import Animated, { interpolateColor, useAnimatedStyle, useDerivedValue, withTiming } from "react-native-reanimated"
 
-import { colors, type } from "@/constants/theme"
-
-import { usePanelInk } from "./box"
-import { Text } from "./text"
+import { colors, dur, ease, motion, radius, type } from "@/constants/theme"
+import { confirmHaptic } from "@/lib/haptics"
 
 /**
- * Printed tabs (APP_SPEC v7 §3), the way a box prints its index on a panel
- * edge: semi-condensed caps, the active tab underlined with a 3pt rule in the
- * face's ink. Every tab is a 44pt target.
+ * Eastside's tabs (APP_SPEC v8 V8.3, M16): bordered 1pt #212121, radius 4,
+ * padding 4/16, 44pt targets; the active tab fills #141414 with white bold
+ * text over 200ms. The row scrolls sideways at an 8pt gap.
  */
 export function SegmentedControl<T extends string>({
   options,
   value,
   onChange,
-  scroll = false,
-  inverse = false,
+  scroll = true,
 }: {
   options: { value: T; label: string }[]
   value: T
   onChange: (value: T) => void
   scroll?: boolean
-  /** On an inked face: print in white. */
+  /** Kept for older call sites; tabs always print on white. */
   inverse?: boolean
 }) {
-  const ink = usePanelInk()
-  const line = inverse ? colors.paper : ink.ink
   const row = (
-    <View style={[styles.row, { borderBottomColor: line }]} accessibilityRole="tablist">
-      {options.map((o) => {
-        const active = o.value === value
-        return (
-          <Pressable
-            key={o.value}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: active }}
-            onPress={() => onChange(o.value)}
-            style={[styles.tab, { borderBottomColor: active ? line : "transparent" }]}>
-            <Text style={[type.tab, { color: line, opacity: active ? 1 : 0.72 }]}>{o.label}</Text>
-          </Pressable>
-        )
-      })}
+    <View style={styles.row} accessibilityRole="tablist">
+      {options.map((o) => (
+        <Tab
+          key={o.value}
+          label={o.label}
+          active={o.value === value}
+          onPress={() => {
+            if (o.value !== value) confirmHaptic()
+            onChange(o.value)
+          }}
+        />
+      ))}
     </View>
   )
   if (!scroll) return row
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scroll}>
       {row}
     </ScrollView>
   )
 }
 
+function Tab({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  const on = useDerivedValue(() => withTiming(active ? 1 : 0, { duration: dur.tab, easing: ease.out, reduceMotion: motion.reduceMotion }), [active])
+  const fill = useAnimatedStyle(() => ({ backgroundColor: interpolateColor(on.value, [0, 1], ["rgba(20,20,20,0)", colors.tabActive]) }))
+  const text = useAnimatedStyle(() => ({ color: interpolateColor(on.value, [0, 1], [colors.text, colors.white]) }))
+  return (
+    <Pressable accessibilityRole="tab" accessibilityState={{ selected: active }} onPress={onPress}>
+      <Animated.View style={[styles.tab, fill]}>
+        <Animated.Text style={[active ? type.tabLabelActive : type.tabLabel, text]}>{label}</Animated.Text>
+      </Animated.View>
+    </Pressable>
+  )
+}
+
 const styles = StyleSheet.create({
-  row: { flexDirection: "row", alignSelf: "flex-start", gap: 20, borderBottomWidth: 1 },
-  tab: { minHeight: 44, minWidth: 44, alignItems: "center", justifyContent: "center", borderBottomWidth: 3, marginBottom: -1 },
+  scroll: { paddingRight: 12 },
+  row: { flexDirection: "row", gap: 8 },
+  tab: {
+    minHeight: 44,
+    justifyContent: "center",
+    paddingVertical: 4,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: colors.text,
+    borderRadius: radius.tab,
+  },
 })

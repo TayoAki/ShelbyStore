@@ -5,26 +5,27 @@ import { StyleSheet, View, type ColorValue } from "react-native"
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSequence, withTiming } from "react-native-reanimated"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
-import { BEAT, colors, ease, motion, type } from "@/constants/theme"
+import { colors, ease, motion, type } from "@/constants/theme"
+import { confirmHaptic } from "@/lib/haptics"
 import { useCart } from "@/providers/cart-provider"
 
 type IconName = React.ComponentProps<typeof Ionicons>["name"]
 
 function icon(name: IconName, focusedName: IconName) {
   function TabBarIcon({ color, focused }: { color: ColorValue; size: number; focused: boolean }) {
-    return <BouncyIcon name={focused ? focusedName : name} focused={focused} color={typeof color === "string" ? color : colors.black} />
+    return <BouncyIcon name={focused ? focusedName : name} focused={focused} color={typeof color === "string" ? color : colors.text} />
   }
   return TabBarIcon
 }
 
-/** Focus change: the icon presses in and out once on the beat (1 → 1.08 → 1); none under Reduce Motion. */
+/** M16: on select the icon presses in and out once (1 → 0.92 → 1, 100ms + 100ms ease-out); none under Reduce Motion. */
 function BouncyIcon({ name, focused, color }: { name: IconName; focused: boolean; color: string }) {
   const s = useSharedValue(1)
   const reduce = useReducedMotion()
   useEffect(() => {
     if (!focused || reduce) return
-    const t = { duration: BEAT / 2, easing: ease.box, reduceMotion: motion.reduceMotion }
-    s.value = withSequence(withTiming(1.08, t), withTiming(1, t))
+    const t = { duration: 100, easing: ease.out, reduceMotion: motion.reduceMotion }
+    s.value = withSequence(withTiming(0.92, t), withTiming(1, t))
   }, [focused, reduce, s])
   const style = useAnimatedStyle(() => ({ transform: [{ scale: s.value }] }))
   return (
@@ -35,10 +36,11 @@ function BouncyIcon({ name, focused, color }: { name: IconName; focused: boolean
 }
 
 /**
- * Tabs (APP_SPEC v7 §4): Home · Shop · Card · Bag · Account. The native tab
- * bar, printed: white board with a 2pt ink keyline along its top edge, square,
- * no shadow; the active tab in ink with a 3pt ink rule under its label, the
- * rest in the meta ink. Labels are 11pt Sofia Sans Semi Condensed.
+ * Tabs (APP_SPEC v8 V8.3): Home · Shop · Card · Bag · Account. The native tab
+ * bar on white, 56pt plus the safe area, a 1pt #F0F0F0 hairline on top.
+ * Inactive #212121 outline glyphs; the active tab is golf green with the
+ * filled glyph. Labels are 11pt Roboto 500 uppercase. The bag badge is a 16pt
+ * green circle. A light haptic on select.
  */
 export default function TabsLayout() {
   const { itemCount } = useCart()
@@ -47,17 +49,17 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.ink,
-        tabBarInactiveTintColor: colors.ink3,
-        tabBarStyle: [styles.bar, { height: 60 + insets.bottom, paddingBottom: insets.bottom }],
-        tabBarLabel: ({ focused, children, color }) => (
+        tabBarActiveTintColor: colors.green,
+        tabBarInactiveTintColor: colors.text,
+        tabBarStyle: [styles.bar, { height: 56 + insets.bottom, paddingBottom: insets.bottom }],
+        tabBarLabel: ({ children, color }) => (
           <View style={styles.labelWrap}>
             <Animated.Text style={[type.tabBar, { color }]}>{children}</Animated.Text>
-            <View style={[styles.underline, { opacity: focused ? 1 : 0 }]} />
           </View>
         ),
-        sceneStyle: { backgroundColor: colors.page },
-      }}>
+        sceneStyle: { backgroundColor: colors.bg },
+      }}
+      screenListeners={{ tabPress: () => confirmHaptic() }}>
       <Tabs.Screen name="index" options={{ title: "Home", tabBarIcon: icon("home-outline", "home") }} />
       <Tabs.Screen name="shop" options={{ title: "Shop", tabBarIcon: icon("grid-outline", "grid") }} />
       <Tabs.Screen name="card" options={{ title: "Card", tabBarIcon: icon("reader-outline", "reader") }} />
@@ -68,13 +70,13 @@ export default function TabsLayout() {
           tabBarIcon: icon("bag-handle-outline", "bag-handle"),
           tabBarBadge: itemCount > 0 ? itemCount : undefined,
           tabBarBadgeStyle: {
-            backgroundColor: colors.ink,
-            color: colors.paper,
+            backgroundColor: colors.green,
+            color: colors.white,
             ...type.countBadge,
-            borderRadius: 0,
-            minWidth: 18,
-            height: 18,
-            lineHeight: 18,
+            borderRadius: 8,
+            minWidth: 16,
+            height: 16,
+            lineHeight: 16,
           },
         }}
       />
@@ -85,14 +87,13 @@ export default function TabsLayout() {
 
 const styles = StyleSheet.create({
   bar: {
-    backgroundColor: colors.paper,
-    borderTopWidth: 2,
-    borderColor: colors.ink,
-    borderTopColor: colors.ink,
-    paddingTop: 6,
+    backgroundColor: colors.white,
+    borderTopWidth: 1,
+    borderColor: colors.border,
+    borderTopColor: colors.border,
+    paddingTop: 4,
     elevation: 0,
     shadowOpacity: 0,
   },
-  labelWrap: { alignItems: "center", gap: 3 },
-  underline: { height: 3, width: 20, backgroundColor: colors.ink },
+  labelWrap: { alignItems: "center" },
 })

@@ -1,144 +1,235 @@
+import Ionicons from "@expo/vector-icons/Ionicons"
 import { useEffect, useState } from "react"
 import { Modal, Pressable, StyleSheet, View, useWindowDimensions, type StyleProp, type ViewStyle } from "react-native"
 import Animated, { runOnJS, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withTiming } from "react-native-reanimated"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
-import { colors, ease, layout, motion } from "@/constants/theme"
+import { colors, dur, ease, layout, motion, shadow } from "@/constants/theme"
+
+import { Text } from "./text"
+
+/** Keeps a modal mounted while its close animation runs ("adjust state on prop change"). */
+function useMounted(visible: boolean) {
+  const [prev, setPrev] = useState(visible)
+  const [closing, setClosing] = useState(false)
+  if (visible !== prev) {
+    setPrev(visible)
+    setClosing(!visible)
+  }
+  return { mounted: visible || closing, done: () => setClosing(false) }
+}
+
+/** The 64pt head: a caps title and a 24pt close ✕ that turns 90° on press (M14). */
+export function SheetHead({ title, onClose }: { title?: string; onClose: () => void }) {
+  const reduce = useReducedMotion()
+  const r = useSharedValue(0)
+  const icon = useAnimatedStyle(() => ({ transform: [{ rotate: `${r.value}deg` }] }))
+  return (
+    <View style={styles.head}>
+      <Text variant="labelCaps" style={styles.flex}>
+        {title ?? ""}
+      </Text>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Close"
+        hitSlop={5}
+        onPress={onClose}
+        onPressIn={() => {
+          if (!reduce) r.value = withTiming(90, { duration: dur.rotate, easing: ease.out, reduceMotion: motion.reduceMotion })
+        }}
+        onPressOut={() => {
+          r.value = withTiming(0, { duration: dur.rotate, easing: ease.out, reduceMotion: motion.reduceMotion })
+        }}
+        style={styles.close}>
+        <Animated.View style={icon}>
+          <Ionicons name="close" size={24} color={colors.text} />
+        </Animated.View>
+      </Pressable>
+    </View>
+  )
+}
 
 /**
- * A bottom sheet printed as a box's bottom flap (APP_SPEC v7 §4): square
- * corners, a 2pt keyline along its top edge, no shadow. Overlay and sheet move
- * on one beat (420ms, the box ease); Reduce Motion: opacity only, instant.
+ * Eastside's flyout as a bottom sheet (APP_SPEC v8 V8.3, M13): white, square,
+ * a 1pt #F0F0F0 top edge and a soft upward shadow. It slides up over 250ms
+ * ease-in-out while the #000 .4 underlay fades in over 300ms after 100ms.
+ * Reduce Motion: opacity only, 200ms.
  */
 export function BottomSheet({
   visible,
   onClose,
   children,
+  title,
   style,
 }: {
   visible: boolean
   onClose: () => void
   children: React.ReactNode
+  /** Shows the 64pt head with a close button. */
+  title?: string
   style?: StyleProp<ViewStyle>
 }) {
   const reduce = useReducedMotion()
   const insets = useSafeAreaInsets()
   const { height } = useWindowDimensions()
-  // Stay mounted while the close animation runs ("adjust state on prop change").
-  const [prevVisible, setPrevVisible] = useState(visible)
-  const [closing, setClosing] = useState(false)
-  if (visible !== prevVisible) {
-    setPrevVisible(visible)
-    setClosing(!visible)
-  }
-  const mounted = visible || closing
+  const { mounted, done } = useMounted(visible)
   const overlay = useSharedValue(0)
   const y = useSharedValue(height)
+  const fade = useSharedValue(0)
 
   useEffect(() => {
     if (visible) {
-      overlay.set(withTiming(1, { duration: reduce ? 0 : 420, easing: ease.box, reduceMotion: motion.reduceMotion }))
-      y.set(reduce ? 0 : height)
-      y.set(withTiming(0, { duration: reduce ? 0 : 420, easing: ease.box, reduceMotion: motion.reduceMotion }))
+      overlay.set(withDelay(reduce ? 0 : dur.underlayDelay, withTiming(1, { duration: reduce ? dur.reducedFade : dur.underlay, easing: ease.css, reduceMotion: motion.reduceMotion })))
+      if (reduce) {
+        y.set(0)
+        fade.set(withTiming(1, { duration: dur.reducedFade }))
+      } else {
+        fade.set(1)
+        y.set(height)
+        y.set(withTiming(0, { duration: dur.bagSheet, easing: ease.inOut, reduceMotion: motion.reduceMotion }))
+      }
     } else {
-      overlay.set(withTiming(0, { duration: reduce ? 0 : 300, easing: ease.boxInOut, reduceMotion: motion.reduceMotion }))
-      y.set(
-        withTiming(
-          reduce ? 0 : height,
-          { duration: reduce ? 0 : 300, easing: ease.boxInOut, reduceMotion: motion.reduceMotion },
-          (done) => {
-            if (done) runOnJS(setClosing)(false)
-          }
-        )
-      )
+      overlay.set(withTiming(0, { duration: reduce ? dur.reducedFade : dur.underlay, easing: ease.css, reduceMotion: motion.reduceMotion }))
+      const finish = (ok?: boolean) => {
+        "worklet"
+        if (ok) runOnJS(done)()
+      }
+      if (reduce) fade.set(withTiming(0, { duration: dur.reducedFade }, finish))
+      else y.set(withTiming(height, { duration: dur.bagSheet, easing: ease.inOut, reduceMotion: motion.reduceMotion }, finish))
     }
-  }, [height, overlay, reduce, visible, y])
+  }, [done, fade, height, overlay, reduce, visible, y])
 
   const overlayStyle = useAnimatedStyle(() => ({ opacity: overlay.value }))
-  const sheetStyle = useAnimatedStyle(() => ({ transform: [{ translateY: y.value }], opacity: reduce ? overlay.value : 1 }))
+  const sheetStyle = useAnimatedStyle(() => ({ transform: [{ translateY: y.value }], opacity: fade.value }))
 
   return (
     <Modal visible={mounted} transparent animationType="none" onRequestClose={onClose} statusBarTranslucent>
-      <Animated.View style={[StyleSheet.absoluteFill, styles.overlay, overlayStyle]}>
+      <Animated.View style={[StyleSheet.absoluteFill, styles.underlay, overlayStyle]}>
         <Pressable accessibilityLabel="Close" style={StyleSheet.absoluteFill} onPress={onClose} />
       </Animated.View>
       <View style={styles.anchor} pointerEvents="box-none">
-        <Animated.View style={[styles.sheet, { paddingBottom: 20 + insets.bottom }, sheetStyle, style]}>{children}</Animated.View>
+        <Animated.View style={[styles.sheet, { paddingBottom: 20 + insets.bottom }, sheetStyle, style]}>
+          {title !== undefined ? <SheetHead title={title} onClose={onClose} /> : null}
+          {children}
+        </Animated.View>
       </View>
     </Modal>
   )
 }
 
 /**
- * The search sheet under the header: unfolds from the top edge (scaleY 0 → 1
- * on the beat), the content printed in after it. Square, keylined, no shadow.
+ * The search panel (APP_SPEC v8 V8.5 §11, M12 from the top): slides down over
+ * 600ms `ease` with the underlay fading in after 100ms. Reduce Motion: a 200ms fade.
  */
-export function TopSheet({ visible, onClose, children }: { visible: boolean; onClose: () => void; children: React.ReactNode }) {
+export function TopSheet({ visible, onClose, children, title }: { visible: boolean; onClose: () => void; children: React.ReactNode; title?: string }) {
   const reduce = useReducedMotion()
   const insets = useSafeAreaInsets()
-  const [prevVisible, setPrevVisible] = useState(visible)
-  const [closing, setClosing] = useState(false)
-  if (visible !== prevVisible) {
-    setPrevVisible(visible)
-    setClosing(!visible)
-  }
-  const mounted = visible || closing
+  const { height } = useWindowDimensions()
+  const { mounted, done } = useMounted(visible)
   const p = useSharedValue(0)
-  const content = useSharedValue(0)
+  const overlay = useSharedValue(0)
 
   useEffect(() => {
     if (visible) {
-      p.set(withTiming(1, { duration: reduce ? 0 : 420, easing: ease.box, reduceMotion: motion.reduceMotion }))
-      content.set(withDelay(reduce ? 0 : 160, withTiming(1, { duration: reduce ? 0 : 200, easing: ease.box })))
+      overlay.set(withDelay(reduce ? 0 : dur.underlayDelay, withTiming(1, { duration: reduce ? dur.reducedFade : dur.underlay })))
+      p.set(withTiming(1, { duration: reduce ? dur.reducedFade : dur.menu, easing: ease.css, reduceMotion: motion.reduceMotion }))
     } else {
-      content.set(withTiming(0, { duration: reduce ? 0 : 120 }))
+      overlay.set(withTiming(0, { duration: reduce ? dur.reducedFade : dur.underlay }))
       p.set(
-        withTiming(0, { duration: reduce ? 0 : 240, easing: ease.boxInOut }, (done) => {
-          if (done) runOnJS(setClosing)(false)
+        withTiming(0, { duration: reduce ? dur.reducedFade : dur.menu, easing: ease.css, reduceMotion: motion.reduceMotion }, (ok) => {
+          if (ok) runOnJS(done)()
         })
       )
     }
-  }, [content, p, reduce, visible])
+  }, [done, overlay, p, reduce, visible])
 
-  const overlayStyle = useAnimatedStyle(() => ({ opacity: p.value }))
-  const sheetStyle = useAnimatedStyle(() => ({ transform: [{ scaleY: reduce ? 1 : p.value }], opacity: reduce ? p.value : 1 }))
-  const contentStyle = useAnimatedStyle(() => ({ opacity: content.value }))
+  const overlayStyle = useAnimatedStyle(() => ({ opacity: overlay.value }))
+  const sheetStyle = useAnimatedStyle(() =>
+    reduce ? { opacity: p.value } : { transform: [{ translateY: (p.value - 1) * height }] }
+  )
 
   return (
     <Modal visible={mounted} transparent animationType="none" onRequestClose={onClose} statusBarTranslucent>
-      <Animated.View style={[StyleSheet.absoluteFill, styles.overlayMenu, overlayStyle]}>
+      <Animated.View style={[StyleSheet.absoluteFill, styles.underlay, overlayStyle]}>
         <Pressable accessibilityLabel="Close search" style={StyleSheet.absoluteFill} onPress={onClose} />
       </Animated.View>
-      <Animated.View style={[styles.top, { paddingTop: insets.top + layout.contentTop }, sheetStyle]}>
-        <Animated.View style={contentStyle}>{children}</Animated.View>
+      <Animated.View style={[styles.top, { paddingTop: insets.top }, sheetStyle]}>
+        <SheetHead title={title ?? "Search"} onClose={onClose} />
+        {children}
+      </Animated.View>
+    </Modal>
+  )
+}
+
+/**
+ * The left drawer (APP_SPEC v8 V8.5 §2, M12): the shop's filters. Slides in
+ * from the left over 600ms `ease`; the underlay fades in after 100ms. Reduce
+ * Motion: a 200ms fade.
+ */
+export function SideSheet({ visible, onClose, children, title }: { visible: boolean; onClose: () => void; children: React.ReactNode; title?: string }) {
+  const reduce = useReducedMotion()
+  const insets = useSafeAreaInsets()
+  const { width } = useWindowDimensions()
+  const panel = Math.min(width * 0.86, 360)
+  const { mounted, done } = useMounted(visible)
+  const p = useSharedValue(0)
+  const overlay = useSharedValue(0)
+
+  useEffect(() => {
+    if (visible) {
+      overlay.set(withDelay(reduce ? 0 : dur.underlayDelay, withTiming(1, { duration: reduce ? dur.reducedFade : dur.underlay })))
+      p.set(withTiming(1, { duration: reduce ? dur.reducedFade : dur.menu, easing: ease.css, reduceMotion: motion.reduceMotion }))
+    } else {
+      overlay.set(withTiming(0, { duration: reduce ? dur.reducedFade : dur.underlay }))
+      p.set(
+        withTiming(0, { duration: reduce ? dur.reducedFade : dur.menu, easing: ease.css, reduceMotion: motion.reduceMotion }, (ok) => {
+          if (ok) runOnJS(done)()
+        })
+      )
+    }
+  }, [done, overlay, p, reduce, visible])
+
+  const overlayStyle = useAnimatedStyle(() => ({ opacity: overlay.value }))
+  const panelStyle = useAnimatedStyle(() => (reduce ? { opacity: p.value } : { transform: [{ translateX: (p.value - 1) * panel }] }))
+
+  return (
+    <Modal visible={mounted} transparent animationType="none" onRequestClose={onClose} statusBarTranslucent>
+      <Animated.View style={[StyleSheet.absoluteFill, styles.underlay, overlayStyle]}>
+        <Pressable accessibilityLabel="Close filters" style={StyleSheet.absoluteFill} onPress={onClose} />
+      </Animated.View>
+      <Animated.View style={[styles.side, { width: panel, paddingTop: insets.top, paddingBottom: insets.bottom + 16 }, panelStyle]}>
+        <SheetHead title={title} onClose={onClose} />
+        {children}
       </Animated.View>
     </Modal>
   )
 }
 
 const styles = StyleSheet.create({
-  overlay: { backgroundColor: colors.overlay },
-  overlayMenu: { backgroundColor: colors.overlayMenu },
+  underlay: { backgroundColor: colors.underlay },
   anchor: { flex: 1, justifyContent: "flex-end" },
   sheet: {
-    backgroundColor: colors.paper,
-    borderTopWidth: 2,
-    borderTopColor: colors.ink,
-    paddingHorizontal: 20,
-    paddingTop: 20,
+    backgroundColor: colors.white,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingHorizontal: layout.edge,
     gap: 16,
     maxHeight: "88%",
+    ...shadow.sheet,
   },
+  head: { height: 64, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  flex: { flex: 1 },
+  close: { width: 44, height: 44, alignItems: "center", justifyContent: "center", marginRight: -10 },
   top: {
     position: "absolute",
     left: 0,
     right: 0,
     top: 0,
-    backgroundColor: colors.paper,
-    borderBottomWidth: 2,
-    borderBottomColor: colors.ink,
-    paddingHorizontal: 20,
+    backgroundColor: colors.white,
+    paddingHorizontal: layout.edge,
     paddingBottom: 20,
-    transformOrigin: "top",
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
+  side: { position: "absolute", left: 0, top: 0, bottom: 0, backgroundColor: colors.white, paddingHorizontal: layout.edge, gap: 8 },
 })

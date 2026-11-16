@@ -1,34 +1,51 @@
 import Ionicons from "@expo/vector-icons/Ionicons"
-import { ActivityIndicator, Pressable, StyleSheet, type StyleProp, type ViewStyle } from "react-native"
-import Animated, { interpolateColor, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated"
+import { useState } from "react"
+import { ActivityIndicator, Pressable, StyleSheet, View, type StyleProp, type TextStyle, type ViewStyle } from "react-native"
+import Animated from "react-native-reanimated"
 
-import { colors, dur, ease, motion, type } from "@/constants/theme"
+import { colors, radius, type } from "@/constants/theme"
+import { usePressSweep } from "@/lib/motion"
 
-import { usePanelInk } from "./box"
 import { Text } from "./text"
 
-export type ButtonVariant = "primary" | "secondary" | "outlineBlack" | "outlineWhite" | "icon" | "link" | "ink"
+export type ButtonVariant =
+  | "primary"
+  | "secondary"
+  | "black"
+  | "white"
+  | "outline"
+  | "outlineWhite"
+  | "kit"
+  | "sticky"
+  | "link"
+  | "icon"
+  // v7 names kept so older call sites compile
+  | "outlineBlack"
+  | "ink"
 export type ButtonSize = "small" | "default" | "large" | "atc"
 
 type IconName = React.ComponentProps<typeof Ionicons>["name"]
-type Palette = { rest: [string, string, string]; pressed: [string, string, string] }
+type Look = { fill: string; border: string; text: string; pressed: string; height: number; corner: number; label: TextStyle }
 
-const PALETTE: Record<Exclude<ButtonVariant, "link" | "icon" | "ink">, Palette> = {
-  primary: { rest: [colors.paper, colors.ink, colors.ink], pressed: [colors.ink, colors.ink, colors.paper] },
-  secondary: { rest: [colors.ink, colors.ink, colors.paper], pressed: [colors.neutral800, colors.neutral800, colors.paper] },
-  outlineBlack: { rest: ["rgba(20,33,61,0)", colors.ink, colors.ink], pressed: [colors.ink, colors.ink, colors.paper] },
-  outlineWhite: { rest: ["rgba(255,255,255,0)", colors.paper, colors.paper], pressed: [colors.paper, colors.paper, colors.ink] },
+const LOOK: Record<Exclude<ButtonVariant, "link" | "icon" | "outlineBlack" | "ink">, Look> = {
+  primary: { fill: colors.green, border: colors.green, text: colors.white, pressed: colors.greenPressed, height: 52, corner: radius.button, label: type.btnAtc },
+  secondary: { fill: colors.text, border: colors.text, text: colors.white, pressed: colors.charcoalPressed, height: 48, corner: radius.button, label: type.btn },
+  black: { fill: colors.ink, border: colors.ink, text: colors.white, pressed: colors.blackPressed, height: 50, corner: radius.button, label: type.btn },
+  white: { fill: colors.white, border: colors.white, text: colors.textStrong, pressed: colors.bgBrighter, height: 44, corner: radius.button, label: type.btn },
+  outline: { fill: "transparent", border: colors.text, text: colors.text, pressed: "rgba(33, 33, 33, 0.1)", height: 44, corner: radius.button, label: type.btn },
+  outlineWhite: { fill: "transparent", border: colors.white, text: colors.white, pressed: "rgba(255, 255, 255, 0.1)", height: 40, corner: radius.button, label: type.btn },
+  kit: { fill: colors.white, border: colors.text, text: colors.textStrong, pressed: colors.bgBrighter, height: 38, corner: radius.button, label: type.btnKit },
+  sticky: { fill: colors.green, border: colors.green, text: colors.white, pressed: colors.greenPressed, height: 47, corner: radius.tab, label: type.btnSticky },
 }
 
-/** Touch targets: every printed block is at least 44pt tall (48pt for the default). */
-const HEIGHT: Record<ButtonSize, number> = { small: 44, default: 48, large: 52, atc: 56 }
-const PAD: Record<ButtonSize, number> = { small: 14, default: 18, large: 20, atc: 20 }
+const resolve = (v: ButtonVariant): keyof typeof LOOK | "link" | "icon" =>
+  v === "outlineBlack" ? "outline" : v === "ink" ? "secondary" : v
 
 /**
- * Printed ink blocks (APP_SPEC v7 §3): square-cut board, a 2pt keyline, a
- * semi-condensed caps label. Press darkens the block over 180ms; no shadows.
- * `ink` prints in the colours of the panel it sits on (white knock-out on a
- * navy face, navy on a white one). `link` is an underlined label in the ink.
+ * Eastside buttons (APP_SPEC v8 V8.3): 3pt corners (4pt on the sticky bar),
+ * Title Case labels, no shadows. Press runs the M1 sweep, a skewed overlay in
+ * the pressed colour; under Reduce Motion the fill switches at once instead.
+ * Short variants (white small, outline white, kit) keep a 44pt hit area.
  */
 export function Button({
   title,
@@ -51,24 +68,14 @@ export function Button({
   icon?: IconName
   style?: StyleProp<ViewStyle>
   accessibilityLabel?: string
-  /** Links and icons on a dark face render white. */
+  /** Links and icons on a dark band render white. */
   inverse?: boolean
 }) {
-  const ink = usePanelInk()
+  const v = resolve(variant)
   const inactive = disabled || loading
-  const pressed = useSharedValue(0)
-  const pal: Palette =
-    variant === "ink"
-      ? { rest: [ink.ink, ink.ink, ink.panel], pressed: [ink.panel, ink.ink, ink.ink] }
-      : PALETTE[variant === "link" || variant === "icon" ? "outlineBlack" : variant]
-  const animated = useAnimatedStyle(() => ({
-    backgroundColor: interpolateColor(pressed.value, [0, 1], [pal.rest[0], pal.pressed[0]]),
-    borderColor: interpolateColor(pressed.value, [0, 1], [pal.rest[1], pal.pressed[1]]),
-  }))
-  const labelStyle = useAnimatedStyle(() => ({ color: interpolateColor(pressed.value, [0, 1], [pal.rest[2], pal.pressed[2]]) }))
-  const press = (to: number) => {
-    pressed.set(withTiming(to, { duration: dur.button, easing: ease.box, reduceMotion: motion.reduceMotion }))
-  }
+  const [width, setWidth] = useState(320)
+  const sweep = usePressSweep(width)
+  const [down, setDown] = useState(false)
   const common = {
     accessibilityRole: "button" as const,
     accessibilityLabel: accessibilityLabel ?? title,
@@ -76,58 +83,74 @@ export function Button({
     onPress: inactive ? undefined : onPress,
   }
 
-  if (variant === "link") {
+  if (v === "link") {
     return (
-      <Pressable {...common} hitSlop={12} style={({ pressed: p }) => [styles.bare, p && { opacity: 0.6 }, style]}>
-        <Text variant="meta" style={[styles.link, { color: inverse ? colors.paper : ink.ink }]}>
-          {title}
-        </Text>
+      <Pressable {...common} hitSlop={12} style={({ pressed: p }) => [styles.bare, style]}>
+        {({ pressed: p }) => (
+          <Text
+            variant="meta"
+            style={[styles.link, { color: inverse ? (p ? colors.onInkPressed : colors.onInk) : p ? colors.linkPressed : colors.text }]}>
+            {title}
+          </Text>
+        )}
       </Pressable>
     )
   }
 
-  if (variant === "icon") {
-    const line = inverse ? colors.paper : ink.ink
+  if (v === "icon") {
+    const line = inverse ? colors.white : colors.text
     return (
-      <Pressable
-        {...common}
-        style={({ pressed: p }) => [
-          styles.icon,
-          { backgroundColor: p ? line : "transparent", borderColor: line },
-          inactive && { opacity: 0.5 },
-          style,
-        ]}>
-        {({ pressed: p }) => (icon ? <Ionicons name={icon} size={18} color={p ? (inverse ? colors.ink : ink.panel) : line} /> : null)}
+      <Pressable {...common} style={({ pressed: p }) => [styles.icon, p && { opacity: 0.7 }, inactive && { opacity: 0.5 }, style]}>
+        {icon ? <Ionicons name={icon} size={20} color={line} /> : null}
       </Pressable>
     )
   }
 
-  const disabledLook = disabled && !loading
+  const look = LOOK[v]
+  const small = size === "small" && (v === "white" || v === "outline" || v === "black")
+  const height = small ? 33 : look.height
+  const label = small ? type.btnSm : look.label
+  const hitSlop = height < 44 ? { top: (44 - height) / 2, bottom: (44 - height) / 2 } : undefined
+  const pressedFill = sweep.reduce && down
+
   return (
     <Pressable
       {...common}
-      onPressIn={() => !inactive && press(1)}
-      onPressOut={() => press(0)}
-      style={[size === "atc" && styles.block, style]}>
-      <Animated.View
-        style={[styles.box, { minHeight: HEIGHT[size], paddingHorizontal: PAD[size] }, animated, disabledLook && styles.disabled]}>
-        {loading ? (
-          <ActivityIndicator size="small" color={pal.rest[2]} />
-        ) : (
-          <>
-            {icon ? <Ionicons name={icon} size={18} color={disabledLook ? colors.gray400 : pal.rest[2]} /> : null}
-            <Animated.Text
-              numberOfLines={1}
-              style={[
-                size === "large" || size === "atc" ? type.buttonLarge : type.button,
-                labelStyle,
-                disabledLook && { color: colors.gray400 },
-              ]}>
-              {title}
-            </Animated.Text>
-          </>
-        )}
-      </Animated.View>
+      hitSlop={hitSlop}
+      onPressIn={() => {
+        if (inactive) return
+        setDown(true)
+        sweep.pressIn()
+      }}
+      onPressOut={() => {
+        setDown(false)
+        sweep.pressOut()
+      }}
+      style={[v === "primary" || v === "sticky" || size === "atc" || size === "large" ? styles.block : null, style]}>
+      <View
+        onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
+        style={[
+          styles.box,
+          {
+            minHeight: height,
+            borderRadius: look.corner,
+            backgroundColor: pressedFill ? look.pressed : look.fill,
+            borderColor: look.border,
+          },
+          disabled && !loading && styles.disabled,
+        ]}>
+        {!sweep.reduce ? (
+          <Animated.View
+            pointerEvents="none"
+            style={[StyleSheet.absoluteFill, { width: sweep.overlayWidth, backgroundColor: look.pressed }, sweep.style]}
+          />
+        ) : null}
+        {loading ? <ActivityIndicator size="small" color={look.text} /> : null}
+        {icon && !loading ? <Ionicons name={icon} size={18} color={look.text} /> : null}
+        <Text numberOfLines={1} style={[label, styles.label, { color: look.text }]}>
+          {title}
+        </Text>
+      </View>
     </Pressable>
   )
 }
@@ -136,7 +159,16 @@ const styles = StyleSheet.create({
   bare: { alignSelf: "flex-start", minHeight: 44, justifyContent: "center" },
   link: { textDecorationLine: "underline" },
   block: { alignSelf: "stretch" },
-  box: { borderWidth: 2, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8 },
-  disabled: { backgroundColor: colors.wash, borderColor: colors.stroke },
-  icon: { width: 44, height: 44, borderWidth: 2, alignItems: "center", justifyContent: "center" },
+  box: {
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+    paddingHorizontal: 20,
+    overflow: "hidden",
+  },
+  label: { textTransform: "capitalize" },
+  disabled: { opacity: 0.5 },
+  icon: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
 })

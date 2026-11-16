@@ -5,7 +5,7 @@ import { colors } from "@/constants/theme"
 
 import { Text } from "./text"
 
-/** APP_SPEC v7 §4: a keylined counter, square, 44pt tall; each button is a full 44pt target and the count sits in tight figures. */
+/** Eastside's quantity control (APP_SPEC v8 V8.3): − and + icons in 44pt hit areas, the count in 14.4 tabular, no outer border. */
 export function QuantityStepper({
   value,
   onChange,
@@ -23,33 +23,35 @@ export function QuantityStepper({
   disabled?: boolean
   label?: string
 }) {
+  const less = disabled || value - step < min
+  const more = disabled || value + step > max
   return (
-    <View style={styles.box} accessibilityLabel={`${label} ${value}`}>
+    <View style={styles.row} accessibilityLabel={`${label} ${value}`}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`Decrease ${label.toLowerCase()}`}
-        disabled={disabled || value - step < min}
+        disabled={less}
         onPress={() => onChange(Math.max(min, value - step))}
-        style={({ pressed }) => [styles.btn, (disabled || value - step < min) && { opacity: 0.35 }, pressed && { opacity: 0.6 }]}>
-        <Ionicons name="remove" size={18} color={colors.ink} />
+        style={({ pressed }) => [styles.btn, less && { opacity: 0.35 }, pressed && { opacity: 0.6 }]}>
+        <Ionicons name="remove" size={12} color={colors.text} />
       </Pressable>
-      <Text variant="priceSm" style={styles.count}>
+      <Text variant="scoreNumber" style={styles.count}>
         {value}
       </Text>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`Increase ${label.toLowerCase()}`}
-        disabled={disabled || value + step > max}
+        disabled={more}
         onPress={() => onChange(Math.min(max, value + step))}
-        style={({ pressed }) => [styles.btn, (disabled || value + step > max) && { opacity: 0.35 }, pressed && { opacity: 0.6 }]}>
-        <Ionicons name="add" size={18} color={colors.ink} />
+        style={({ pressed }) => [styles.btn, more && { opacity: 0.35 }, pressed && { opacity: 0.6 }]}>
+        <Ionicons name="add" size={12} color={colors.text} />
       </Pressable>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  box: { height: 48, borderWidth: 2, borderColor: colors.ink, flexDirection: "row", alignItems: "center", backgroundColor: colors.paper },
+  row: { flexDirection: "row", alignItems: "center" },
   btn: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
-  count: { minWidth: 32, textAlign: "center", color: colors.ink },
+  count: { minWidth: 24, textAlign: "center" },
 })

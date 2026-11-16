@@ -4,7 +4,7 @@ import { colors } from "@/constants/theme"
 
 import { Text } from "./text"
 
-/** A printed fact unit (APP_SPEC v7 §3): keylined, square-cut, its label above its line of body. */
+/** A fact block (APP_SPEC v8): an #F6F6F6 tile, a green eyebrow over one line of body. */
 export function ValueTile({
   eyebrow,
   body,
@@ -18,8 +18,8 @@ export function ValueTile({
 }) {
   return (
     <View style={[styles.tile, style]}>
-      <Text variant="label">{eyebrow}</Text>
-      {body ? <Text variant="body">{body}</Text> : null}
+      <Text variant="eyebrowSm">{eyebrow}</Text>
+      {body ? <Text variant="bodyPdp">{body}</Text> : null}
       {children}
     </View>
   )
@@ -32,4 +32,4 @@ export const VALUE_TILES = [
   { eyebrow: "Free shipping on $85+", body: "Any two caps ship free. Under $85, standard shipping is $6. 30-day returns." },
 ]
 
-const styles = StyleSheet.create({ tile: { backgroundColor: colors.paper, borderWidth: 2, borderColor: colors.ink, padding: 16, gap: 6 } })
+const styles = StyleSheet.create({ tile: { backgroundColor: colors.tile, padding: 20, gap: 6 } })

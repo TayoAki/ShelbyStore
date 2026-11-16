@@ -422,3 +422,14 @@ export function lineImage(
   }
   return imageUrl(line.thumbnail)
 }
+
+/** The crown height as numbers: "11–11.5" → [11, 11.5]; a single value repeats. */
+export function crownRange(product: Product): [number, number] | null {
+  const cm = crownCmOf(product)
+  if (!cm) return null
+  const nums = cm
+    .split(/[–-]/)
+    .map((x) => Number.parseFloat(x.trim()))
+    .filter((n) => Number.isFinite(n))
+  return nums.length ? [nums[0], nums[nums.length - 1]] : null
+}

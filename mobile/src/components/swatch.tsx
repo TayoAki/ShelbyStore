@@ -1,20 +1,21 @@
 import { Pressable, StyleSheet, View } from "react-native"
 
 import { colors, colourwayOf } from "@/constants/theme"
+import { confirmHaptic } from "@/lib/haptics"
 
-import { usePanelInk } from "./box"
 import { Text } from "./text"
 
 /**
- * An ink chip (APP_SPEC v7 §3): a printed square of the crown colour with the
- * rope colour across it, the way a ball box prints its colour range. The
- * chosen chip carries a heavy keyline in the face's ink; sold out is struck
- * through. Pressable chips are 44pt targets.
+ * Eastside's colour dots (APP_SPEC v8 V8.3). Card dots are 20pt with a 1pt
+ * #E9E9E9 border (#8C8C8C on light crowns); picker swatches are 32pt in a 44pt
+ * hit area, selected shown as a 2pt white gap and a 1pt #212121 ring. The
+ * crown colour fills the circle and a rope band runs across its lower third.
+ * Sold out is struck through.
  */
 export function Swatch({
   name,
   selected = false,
-  size = 36,
+  size = 32,
   soldOut = false,
   caption,
   onPress,
@@ -22,29 +23,37 @@ export function Swatch({
 }: {
   name: string
   selected?: boolean
-  size?: 36 | 20
+  /** 32 (picker) or 20 (card dot); 36 is accepted from older call sites. */
+  size?: 36 | 32 | 20
   soldOut?: boolean
   /** A date under upcoming numbered editions. */
   caption?: string | null
   onPress?: () => void
   accessibilityHint?: string
 }) {
-  const ink = usePanelInk()
   const cw = colourwayOf(name)
+  const d = size === 20 ? 20 : 32
+  const dot = (
+    <View
+      style={[
+        styles.dot,
+        { width: d, height: d, borderRadius: d / 2, backgroundColor: cw.crown, borderColor: cw.light ? colors.fieldBorder : colors.swatchBorder },
+      ]}>
+      <View style={[styles.rope, { backgroundColor: cw.rope }]} />
+      {soldOut ? <View style={[styles.cross, { backgroundColor: colors.text }]} /> : null}
+    </View>
+  )
   const body = (
     <View style={styles.wrap}>
-      <View style={[styles.ring, { width: size + 10, height: size + 10, borderColor: selected ? ink.ink : "transparent" }]}>
-        <View
-          style={[
-            styles.chip,
-            { width: size, height: size, backgroundColor: cw.crown, borderColor: cw.light ? colors.stroke : "transparent" },
-          ]}>
-          <View style={[styles.rope, { height: size === 36 ? 4 : 3, backgroundColor: cw.rope }]} />
-          {soldOut ? <View style={[styles.cross, { backgroundColor: ink.ink }]} /> : null}
+      {d === 32 ? (
+        <View style={[styles.ring, { width: d + 6, height: d + 6, borderRadius: (d + 6) / 2, borderColor: selected ? colors.text : "transparent" }]}>
+          {dot}
         </View>
-      </View>
+      ) : (
+        dot
+      )}
       {caption ? (
-        <Text variant="badge" style={{ color: ink.ink }}>
+        <Text variant="micro" tone="muted">
           {caption}
         </Text>
       ) : null}
@@ -58,7 +67,10 @@ export function Swatch({
       accessibilityHint={accessibilityHint}
       accessibilityState={{ selected }}
       hitSlop={6}
-      onPress={onPress}
+      onPress={() => {
+        confirmHaptic()
+        onPress()
+      }}
       style={styles.hit}>
       {body}
     </Pressable>
@@ -66,10 +78,10 @@ export function Swatch({
 }
 
 const styles = StyleSheet.create({
-  hit: { minWidth: 44, minHeight: 44 },
+  hit: { minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center" },
   wrap: { alignItems: "center", gap: 4 },
-  ring: { borderWidth: 2.5, alignItems: "center", justifyContent: "center" },
-  chip: { borderWidth: 1.5, overflow: "hidden" },
-  rope: { position: "absolute", left: 0, right: 0, top: "60%" },
-  cross: { position: "absolute", width: "140%", height: 1.5, top: "50%", left: "-20%", transform: [{ rotate: "-45deg" }] },
+  ring: { borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  dot: { borderWidth: 1, overflow: "hidden" },
+  rope: { position: "absolute", left: 0, right: 0, top: "62%", height: "14%" },
+  cross: { position: "absolute", width: "140%", height: 1, top: "50%", left: "-20%", transform: [{ rotate: "-45deg" }] },
 })

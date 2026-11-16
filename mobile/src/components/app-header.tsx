@@ -1,11 +1,10 @@
 import Ionicons from "@expo/vector-icons/Ionicons"
 import { Image } from "expo-image"
 import { router } from "expo-router"
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { Pressable, ScrollView, StyleSheet, View } from "react-native"
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated"
 
-import { colors, CORE_COLOURWAYS, ease, layout, type } from "@/constants/theme"
+import { colors, CORE_COLOURWAYS, layout, type } from "@/constants/theme"
 import { useCatalog } from "@/hooks/use-products"
 import { useRecentlyViewed } from "@/hooks/use-recently-viewed"
 import { trackTap } from "@/lib/analytics"
@@ -18,49 +17,42 @@ import { BottomSheet, TopSheet } from "./sheet"
 import { Text } from "./text"
 
 /**
- * The header bar (APP_SPEC v7 §4.1), the box's top flap: white board, 52pt,
- * a 2pt navy keyline at its foot, laid out in the flow above the content.
- * Back and recently viewed at the left, the SHELBY wordmark centred, search
- * and bag at the right; every icon is a 44pt target.
+ * Eastside's mobile header (APP_SPEC v8 V8.3): 72pt, white, no border. Search
+ * at the left (the tab bar replaces Eastside's hamburger), the SHELBY wordmark
+ * centred in Monomakh, recently viewed at the right. Stack screens put a back
+ * chevron before search and the bag after recently viewed, since the tab bar
+ * is not on screen there. Every icon is a 44pt target.
  */
 export function AppHeader({ back = false }: { belowTicker?: boolean; back?: boolean }) {
   const { itemCount } = useCart()
   const viewed = useRecentlyViewed()
   const [search, setSearch] = useState(false)
   const [recent, setRecent] = useState(false)
+  const stack = back && router.canGoBack()
 
   return (
     <>
-      <View style={styles.pill}>
+      <View style={styles.bar}>
         <View style={styles.side}>
-          {back && router.canGoBack() ? <IconButton icon="chevron-back" label="Back" onPress={() => router.back()} /> : null}
-          {viewed.handles.length ? (
-            <IconButton
-              icon="eye-outline"
-              label={`Previously viewed, ${viewed.handles.length} products`}
-              count={viewed.handles.length}
-              onPress={() => {
-                trackTap("recently_viewed")
-                setRecent(true)
-              }}
-            />
-          ) : null}
+          {stack ? <IconButton icon="chevron-back" label="Back" onPress={() => router.back()} /> : null}
+          <IconButton icon="search" label="Search" onPress={() => setSearch(true)} />
         </View>
-        <Pressable
-          accessibilityRole="link"
-          accessibilityLabel="Shelby, home"
-          onPress={() => router.navigate("/")}
-          style={styles.wordmarkWrap}>
-          <Text style={type.wordmark}>shelby</Text>
+        <Pressable accessibilityRole="link" accessibilityLabel="Shelby, home" onPress={() => router.navigate("/")} style={styles.wordmarkWrap}>
+          <Text style={type.wordmark}>Shelby</Text>
         </Pressable>
         <View style={[styles.side, styles.right]}>
-          <IconButton icon="search-outline" label="Search" onPress={() => setSearch(true)} />
           <IconButton
-            icon="bag-handle-outline"
-            label={`Bag, ${itemCount} items`}
-            count={itemCount}
-            onPress={() => router.navigate("/cart")}
+            icon="eye-outline"
+            label={`Previously viewed, ${viewed.handles.length} products`}
+            count={viewed.handles.length}
+            onPress={() => {
+              trackTap("recently_viewed")
+              setRecent(true)
+            }}
           />
+          {back ? (
+            <IconButton icon="bag-handle-outline" label={`Bag, ${itemCount} items`} count={itemCount} onPress={() => router.navigate("/cart")} />
+          ) : null}
         </View>
       </View>
       <SearchSheet visible={search} onClose={() => setSearch(false)} />
@@ -69,9 +61,9 @@ export function AppHeader({ back = false }: { belowTicker?: boolean; back?: bool
   )
 }
 
-/** v6 helper kept for call sites: the header now sits in the flow, so content starts 12pt under it. */
+/** v6 helper kept for call sites: content starts directly under the header. */
 export function useHeaderInset(_belowTicker = false) {
-  return 12
+  return 0
 }
 
 function IconButton({
@@ -85,17 +77,18 @@ function IconButton({
   count?: number
   onPress: () => void
 }) {
-  const o = useSharedValue(count > 0 ? 1 : 0)
-  useEffect(() => {
-    o.value = withTiming(count > 0 ? 1 : 0, { duration: 50, easing: ease.sineIn })
-  }, [count, o])
-  const badge = useAnimatedStyle(() => ({ opacity: o.value }))
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} hitSlop={8} onPress={onPress} style={styles.icon}>
-      <Ionicons name={icon} size={24} color={colors.ink} />
-      <Animated.View style={[styles.count, badge]} pointerEvents="none">
-        <Text style={[type.countBadge, { color: colors.white }]}>{count > 99 ? "99" : count}</Text>
-      </Animated.View>
+    <Pressable accessibilityRole="button" accessibilityLabel={label} hitSlop={4} onPress={onPress} style={styles.icon}>
+      {({ pressed }) => (
+        <>
+          <Ionicons name={icon} size={22} color={pressed ? colors.linkPressed : colors.text} />
+          {count > 0 ? (
+            <View style={styles.count} pointerEvents="none">
+              <Text style={[type.countBadge, { color: colors.white }]}>{count > 99 ? "99" : count}</Text>
+            </View>
+          ) : null}
+        </>
+      )}
     </Pressable>
   )
 }
@@ -159,32 +152,36 @@ function SearchSheet({ visible, onClose }: { visible: boolean; onClose: () => vo
     router.push(href as never)
   }
   return (
-    <TopSheet visible={visible} onClose={onClose}>
-      <View style={{ gap: 12 }}>
+    <TopSheet visible={visible} onClose={onClose} title="Search">
+      <View style={{ gap: 16 }}>
         <SearchPill value={q} onChangeText={setQ} autoFocus={visible} onSubmit={() => trackTap("search_submit", { q: query })} />
-        <ScrollView style={{ maxHeight: 360 }} keyboardShouldPersistTaps="handled">
-          <View style={{ gap: 8 }}>
+        <ScrollView style={{ maxHeight: 460 }} keyboardShouldPersistTaps="handled">
+          <View style={styles.grid}>
             {results.slice(0, 8).map((e) => (
-              <Pressable key={e.key} accessibilityRole="link" onPress={() => go(e.href)} style={styles.result}>
-                {e.image ? <Image source={e.image} style={styles.resultImage} contentFit="contain" /> : <View style={styles.resultImage} />}
-                <View style={styles.flex}>
-                  <Text variant="cardTitle" numberOfLines={1}>
-                    {e.title}
-                  </Text>
-                  <Text variant="meta" tone="muted" numberOfLines={1}>
-                    {e.meta}
-                  </Text>
-                </View>
+              <Pressable key={e.key} accessibilityRole="link" onPress={() => go(e.href)} style={styles.cell}>
+                {({ pressed }) => (
+                  <>
+                    <View style={styles.tile}>
+                      {e.image ? <Image source={e.image} style={styles.tileImage} contentFit="contain" /> : null}
+                    </View>
+                    <Text variant="cardTitleEastside" numberOfLines={2} style={pressed && { color: colors.linkPressed }}>
+                      {e.title}
+                    </Text>
+                    <Text variant="priceCard" numberOfLines={1}>
+                      {e.meta}
+                    </Text>
+                  </>
+                )}
               </Pressable>
             ))}
-            {query && !results.length ? (
-              <Text variant="body" tone="muted">
-                Nothing matches &ldquo;{q}&rdquo;. Try a color: navy, pine, fescue.
-              </Text>
-            ) : null}
           </View>
+          {query && !results.length ? (
+            <Text variant="bodyPdp" tone="muted">
+              Nothing matches &ldquo;{q}&rdquo;. Try a color: navy, pine, fescue.
+            </Text>
+          ) : null}
         </ScrollView>
-        <Pressable accessibilityRole="link" onPress={() => go("/shop")}>
+        <Pressable accessibilityRole="link" onPress={() => go("/shop")} style={styles.more}>
           <Text variant="meta" style={styles.underline}>
             View all results
           </Text>
@@ -198,8 +195,7 @@ function RecentSheet({ visible, onClose, handles }: { visible: boolean; onClose:
   const catalog = useCatalog()
   const products = handles.map((h) => catalog.data?.find((p) => p.handle === h)).filter((p): p is Product => !!p)
   return (
-    <BottomSheet visible={visible} onClose={onClose}>
-      <Text variant="cardTitle">Previously viewed ({products.length})</Text>
+    <BottomSheet visible={visible} onClose={onClose} title={`Previously viewed (${products.length})`}>
       <ScrollView>
         <View style={styles.grid}>
           {products.map((p) => {
@@ -208,32 +204,37 @@ function RecentSheet({ visible, onClose, handles }: { visible: boolean; onClose:
               <Pressable
                 key={p.id}
                 accessibilityRole="link"
-                style={styles.recent}
+                style={styles.cell}
                 onPress={() => {
                   onClose()
                   router.push(`/products/${p.handle}`)
                 }}>
-                <Image source={imagesFor(p)[0] ?? null} style={styles.recentImage} contentFit="contain" />
-                <Text variant="cardTitle" numberOfLines={1}>
+                <View style={styles.tile}>
+                  <Image source={imagesFor(p)[0] ?? null} style={styles.tileImage} contentFit="contain" />
+                </View>
+                <Text variant="cardTitleEastside" numberOfLines={1}>
                   {p.title}
                 </Text>
-                {price ? <Text variant="priceSm">{formatMoney(price.amount, price.currency)}</Text> : null}
+                {price ? <Text variant="priceCard">{formatMoney(price.amount, price.currency)}</Text> : null}
               </Pressable>
             )
           })}
         </View>
+        {!products.length ? (
+          <Text variant="bodyPdp" tone="muted">
+            Nothing viewed yet.
+          </Text>
+        ) : null}
       </ScrollView>
     </BottomSheet>
   )
 }
 
 const styles = StyleSheet.create({
-  pill: {
+  bar: {
     height: layout.header,
-    backgroundColor: colors.paper,
-    borderBottomWidth: 2,
-    borderBottomColor: colors.ink,
-    paddingHorizontal: 4,
+    backgroundColor: colors.white,
+    paddingHorizontal: 6,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -247,26 +248,18 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 4,
     right: 2,
-    minWidth: 18,
-    height: 18,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
     paddingHorizontal: 3,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.green,
     alignItems: "center",
     justifyContent: "center",
   },
-  flex: { flex: 1 },
-  result: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    minHeight: 64,
-    paddingVertical: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.rule,
-  },
-  resultImage: { width: 56, height: 56, borderRadius: 14, borderWidth: 1.5, borderColor: colors.ink, backgroundColor: colors.paper },
+  grid: { flexDirection: "row", flexWrap: "wrap", columnGap: layout.gridGap, rowGap: 16 },
+  cell: { width: "47.5%", gap: 6 },
+  tile: { width: "100%", aspectRatio: 5 / 6, backgroundColor: colors.tile, alignItems: "center", justifyContent: "center" },
+  tileImage: { width: "88%", height: "88%" },
+  more: { minHeight: 44, justifyContent: "center", alignSelf: "flex-start" },
   underline: { textDecorationLine: "underline" },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  recent: { width: "48%", gap: 4 },
-  recentImage: { width: "100%", aspectRatio: 1, borderRadius: 18, borderWidth: 2, borderColor: colors.ink, backgroundColor: colors.paper },
 })

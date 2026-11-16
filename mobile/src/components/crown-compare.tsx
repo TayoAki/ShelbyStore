@@ -2,9 +2,9 @@ import { useState } from "react"
 import { StyleSheet, View } from "react-native"
 import Svg, { G, Line, Path, Text as SvgText } from "react-native-svg"
 
-import { colourwayOf, fonts } from "@/constants/theme"
+import { colors, colourwayOf, fonts } from "@/constants/theme"
 
-import { InkText, usePanelInk } from "./box"
+import { Text } from "./text"
 
 /** A cap's side profile in centimetres, front of the crown at x = 0, baseline y = 0, y up. */
 function profile(h: number) {
@@ -21,13 +21,13 @@ const TOP = 13
 const BOTTOM = -1.8
 
 /**
- * The side panel's measured drawing: the Rope Cap's side profile, filled in
- * the chosen colourway with its rope, standing on one baseline against a 12 cm
- * high crown drawn dashed behind it, beside a centimetre ruler. Drawn in
- * proportion so both crowns share one scale; sized to sit under the front panel.
+ * The crown drawing (APP_SPEC v8 V8.3) on an #F6F6F6 tile: the Rope Cap's side
+ * profile filled in its crown colour with a 3pt rope, standing on one baseline
+ * against a 12 cm crown drawn as a 1.5pt dashed #646464 outline, beside a
+ * #646464 centimetre ruler with 11pt figures. Both share one scale.
  */
 export function CrownCompare({ colour, cm }: { colour: string | null; cm: [number, number] }) {
-  const ink = usePanelInk()
+  const line = colors.textLight
   const [w, setW] = useState(0)
   const cap = colourwayOf(colour)
   const s = w ? Math.min(13, w / (RIGHT - LEFT)) : 0
@@ -47,51 +47,53 @@ export function CrownCompare({ colour, cm }: { colour: string | null; cm: [numbe
           accessible
           accessibilityLabel={`The Rope Cap's crown, ${cm[0]} to ${cm[1]} centimetres, drawn on one ruler against a 12 centimetre high crown`}>
           {/* ruler: a tick every centimetre, numbered every two */}
-          <Line x1={X(-9.2)} y1={Y(0)} x2={X(-9.2)} y2={Y(12.6)} stroke={ink.ink} strokeWidth={1.5} />
+          <Line x1={X(-9.2)} y1={Y(0)} x2={X(-9.2)} y2={Y(12.6)} stroke={line} strokeWidth={1.5} />
           {Array.from({ length: 13 }, (_, i) => (
             <G key={i}>
-              <Line x1={X(-9.2)} x2={X(i % 2 ? -8.6 : -8.2)} y1={Y(i)} y2={Y(i)} stroke={ink.ink} strokeWidth={1.2} />
+              <Line x1={X(-9.2)} x2={X(i % 2 ? -8.6 : -8.2)} y1={Y(i)} y2={Y(i)} stroke={line} strokeWidth={1.2} />
               {i % 2 === 0 ? (
-                <SvgText x={X(-9.6)} y={Y(i) + 4} fontSize={11} fill={ink.ink} textAnchor="end" fontFamily={fonts.label}>
+                <SvgText x={X(-9.6)} y={Y(i) + 4} fontSize={11} fill={line} textAnchor="end" fontFamily={fonts.body}>
                   {i}
                 </SvgText>
               ) : null}
             </G>
           ))}
           {/* the shared baseline */}
-          <Line x1={X(-9.2)} x2={X(RIGHT)} y1={Y(0)} y2={Y(0)} stroke={ink.ink} strokeWidth={2} />
+          <Line x1={X(-9.2)} x2={X(RIGHT)} y1={Y(0)} y2={Y(0)} stroke={line} strokeWidth={2} />
           {/* the 12 cm high crown, dashed, behind */}
-          <Line x1={X(-8.2)} x2={X(RIGHT)} y1={Y(12)} y2={Y(12)} stroke={ink.ink} strokeWidth={1} strokeDasharray="3 4" opacity={0.6} />
+          <Line x1={X(-8.2)} x2={X(RIGHT)} y1={Y(12)} y2={Y(12)} stroke={line} strokeWidth={1} strokeDasharray="3 4" opacity={0.6} />
           <G transform={t}>
-            <Path d={high.crown} fill="none" stroke={ink.ink} strokeWidth={1.6 / s} strokeDasharray={`${4 / s} ${3 / s}`} />
+            <Path d={high.crown} fill="none" stroke={line} strokeWidth={1.5 / s} strokeDasharray={`${4 / s} ${3 / s}`} />
           </G>
           {/* the Rope Cap, in the chosen ink, in front */}
-          <Line x1={X(-8.2)} x2={X(RIGHT)} y1={Y(cm[1])} y2={Y(cm[1])} stroke={ink.ink} strokeWidth={1} opacity={0.6} />
+          <Line x1={X(-8.2)} x2={X(RIGHT)} y1={Y(cm[1])} y2={Y(cm[1])} stroke={line} strokeWidth={1} opacity={0.6} />
           <G transform={t}>
-            <Path d={ours.crown} fill={cap.crown} stroke={ink.ink} strokeWidth={2 / s} />
-            <Path d={ours.brim} fill={cap.crown} stroke={ink.ink} strokeWidth={2 / s} />
-            <Path d={ours.rope} fill="none" stroke={cap.rope} strokeWidth={4 / s} strokeLinecap="round" />
+            <Path d={ours.crown} fill={cap.crown} stroke={colors.text} strokeWidth={1.5 / s} />
+            <Path d={ours.brim} fill={cap.crown} stroke={colors.text} strokeWidth={1.5 / s} />
+            <Path d={ours.rope} fill="none" stroke={cap.rope} strokeWidth={3 / s} strokeLinecap="round" />
           </G>
         </Svg>
       ) : null}
       <View style={styles.legend}>
         <View style={styles.flex}>
-          <InkText variant="label">High crown</InkText>
-          <InkText variant="meta">12 cm, published spec</InkText>
+          <Text variant="labelCaps">High crown</Text>
+          <Text variant="meta" tone="muted">
+            12 cm, published spec
+          </Text>
         </View>
         <View style={styles.flex}>
-          <InkText variant="label">The Rope Cap</InkText>
-          <InkText variant="meta">
+          <Text variant="labelCaps">The Rope Cap</Text>
+          <Text variant="meta" tone="muted">
             {cm[0] === cm[1] ? cm[0] : `${cm[0]}–${cm[1]}`} cm
             {colour ? `, ${colour}` : ""}
-          </InkText>
+          </Text>
         </View>
       </View>
-      <InkText variant="caption" muted>
+      <Text variant="note" tone="muted">
         Both drawn on one ruler, in proportion.
-      </InkText>
+      </Text>
     </View>
   )
 }
 
-const styles = StyleSheet.create({ wrap: { gap: 12, width: "100%" }, legend: { flexDirection: "row", gap: 16 }, flex: { flex: 1, gap: 2 } })
+const styles = StyleSheet.create({ wrap: { gap: 12, width: "100%", backgroundColor: colors.tile, padding: 16 }, legend: { flexDirection: "row", gap: 16 }, flex: { flex: 1, gap: 2 } })
