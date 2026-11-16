@@ -2,29 +2,33 @@ import Ionicons from "@expo/vector-icons/Ionicons"
 import { ActivityIndicator, Pressable, StyleSheet, type StyleProp, type ViewStyle } from "react-native"
 import Animated, { interpolateColor, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated"
 
-import { colors, dur, ease, golf, motion, radius, type } from "@/constants/theme"
+import { colors, dur, ease, motion, type } from "@/constants/theme"
 
+import { usePanelInk } from "./box"
 import { Text } from "./text"
 
-export type ButtonVariant = "primary" | "secondary" | "outlineBlack" | "outlineWhite" | "icon" | "link"
+export type ButtonVariant = "primary" | "secondary" | "outlineBlack" | "outlineWhite" | "icon" | "link" | "ink"
 export type ButtonSize = "small" | "default" | "large" | "atc"
 
 type IconName = React.ComponentProps<typeof Ionicons>["name"]
+type Palette = { rest: [string, string, string]; pressed: [string, string, string] }
 
-/** [fill, border, label] at rest and pressed (APP_SPEC v5 §3; M11). */
-const PALETTE: Record<Exclude<ButtonVariant, "link" | "icon">, { rest: [string, string, string]; pressed: [string, string, string] }> = {
-  primary: { rest: [colors.white, colors.white, colors.black], pressed: [colors.black, colors.black, colors.white] },
-  secondary: { rest: [colors.black, colors.black, colors.white], pressed: [colors.muted, colors.muted, colors.white] },
-  outlineBlack: { rest: ["rgba(33,33,33,0)", colors.black, colors.black], pressed: [colors.black, colors.black, colors.white] },
-  outlineWhite: { rest: ["rgba(255,255,255,0)", colors.white, colors.white], pressed: [colors.white, colors.white, colors.black] },
+const PALETTE: Record<Exclude<ButtonVariant, "link" | "icon" | "ink">, Palette> = {
+  primary: { rest: [colors.paper, colors.ink, colors.ink], pressed: [colors.ink, colors.ink, colors.paper] },
+  secondary: { rest: [colors.ink, colors.ink, colors.paper], pressed: [colors.neutral800, colors.neutral800, colors.paper] },
+  outlineBlack: { rest: ["rgba(20,33,61,0)", colors.ink, colors.ink], pressed: [colors.ink, colors.ink, colors.paper] },
+  outlineWhite: { rest: ["rgba(255,255,255,0)", colors.paper, colors.paper], pressed: [colors.paper, colors.paper, colors.ink] },
 }
 
-const HEIGHT: Record<ButtonSize, number> = { small: 33, default: 33, large: 42, atc: 49 }
-const PAD: Record<ButtonSize, number> = { small: 12, default: 16, large: 14, atc: 16 }
+/** Touch targets: every printed block is at least 44pt tall (48pt for the default). */
+const HEIGHT: Record<ButtonSize, number> = { small: 44, default: 48, large: 52, atc: 56 }
+const PAD: Record<ButtonSize, number> = { small: 14, default: 18, large: 20, atc: 20 }
 
 /**
- * Allbirds' pill buttons (radius 9999): colours change on press over 200ms
- * sine.in-out. `link` is golf green and underlined (G.2.2).
+ * Printed ink blocks (APP_SPEC v7 §3): square-cut board, a 2pt keyline, a
+ * semi-condensed caps label. Press darkens the block over 180ms; no shadows.
+ * `ink` prints in the colours of the panel it sits on (white knock-out on a
+ * navy face, navy on a white one). `link` is an underlined label in the ink.
  */
 export function Button({
   title,
@@ -47,22 +51,23 @@ export function Button({
   icon?: IconName
   style?: StyleProp<ViewStyle>
   accessibilityLabel?: string
-  /** Links on a dark or golf-green band render white. */
+  /** Links and icons on a dark face render white. */
   inverse?: boolean
 }) {
+  const ink = usePanelInk()
   const inactive = disabled || loading
   const pressed = useSharedValue(0)
-  const kind = variant === "link" || variant === "icon" ? "outlineBlack" : variant
-  const pal = PALETTE[kind]
+  const pal: Palette =
+    variant === "ink"
+      ? { rest: [ink.ink, ink.ink, ink.panel], pressed: [ink.panel, ink.ink, ink.ink] }
+      : PALETTE[variant === "link" || variant === "icon" ? "outlineBlack" : variant]
   const animated = useAnimatedStyle(() => ({
     backgroundColor: interpolateColor(pressed.value, [0, 1], [pal.rest[0], pal.pressed[0]]),
     borderColor: interpolateColor(pressed.value, [0, 1], [pal.rest[1], pal.pressed[1]]),
   }))
-  const labelStyle = useAnimatedStyle(() => ({
-    color: interpolateColor(pressed.value, [0, 1], [pal.rest[2], pal.pressed[2]]),
-  }))
+  const labelStyle = useAnimatedStyle(() => ({ color: interpolateColor(pressed.value, [0, 1], [pal.rest[2], pal.pressed[2]]) }))
   const press = (to: number) => {
-    pressed.set(withTiming(to, { duration: dur.button, easing: ease.sineInOut, reduceMotion: motion.reduceMotion }))
+    pressed.set(withTiming(to, { duration: dur.button, easing: ease.box, reduceMotion: motion.reduceMotion }))
   }
   const common = {
     accessibilityRole: "button" as const,
@@ -73,8 +78,8 @@ export function Button({
 
   if (variant === "link") {
     return (
-      <Pressable {...common} hitSlop={10} style={({ pressed: p }) => [styles.bare, p && { opacity: 0.6 }, style]}>
-        <Text variant="meta" style={[styles.link, { color: inverse ? colors.white : golf.green }]}>
+      <Pressable {...common} hitSlop={12} style={({ pressed: p }) => [styles.bare, p && { opacity: 0.6 }, style]}>
+        <Text variant="meta" style={[styles.link, { color: inverse ? colors.paper : ink.ink }]}>
           {title}
         </Text>
       </Pressable>
@@ -82,18 +87,17 @@ export function Button({
   }
 
   if (variant === "icon") {
+    const line = inverse ? colors.paper : ink.ink
     return (
       <Pressable
         {...common}
         style={({ pressed: p }) => [
           styles.icon,
-          { backgroundColor: p ? colors.black : "transparent", borderColor: inverse ? colors.white : colors.black },
+          { backgroundColor: p ? line : "transparent", borderColor: line },
           inactive && { opacity: 0.5 },
           style,
         ]}>
-        {({ pressed: p }) =>
-          icon ? <Ionicons name={icon} size={16} color={p ? colors.white : inverse ? colors.white : colors.black} /> : null
-        }
+        {({ pressed: p }) => (icon ? <Ionicons name={icon} size={18} color={p ? (inverse ? colors.ink : ink.panel) : line} /> : null)}
       </Pressable>
     )
   }
@@ -106,22 +110,16 @@ export function Button({
       onPressOut={() => press(0)}
       style={[size === "atc" && styles.block, style]}>
       <Animated.View
-        style={[
-          styles.box,
-          { height: HEIGHT[size], paddingHorizontal: PAD[size] },
-          animated,
-          disabledLook && styles.disabled,
-        ]}>
+        style={[styles.box, { minHeight: HEIGHT[size], paddingHorizontal: PAD[size] }, animated, disabledLook && styles.disabled]}>
         {loading ? (
           <ActivityIndicator size="small" color={pal.rest[2]} />
         ) : (
           <>
-            {icon ? <Ionicons name={icon} size={16} color={disabledLook ? colors.gray400 : pal.rest[2]} /> : null}
+            {icon ? <Ionicons name={icon} size={18} color={disabledLook ? colors.gray400 : pal.rest[2]} /> : null}
             <Animated.Text
               numberOfLines={1}
               style={[
-                size === "large" ? type.buttonLarge : type.button,
-                size === "small" && { fontSize: 11 },
+                size === "large" || size === "atc" ? type.buttonLarge : type.button,
                 labelStyle,
                 disabledLook && { color: colors.gray400 },
               ]}>
@@ -135,24 +133,10 @@ export function Button({
 }
 
 const styles = StyleSheet.create({
-  bare: { alignSelf: "flex-start" },
+  bare: { alignSelf: "flex-start", minHeight: 44, justifyContent: "center" },
   link: { textDecorationLine: "underline" },
   block: { alignSelf: "stretch" },
-  box: {
-    borderRadius: radius.full,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "row",
-    gap: 8,
-  },
-  disabled: { backgroundColor: colors.gray200, borderColor: colors.gray300 },
-  icon: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  box: { borderWidth: 2, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8 },
+  disabled: { backgroundColor: colors.wash, borderColor: colors.stroke },
+  icon: { width: 44, height: 44, borderWidth: 2, alignItems: "center", justifyContent: "center" },
 })

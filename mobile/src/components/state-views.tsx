@@ -3,7 +3,7 @@ import { useEffect } from "react"
 import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native"
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from "react-native-reanimated"
 
-import { colors, ease, motion, radius } from "@/constants/theme"
+import { colors, ease, motion } from "@/constants/theme"
 import { errorMessage } from "@/lib/medusa"
 
 import { Button } from "./button"
@@ -28,7 +28,7 @@ export function Skeleton({ style }: { style?: StyleProp<ViewStyle> }) {
 export function LoadingState() {
   return (
     <View style={styles.loading} accessibilityLabel="Loading">
-      <Skeleton style={{ height: 240, borderRadius: radius.xxl }} />
+      <Skeleton style={{ height: 240, borderRadius: 28 }} />
       <Skeleton style={{ height: 20, width: "60%" }} />
       <Skeleton style={{ height: 16, width: "40%" }} />
     </View>
@@ -38,13 +38,13 @@ export function LoadingState() {
 export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
   return (
     <View style={styles.center}>
-      <Text variant="empty" style={styles.text}>
+      <Text variant="panelTitle" accessibilityRole="header" style={styles.text}>
         We couldn&apos;t load this.
       </Text>
       <Text variant="meta" tone="muted" style={styles.text}>
         {errorMessage(error)}
       </Text>
-      {onRetry ? <Button title="Try again" variant="outlineBlack" onPress={onRetry} /> : null}
+      {onRetry ? <Button title="Try again" variant="outlineBlack" onPress={onRetry} style={styles.action} /> : null}
     </View>
   )
 }
@@ -64,8 +64,8 @@ export function EmptyState({
 }) {
   return (
     <View style={styles.center}>
-      {icon ? <Ionicons name={icon} size={40} color={colors.black} /> : null}
-      <Text variant="empty" style={styles.text}>
+      {icon ? <Ionicons name={icon} size={36} color={colors.ink} /> : null}
+      <Text variant="panelTitle" accessibilityRole="header" style={styles.text}>
         {title}
       </Text>
       {body ? (
@@ -79,9 +79,9 @@ export function EmptyState({
 }
 
 const styles = StyleSheet.create({
-  skeleton: { backgroundColor: colors.naturalWhite, borderRadius: radius.sm, height: 16 },
-  loading: { padding: 10, gap: 12 },
-  center: { alignItems: "center", justifyContent: "center", paddingVertical: 48, paddingHorizontal: 40, gap: 20 },
+  skeleton: { backgroundColor: colors.wash, height: 16 },
+  loading: { padding: 12, gap: 12 },
+  center: { alignItems: "center", justifyContent: "center", paddingVertical: 40, paddingHorizontal: 24, gap: 16 },
   text: { textAlign: "center" },
   action: { alignSelf: "stretch" },
 })

@@ -5,12 +5,13 @@ import { router } from "expo-router"
 import { useState } from "react"
 import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from "react-native"
 
+import { Box, Digits, Face } from "@/components/box"
 import { Button } from "@/components/button"
 import { Screen } from "@/components/screen"
 import { EmptyState } from "@/components/state-views"
 import { Text } from "@/components/text"
 import { TextField } from "@/components/text-field"
-import { colors, radius } from "@/constants/theme"
+import { colors, fonts } from "@/constants/theme"
 import { useCatalog } from "@/hooks/use-products"
 import { useTrackOnce } from "@/lib/analytics"
 import { formatMoney } from "@/lib/format"
@@ -91,8 +92,7 @@ export default function CheckoutScreen() {
   }
 
   const currency = cart.currency_code
-  const countryCode =
-    cart.region?.countries?.find((c) => c.iso_2 === "us")?.iso_2 ?? cart.region?.countries?.[0]?.iso_2 ?? "us"
+  const countryCode = cart.region?.countries?.find((c) => c.iso_2 === "us")?.iso_2 ?? cart.region?.countries?.[0]?.iso_2 ?? "us"
   const selectedOptionId = cart.shipping_methods?.[0]?.shipping_option_id
   const set = (key: keyof Form) => (value: string) => setForm((f) => ({ ...f, [key]: value }))
 
@@ -176,146 +176,144 @@ export default function CheckoutScreen() {
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <Screen header={false} under="safe" contentStyle={{ paddingTop: 10 }}>
-        <View style={styles.body}>
-          <Summary cart={cart} />
+        <View style={styles.wrap}>
+          <Box>
+            <Summary cart={cart} />
 
-          <Section
-            index={1}
-            title="Contact & address"
-            active={step === "details"}
-            done={step !== "details"}
-            onEdit={() => setStep("details")}
-            summary={`${form.email} · ${form.address_1}, ${form.city} ${form.province} ${form.postal_code}`}>
-            <TextField
-              label="Email"
-              value={form.email}
-              onChangeText={set("email")}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoComplete="email"
-              error={fieldErrors.email}
-            />
-            <View style={styles.row}>
+            <Section
+              index={1}
+              title="Contact & address"
+              active={step === "details"}
+              done={step !== "details"}
+              onEdit={() => setStep("details")}
+              summary={`${form.email} · ${form.address_1}, ${form.city} ${form.province} ${form.postal_code}`}>
               <TextField
-                label="First name"
-                value={form.first_name}
-                onChangeText={set("first_name")}
-                autoComplete="given-name"
-                error={fieldErrors.first_name}
-                style={styles.flex}
+                label="Email"
+                value={form.email}
+                onChangeText={set("email")}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoComplete="email"
+                error={fieldErrors.email}
+              />
+              <View style={styles.row}>
+                <TextField
+                  label="First name"
+                  value={form.first_name}
+                  onChangeText={set("first_name")}
+                  autoComplete="given-name"
+                  error={fieldErrors.first_name}
+                  style={styles.flex}
+                />
+                <TextField
+                  label="Last name"
+                  value={form.last_name}
+                  onChangeText={set("last_name")}
+                  autoComplete="family-name"
+                  error={fieldErrors.last_name}
+                  style={styles.flex}
+                />
+              </View>
+              <TextField
+                label="Address"
+                value={form.address_1}
+                onChangeText={set("address_1")}
+                autoComplete="address-line1"
+                error={fieldErrors.address_1}
               />
               <TextField
-                label="Last name"
-                value={form.last_name}
-                onChangeText={set("last_name")}
-                autoComplete="family-name"
-                error={fieldErrors.last_name}
-                style={styles.flex}
+                label="Apt, suite (optional)"
+                value={form.address_2}
+                onChangeText={set("address_2")}
+                autoComplete="address-line2"
               />
-            </View>
-            <TextField
-              label="Address"
-              value={form.address_1}
-              onChangeText={set("address_1")}
-              autoComplete="address-line1"
-              error={fieldErrors.address_1}
-            />
-            <TextField
-              label="Apt, suite (optional)"
-              value={form.address_2}
-              onChangeText={set("address_2")}
-              autoComplete="address-line2"
-            />
-            <TextField label="City" value={form.city} onChangeText={set("city")} error={fieldErrors.city} />
-            <View style={styles.row}>
+              <TextField label="City" value={form.city} onChangeText={set("city")} error={fieldErrors.city} />
+              <View style={styles.row}>
+                <TextField
+                  label="State"
+                  value={form.province}
+                  onChangeText={set("province")}
+                  autoCapitalize="characters"
+                  maxLength={2}
+                  placeholder="CA"
+                  error={fieldErrors.province}
+                  style={styles.flex}
+                />
+                <TextField
+                  label="ZIP"
+                  value={form.postal_code}
+                  onChangeText={set("postal_code")}
+                  keyboardType="number-pad"
+                  autoComplete="postal-code"
+                  error={fieldErrors.postal_code}
+                  style={styles.flex}
+                />
+              </View>
               <TextField
-                label="State"
-                value={form.province}
-                onChangeText={set("province")}
-                autoCapitalize="characters"
-                maxLength={2}
-                placeholder="CA"
-                error={fieldErrors.province}
-                style={styles.flex}
+                label="Phone (optional)"
+                value={form.phone}
+                onChangeText={set("phone")}
+                keyboardType="phone-pad"
+                autoComplete="tel"
               />
-              <TextField
-                label="ZIP"
-                value={form.postal_code}
-                onChangeText={set("postal_code")}
-                keyboardType="number-pad"
-                autoComplete="postal-code"
-                error={fieldErrors.postal_code}
-                style={styles.flex}
-              />
-            </View>
-            <TextField
-              label="Phone (optional)"
-              value={form.phone}
-              onChangeText={set("phone")}
-              keyboardType="phone-pad"
-              autoComplete="tel"
-            />
-            <Text variant="meta" tone="muted">
-              We currently ship within the United States.
-            </Text>
-            <Button title="Continue to delivery" size="atc" onPress={saveDetails} loading={busy} />
-          </Section>
-
-          <Section
-            index={2}
-            title="Delivery"
-            active={step === "delivery"}
-            done={step === "payment"}
-            onEdit={() => setStep("delivery")}
-            summary={cart.shipping_methods?.[0]?.name ?? ""}>
-            {options.map((option) => {
-              const selected = option.id === selectedOptionId
-              return (
-                <Pressable
-                  key={option.id}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected }}
-                  onPress={() => chooseOption(option.id)}
-                  disabled={busy}
-                  style={[styles.option, selected && styles.optionSelected]}>
-                  <View style={[styles.radio, selected && styles.radioOn]} />
-                  <View style={styles.flex}>
-                    <Text style={styles.optionName}>{option.name}</Text>
-                    {option.type?.description ? (
-                      <Text variant="meta" tone="muted">
-                        {option.type.description}
-                      </Text>
-                    ) : null}
-                  </View>
-                  <Text variant="priceSm">{option.amount === 0 ? "Free" : formatMoney(option.amount, currency)}</Text>
-                </Pressable>
-              )
-            })}
-            <Button
-              title="Continue to payment"
-              size="atc"
-              onPress={() => setStep("payment")}
-              disabled={!selectedOptionId || busy}
-            />
-          </Section>
-
-          <Section index={3} title="Payment" active={step === "payment"} done={false}>
-            <View style={styles.notice}>
-              <Text style={styles.optionName}>Test payment</Text>
-              <Text variant="meta" tone="muted" style={styles.noticeCopy}>
-                This build uses Medusa&apos;s built-in test provider: your order is recorded, and no card is charged.
-                Card payments (e.g. Stripe) get switched on before launch.
+              <Text variant="meta" tone="muted">
+                We currently ship within the United States.
               </Text>
-            </View>
-            <Button
-              title={`Place order · ${formatMoney(cart.total, currency)}`}
-              size="atc"
-              onPress={placeOrder}
-              loading={busy}
-            />
-          </Section>
+              <Button title="Continue to delivery" size="atc" onPress={saveDetails} loading={busy} />
+            </Section>
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+            <Section
+              index={2}
+              title="Delivery"
+              active={step === "delivery"}
+              done={step === "payment"}
+              onEdit={() => setStep("delivery")}
+              summary={cart.shipping_methods?.[0]?.name ?? ""}>
+              {options.map((option) => {
+                const selected = option.id === selectedOptionId
+                return (
+                  <Pressable
+                    key={option.id}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected }}
+                    onPress={() => chooseOption(option.id)}
+                    disabled={busy}
+                    style={[styles.option, selected && styles.optionSelected]}>
+                    <View style={[styles.radio, selected && styles.radioOn]} />
+                    <View style={styles.flex}>
+                      <Text style={styles.optionName}>{option.name}</Text>
+                      {option.type?.description ? (
+                        <Text variant="meta" tone="muted">
+                          {option.type.description}
+                        </Text>
+                      ) : null}
+                    </View>
+                    <Text variant="priceSm">{option.amount === 0 ? "Free" : formatMoney(option.amount, currency)}</Text>
+                  </Pressable>
+                )
+              })}
+              <Button title="Continue to payment" size="atc" onPress={() => setStep("payment")} disabled={!selectedOptionId || busy} />
+            </Section>
+
+            <Section index={3} title="Payment" active={step === "payment"} done={false}>
+              <View style={styles.notice}>
+                <Text style={styles.optionName}>Test payment</Text>
+                <Text variant="meta" tone="muted" style={styles.noticeCopy}>
+                  This build uses Medusa&apos;s built-in test provider: your order is recorded, and no card is charged. Card payments (e.g.
+                  Stripe) get switched on before launch.
+                </Text>
+              </View>
+              <Button title={`Place order · ${formatMoney(cart.total, currency)}`} size="atc" onPress={placeOrder} loading={busy} />
+            </Section>
+
+            {error ? (
+              <Face>
+                <Text style={styles.error} accessibilityLiveRegion="polite">
+                  {error}
+                </Text>
+              </Face>
+            ) : null}
+          </Box>
         </View>
       </Screen>
     </KeyboardAvoidingView>
@@ -340,10 +338,11 @@ function Section({
   children: React.ReactNode
 }) {
   return (
-    <View style={styles.section}>
+    <Face>
       <View style={styles.sectionHeader}>
-        <Text variant="eyebrow" tone={active || done ? "default" : "muted"}>
-          {index} · {title}
+        <Digits value={String(index).padStart(2, "0")} variant="digitsSm" style={!active && !done ? styles.dim : null} />
+        <Text variant="cardHeading" accessibilityRole="header" style={[styles.flex, !active && !done && styles.dim]}>
+          {title}
         </Text>
         {done && onEdit ? <Button title="Edit" variant="link" onPress={onEdit} /> : null}
       </View>
@@ -353,7 +352,7 @@ function Section({
           {summary}
         </Text>
       ) : null}
-    </View>
+    </Face>
   )
 }
 
@@ -366,23 +365,27 @@ function Summary({ cart }: { cart: Cart }) {
     ["Tax", cart.tax_total],
   ]
   return (
-    <View style={styles.summary}>
+    <Face>
+      <Text variant="panelTitle" accessibilityRole="header">
+        Checkout
+      </Text>
       {(cart.items ?? []).map((item) => {
         const image = lineImage(catalog.data, item)
         return (
           <View key={item.id} style={styles.summaryLine}>
-            <View>
-              {image ? <Image source={image} style={styles.summaryImage} contentFit="contain" /> : <View style={styles.summaryImage} />}
-              <View style={styles.qty}>
-                <Text style={styles.qtyText}>{item.quantity}</Text>
-              </View>
+            <View style={styles.summaryWindow}>
+              {image ? <Image source={image} style={styles.summaryImage} contentFit="contain" /> : null}
             </View>
             <View style={styles.flex}>
               <Text variant="cardTitle" numberOfLines={1}>
                 {item.product_title ?? item.title}
               </Text>
               <Text variant="meta" tone="muted" numberOfLines={1}>
-                {lineMeta(catalog.data?.find((p) => p.id === item.product_id), item)}
+                {item.quantity > 1 ? `${item.quantity} × ` : ""}
+                {lineMeta(
+                  catalog.data?.find((p) => p.id === item.product_id),
+                  item
+                )}
               </Text>
             </View>
             <Text variant="priceSm">{formatMoney(item.total, currency)}</Text>
@@ -400,54 +403,41 @@ function Summary({ cart }: { cart: Cart }) {
           </Text>
         </View>
       ))}
-      <View style={styles.summaryRow}>
-        <Text style={styles.total}>Total</Text>
-        <Text style={styles.total}>{formatMoney(cart.total, currency)}</Text>
+      <View style={[styles.summaryRow, styles.totalRow]}>
+        <Text variant="label">Total</Text>
+        <Digits value={formatMoney(cart.total, currency)} variant="digitsSm" />
       </View>
-    </View>
+    </Face>
   )
 }
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  body: { padding: 10, gap: 10 },
+  wrap: { marginHorizontal: 12 },
   row: { flexDirection: "row", gap: 12 },
-  summary: { padding: 20, gap: 10, backgroundColor: colors.white, borderRadius: radius.xxl },
+  dim: { opacity: 0.55 },
   summaryLine: { flexDirection: "row", alignItems: "center", gap: 12 },
-  summaryImage: { width: 64, height: 64, borderRadius: radius.xl, backgroundColor: colors.naturalWhite25 },
-  qty: {
-    position: "absolute",
-    top: -6,
-    right: -6,
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: colors.black,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 4,
+  summaryWindow: {
+    width: 64,
+    height: 64,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: colors.ink,
+    backgroundColor: colors.paper,
+    overflow: "hidden",
   },
-  qtyText: { fontFamily: "Inter_500Medium", fontSize: 11, lineHeight: 13, color: colors.white },
-  summaryRow: { flexDirection: "row", justifyContent: "space-between", gap: 12 },
-  divider: { height: 1, backgroundColor: colors.page, marginVertical: 4 },
-  total: { fontFamily: "Inter_500Medium", fontSize: 18, lineHeight: 28, color: colors.black },
-  section: { padding: 24, gap: 16, backgroundColor: colors.white, borderRadius: radius.xxl },
-  sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  summaryImage: { position: "absolute", top: "8%", left: "8%", right: "8%", bottom: "8%" },
+  summaryRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 12 },
+  totalRow: { borderTopWidth: 2, borderTopColor: colors.ink, paddingTop: 12 },
+  divider: { height: 1.5, backgroundColor: colors.ink, marginVertical: 4 },
+  sectionHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
   sectionBody: { gap: 16 },
-  option: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    padding: 14,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.stroke,
-  },
-  optionSelected: { borderColor: colors.black },
-  optionName: { fontFamily: "Inter_500Medium", fontSize: 14, lineHeight: 21, color: colors.black },
-  radio: { width: 18, height: 18, borderRadius: 9, borderWidth: 1, borderColor: colors.black },
+  option: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14, minHeight: 56, borderWidth: 2, borderColor: colors.stroke },
+  optionSelected: { borderColor: colors.ink },
+  optionName: { fontFamily: fonts.bodySemi, fontSize: 15, lineHeight: 21, color: colors.ink },
+  radio: { width: 20, height: 20, borderWidth: 2, borderColor: colors.ink },
   radioOn: { borderWidth: 6 },
-  notice: { padding: 14, gap: 4, borderRadius: radius.xl, backgroundColor: colors.naturalWhite25 },
-  noticeCopy: { lineHeight: 19.5 },
-  error: { fontFamily: "Inter_400Regular", fontSize: 12, lineHeight: 16, color: colors.red },
+  notice: { padding: 14, gap: 4, borderWidth: 1.5, borderColor: colors.ink, borderStyle: "dashed" },
+  noticeCopy: { lineHeight: 20 },
+  error: { fontFamily: fonts.body, fontSize: 14, lineHeight: 20, color: colors.red },
 })

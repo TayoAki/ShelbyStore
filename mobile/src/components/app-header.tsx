@@ -4,9 +4,8 @@ import { router } from "expo-router"
 import { useEffect, useMemo, useState } from "react"
 import { Pressable, ScrollView, StyleSheet, View } from "react-native"
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated"
-import { useSafeAreaInsets } from "react-native-safe-area-context"
 
-import { colors, CORE_COLOURWAYS, ease, layout, radius, shadow, type } from "@/constants/theme"
+import { colors, CORE_COLOURWAYS, ease, layout, type } from "@/constants/theme"
 import { useCatalog } from "@/hooks/use-products"
 import { useRecentlyViewed } from "@/hooks/use-recently-viewed"
 import { trackTap } from "@/lib/analytics"
@@ -19,26 +18,22 @@ import { BottomSheet, TopSheet } from "./sheet"
 import { Text } from "./text"
 
 /**
- * The floating header pill (APP_SPEC v5 §4.1): white, radius 12, 40pt, 20pt
- * from the edges. Recently viewed at the left (hidden when empty), the
- * wordmark centred, search and bag at the right. `belowTicker` pushes it under
- * the 32pt ticker on Home.
+ * The header bar (APP_SPEC v7 §4.1), the box's top flap: white board, 52pt,
+ * a 2pt navy keyline at its foot, laid out in the flow above the content.
+ * Back and recently viewed at the left, the SHELBY wordmark centred, search
+ * and bag at the right; every icon is a 44pt target.
  */
-export function AppHeader({ belowTicker = false, back = false }: { belowTicker?: boolean; back?: boolean }) {
-  const insets = useSafeAreaInsets()
+export function AppHeader({ back = false }: { belowTicker?: boolean; back?: boolean }) {
   const { itemCount } = useCart()
   const viewed = useRecentlyViewed()
   const [search, setSearch] = useState(false)
   const [recent, setRecent] = useState(false)
-  const top = insets.top + layout.pillTop + (belowTicker ? layout.ticker : 0)
 
   return (
     <>
-      <View style={[styles.pill, shadow.sm, { top }]}>
+      <View style={styles.pill}>
         <View style={styles.side}>
-          {back && router.canGoBack() ? (
-            <IconButton icon="chevron-back" label="Back" onPress={() => router.back()} />
-          ) : null}
+          {back && router.canGoBack() ? <IconButton icon="chevron-back" label="Back" onPress={() => router.back()} /> : null}
           {viewed.handles.length ? (
             <IconButton
               icon="eye-outline"
@@ -51,12 +46,21 @@ export function AppHeader({ belowTicker = false, back = false }: { belowTicker?:
             />
           ) : null}
         </View>
-        <Pressable accessibilityRole="link" accessibilityLabel="Shelby, home" onPress={() => router.navigate("/")} style={styles.wordmarkWrap}>
+        <Pressable
+          accessibilityRole="link"
+          accessibilityLabel="Shelby, home"
+          onPress={() => router.navigate("/")}
+          style={styles.wordmarkWrap}>
           <Text style={type.wordmark}>shelby</Text>
         </Pressable>
         <View style={[styles.side, styles.right]}>
           <IconButton icon="search-outline" label="Search" onPress={() => setSearch(true)} />
-          <IconButton icon="bag-handle-outline" label={`Bag, ${itemCount} items`} count={itemCount} onPress={() => router.navigate("/cart")} />
+          <IconButton
+            icon="bag-handle-outline"
+            label={`Bag, ${itemCount} items`}
+            count={itemCount}
+            onPress={() => router.navigate("/cart")}
+          />
         </View>
       </View>
       <SearchSheet visible={search} onClose={() => setSearch(false)} />
@@ -65,10 +69,9 @@ export function AppHeader({ belowTicker = false, back = false }: { belowTicker?:
   )
 }
 
-/** Screens start their content under the floating pill. */
-export function useHeaderInset(belowTicker = false) {
-  const insets = useSafeAreaInsets()
-  return insets.top + layout.contentTop + (belowTicker ? layout.ticker : 0)
+/** v6 helper kept for call sites: the header now sits in the flow, so content starts 12pt under it. */
+export function useHeaderInset(_belowTicker = false) {
+  return 12
 }
 
 function IconButton({
@@ -89,7 +92,7 @@ function IconButton({
   const badge = useAnimatedStyle(() => ({ opacity: o.value }))
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={label} hitSlop={8} onPress={onPress} style={styles.icon}>
-      <Ionicons name={icon} size={24} color={colors.black} />
+      <Ionicons name={icon} size={24} color={colors.ink} />
       <Animated.View style={[styles.count, badge]} pointerEvents="none">
         <Text style={[type.countBadge, { color: colors.white }]}>{count > 99 ? "99" : count}</Text>
       </Animated.View>
@@ -147,7 +150,9 @@ function SearchSheet({ visible, onClose }: { visible: boolean; onClose: () => vo
   const [q, setQ] = useState("")
   const index = useSearchIndex()
   const query = q.trim().toLowerCase()
-  const results = query ? index.filter((e) => query.split(/\s+/).every((t) => e.terms.includes(t) || e.title.toLowerCase().includes(t))) : index
+  const results = query
+    ? index.filter((e) => query.split(/\s+/).every((t) => e.terms.includes(t) || e.title.toLowerCase().includes(t)))
+    : index
   const go = (href: string) => {
     trackTap("search_result", { q: query })
     onClose()
@@ -180,7 +185,7 @@ function SearchSheet({ visible, onClose }: { visible: boolean; onClose: () => vo
           </View>
         </ScrollView>
         <Pressable accessibilityRole="link" onPress={() => go("/shop")}>
-          <Text variant="meta" tone="golf" style={styles.underline}>
+          <Text variant="meta" style={styles.underline}>
             View all results
           </Text>
         </Pressable>
@@ -224,31 +229,28 @@ function RecentSheet({ visible, onClose, handles }: { visible: boolean; onClose:
 
 const styles = StyleSheet.create({
   pill: {
-    position: "absolute",
-    left: layout.pillSide,
-    right: layout.pillSide,
-    height: layout.pillHeight,
-    backgroundColor: colors.white,
-    borderRadius: radius.xl,
-    paddingHorizontal: 10,
+    height: layout.header,
+    backgroundColor: colors.paper,
+    borderBottomWidth: 2,
+    borderBottomColor: colors.ink,
+    paddingHorizontal: 4,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     zIndex: 80,
   },
-  side: { flexDirection: "row", alignItems: "center", gap: 8, minWidth: 64 },
+  side: { flexDirection: "row", alignItems: "center", minWidth: 88 },
   right: { justifyContent: "flex-end" },
-  wordmarkWrap: { position: "absolute", left: 0, right: 0, alignItems: "center", zIndex: -1 },
-  icon: { width: 28, height: 28, alignItems: "center", justifyContent: "center" },
+  wordmarkWrap: { position: "absolute", left: 96, right: 96, alignItems: "center", justifyContent: "center", minHeight: 44, zIndex: -1 },
+  icon: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
   count: {
     position: "absolute",
-    top: 0,
-    right: -4,
-    minWidth: 14,
-    height: 14,
-    borderRadius: 7,
-    paddingHorizontal: 2,
-    backgroundColor: colors.black,
+    top: 4,
+    right: 2,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 3,
+    backgroundColor: colors.ink,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -257,13 +259,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: colors.white,
-    borderRadius: radius.lg,
-    padding: 8,
+    minHeight: 64,
+    paddingVertical: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.rule,
   },
-  resultImage: { width: 56, height: 56, borderRadius: radius.lg, backgroundColor: colors.white },
+  resultImage: { width: 56, height: 56, borderRadius: 14, borderWidth: 1.5, borderColor: colors.ink, backgroundColor: colors.paper },
   underline: { textDecorationLine: "underline" },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   recent: { width: "48%", gap: 4 },
-  recentImage: { width: "100%", aspectRatio: 1, borderRadius: radius.xxl, backgroundColor: colors.naturalWhite25 },
+  recentImage: { width: "100%", aspectRatio: 1, borderRadius: 18, borderWidth: 2, borderColor: colors.ink, backgroundColor: colors.paper },
 })

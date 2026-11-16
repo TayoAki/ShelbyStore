@@ -1,36 +1,23 @@
 import { router } from "expo-router"
-import { StyleSheet, View } from "react-native"
+import { StyleSheet } from "react-native"
 
+import { InkText, Panel } from "@/components/box"
 import { Button } from "@/components/button"
 import { Screen } from "@/components/screen"
-import { Text } from "@/components/text"
-import { colors, radius } from "@/constants/theme"
 
-/** Not found (APP_SPEC G.5): a value tile, no golf wordplay (G.1.3). */
+/** Not found (APP_SPEC v7 §5.8): one printed panel, no golf wordplay (G.1.3). */
 export default function NotFound() {
   return (
     <Screen back>
-      <View style={styles.tile}>
-        <Text variant="eyebrow">404</Text>
-        <Text variant="empty" style={styles.center}>
-          This page wandered off.
-        </Text>
-        <Button title="Shop the Rope Cap" onPress={() => router.replace("/products/rope-cap")} />
-      </View>
+      <Panel style={styles.wrap}>
+        <InkText variant="panelTitle" accessibilityRole="header">
+          This page isn&apos;t here.
+        </InkText>
+        <InkText variant="body">The link may be old. The cap is still where it was.</InkText>
+        <Button title="Shop the Rope Cap" variant="ink" size="large" onPress={() => router.replace("/products/rope-cap")} />
+      </Panel>
     </Screen>
   )
 }
 
-const styles = StyleSheet.create({
-  tile: {
-    margin: 10,
-    backgroundColor: colors.white,
-    borderRadius: radius.xxl,
-    paddingTop: 40,
-    paddingBottom: 32,
-    paddingHorizontal: 20,
-    gap: 20,
-    alignItems: "center",
-  },
-  center: { textAlign: "center" },
-})
+const styles = StyleSheet.create({ wrap: { marginHorizontal: 12 } })

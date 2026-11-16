@@ -1,49 +1,36 @@
-import Ionicons from "@expo/vector-icons/Ionicons"
-import { Image } from "expo-image"
 import { router } from "expo-router"
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from "react-native"
-import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from "react-native-reanimated"
 
-import { colors, CORE_COLOURWAYS, colourwaySlug, ease, motion, radius } from "@/constants/theme"
+import { CORE_COLOURWAYS, colourwaySlug } from "@/constants/theme"
 import { holeDay, type Hole } from "@/hooks/use-holes"
 import { useQuickAdd } from "@/hooks/use-quick-add"
 import { trackTap } from "@/lib/analytics"
 import { formatMoney } from "@/lib/format"
 import { colorCounts, hatImage, imagesFor, productPrice, ropeNameFor, type Product } from "@/lib/product"
 
-import { Badge } from "./badge"
-import { EditionBadge } from "./edition-badge"
-import { Swatch } from "./swatch"
-import { Text } from "./text"
-
-function usePressScale() {
-  const reduce = useReducedMotion()
-  const scale = useSharedValue(1)
-  const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }))
-  const press = (to: number) => {
-    if (reduce) return
-    scale.set(withTiming(to, { duration: 150, easing: ease.tailwind, reduceMotion: motion.reduceMotion }))
-  }
-  return { style, press }
-}
+import { confirmHaptic, Digits, Face, InkText, inkFor, Panel, Window, type Ink } from "./box"
+import { Button } from "./button"
 
 /**
- * A colourway card of The Rope Cap (APP_SPEC G.5 Shop): the colour is fixed,
- * the swatch row shows the four core colours with this one selected, and
- * ADD adds the one-size cap directly.
+ * A colourway of The Rope Cap as its own printed face (APP_SPEC v7 §5.4): the
+ * face inked in the colourway's ink, a die-cut window onto the cap, the
+ * colour as the heading, status in the meta line under it (never on the
+ * photo), the price in tight figures and an Add ink block.
  */
 export function ColourwayCard({
   product,
   colourway,
   style,
   source = "app_quick_add",
+  flat = false,
 }: {
   product: Product
   colourway: string
   style?: StyleProp<ViewStyle>
   source?: string
+  /** Printed as a cell of a shared sheet (no keyline of its own). */
+  flat?: boolean
 }) {
-  const { style: scaleStyle, press } = usePressScale()
   const quick = useQuickAdd()
   const image = imagesFor(product, colourway)[0] ?? hatImage(`rope-cap-${colourwaySlug(colourway)}-1.jpg`)
   const price = productPrice(product)
@@ -54,55 +41,56 @@ export function ColourwayCard({
     trackTap("core_product", { color: colourway })
     router.push({ pathname: "/products/[handle]", params: { handle: product.handle!, color: colourway } })
   }
-
   return (
-    <Animated.View style={[styles.card, scaleStyle, style]}>
-      <Pressable accessibilityRole="link" accessibilityLabel={`The Rope Cap in ${colourway}`} onPressIn={() => press(0.98)} onPressOut={() => press(1)} onPress={go}>
-        <View>
-          <Image source={image} style={styles.image} contentFit="contain" />
-          <Badge label={soldOut ? "Sold out" : "Core"} style={styles.badge} />
-        </View>
-        <View style={styles.info}>
-          <Text variant="cardTitle" numberOfLines={1}>
-            {product.title}
-          </Text>
-          <Text variant="cardMeta" tone="muted" numberOfLines={1}>
+    <Shell flat={flat} ink={inkFor(colourway)} style={style}>
+      <Pressable accessibilityRole="link" accessibilityLabel={`The Rope Cap in ${colourway}`} onPress={go} style={styles.gap}>
+        <Window source={image} alt={`The Rope Cap in ${colourway}`} aspectRatio={1} />
+        <View style={styles.text}>
+          <InkText variant="cardHeading" numberOfLines={2}>
             {colourway}
-            {rope ? ` · ${rope} rope` : ""}
-          </Text>
-          {price ? <Text variant="priceSm">{formatMoney(price.amount, price.currency)}</Text> : null}
-          <View style={styles.swatches}>
-            {CORE_COLOURWAYS.map((c) => (
-              <Swatch key={c} name={c} size={20} selected={c === colourway} />
-            ))}
-          </View>
+          </InkText>
+          <InkText variant="meta" numberOfLines={2}>
+            {[flat ? null : "The Rope Cap", rope ? `${flat ? rope : rope.toLowerCase()} rope` : null, soldOut ? "Sold out" : "Core"]
+              .filter(Boolean)
+              .join(" · ")}
+          </InkText>
         </View>
       </Pressable>
-      <View style={styles.addRow}>
-        <Text variant="meta" tone="muted">
-          One size
-        </Text>
-        <Pressable
-          accessibilityRole="button"
+      <View style={styles.foot}>
+        {price ? <Digits value={formatMoney(price.amount, price.currency)} variant="price" /> : null}
+        <Button
+          title={soldOut ? "Sold out" : "Add"}
+          variant="ink"
+          size="small"
+          style={styles.flex}
+          disabled={soldOut}
+          loading={quick.pending !== null}
           accessibilityLabel={`Add ${colourway} to bag`}
-          disabled={soldOut || quick.pending !== null}
-          hitSlop={8}
           onPress={() => {
             trackTap("quick_add", { color: colourway })
+            confirmHaptic()
             void quick.addColour(product, colourway, source)
           }}
-          style={({ pressed }) => [styles.add, (soldOut || pressed) && { opacity: 0.5 }]}>
-          <Ionicons name="bag-handle-outline" size={16} color={colors.black} />
-          <Text variant="cardTitle">{soldOut ? "Sold out" : "Add"}</Text>
-        </Pressable>
+        />
       </View>
-    </Animated.View>
+    </Shell>
   )
 }
 
-/** A numbered edition card (Shop's LIMITED group): live editions add; upcoming ones open the tee sheet. */
-export function EditionCard({ hole, style }: { hole: Hole; style?: StyleProp<ViewStyle> }) {
-  const { style: scaleStyle, press } = usePressScale()
+function Shell({ flat, ink, style, children }: { flat: boolean; ink: Ink; style?: StyleProp<ViewStyle>; children: React.ReactNode }) {
+  return flat ? (
+    <Face ink={ink} style={[styles.fill, style]} padded={false}>
+      <View style={styles.cell}>{children}</View>
+    </Face>
+  ) : (
+    <Panel ink={ink} style={style}>
+      {children}
+    </Panel>
+  )
+}
+
+/** A numbered edition as its own face: live editions add; upcoming ones open the tee sheet. */
+export function EditionCard({ hole, style, flat = false }: { hole: Hole; style?: StyleProp<ViewStyle>; flat?: boolean }) {
   const quick = useQuickAdd()
   const product = hole.product
   const colour = hole.colourway
@@ -111,51 +99,59 @@ export function EditionCard({ hole, style }: { hole: Hole; style?: StyleProp<Vie
     if (hole.status === "live" && product?.handle) router.push(`/products/${product.handle}`)
     else if (hole.handle) router.push(`/card/${hole.handle}`)
   }
+  const meta = [
+    `Hole ${hole.number}`,
+    hole.editionSize
+      ? hole.status === "live" && hole.left != null
+        ? `${hole.left} of ${hole.editionSize} left`
+        : `Edition of ${hole.editionSize}`
+      : null,
+    hole.status === "upcoming" ? `Releases ${holeDay(hole.releaseAt ?? hole.dateIso)}` : hole.status === "sold_out" ? "Sold out" : null,
+  ]
+    .filter(Boolean)
+    .join(" · ")
   return (
-    <Animated.View style={[styles.card, scaleStyle, style]}>
-      <Pressable accessibilityRole="link" accessibilityLabel={`Hole ${hole.number}, ${hole.name}`} onPressIn={() => press(0.98)} onPressOut={() => press(1)} onPress={go}>
-        <View>
-          {hole.image ? <Image source={hole.image} style={styles.image} contentFit="contain" /> : <View style={styles.image} />}
-          <Badge label={hole.status === "sold_out" ? "Sold out" : `Hole ${hole.number}`} style={styles.badge} />
-        </View>
-        <View style={styles.info}>
-          <Text variant="cardTitle" numberOfLines={1}>
-            The Rope Cap, {hole.name}
-          </Text>
-          <Text variant="cardMeta" tone="muted" numberOfLines={1}>
-            {colour ? `${colour} · ${ropeNameFor(product, colour) ?? ""} rope` : hole.promise}
-          </Text>
-          {hole.price != null ? <Text variant="priceSm">{formatMoney(hole.price)}</Text> : null}
-          <EditionBadge size={hole.editionSize} left={hole.status === "live" ? hole.left : null} />
-          {hole.status === "upcoming" ? (
-            <Text variant="badge" tone="muted">
-              Releases {holeDay(hole.releaseAt ?? hole.dateIso)}
-            </Text>
-          ) : null}
+    <Shell flat={flat} ink={inkFor(colour)} style={style}>
+      <Pressable accessibilityRole="link" accessibilityLabel={`Hole ${hole.number}, ${hole.name}`} onPress={go} style={styles.gap}>
+        <Window source={hole.image} alt={`The Rope Cap, ${hole.name}`} aspectRatio={1} />
+        <View style={styles.text}>
+          <InkText variant="cardHeading" numberOfLines={1}>
+            {String(hole.number).padStart(2, "0")} {hole.name}
+          </InkText>
+          <InkText variant="meta" numberOfLines={2}>
+            {meta}
+          </InkText>
         </View>
       </Pressable>
-      <View style={styles.addRow}>
+      <View style={styles.foot}>
+        {hole.price != null ? <Digits value={formatMoney(hole.price)} variant="price" /> : null}
         {hole.status === "live" && product && colour ? (
-          <Pressable
-            accessibilityRole="button"
+          <Button
+            title="Add"
+            variant="ink"
+            size="small"
+            style={styles.flex}
+            loading={quick.pending !== null}
             accessibilityLabel={`Add ${hole.name} to bag`}
-            disabled={quick.pending !== null}
-            onPress={() => void quick.addColour(product, colour, "app_quick_add")}
-            style={({ pressed }) => [styles.add, pressed && { opacity: 0.5 }]}>
-            <Ionicons name="bag-handle-outline" size={16} color={colors.black} />
-            <Text variant="cardTitle">Add</Text>
-          </Pressable>
+            onPress={() => {
+              confirmHaptic()
+              void quick.addColour(product, colour, "app_quick_add")
+            }}
+          />
         ) : hole.status === "upcoming" ? (
-          <Pressable accessibilityRole="link" onPress={go} style={styles.add}>
-            <Text variant="cardTitle">Join the tee sheet</Text>
-          </Pressable>
+          <Button
+            title={flat ? "Tee sheet" : "Join the tee sheet"}
+            accessibilityLabel={`Join the tee sheet for ${hole.name}`}
+            variant="ink"
+            size="small"
+            style={styles.flex}
+            onPress={go}
+          />
         ) : (
-          <Text variant="meta" tone="muted">
-            {hole.status === "sold_out" ? "Sold out" : hole.status === "ended" ? "Played" : "Announced"}
-          </Text>
+          <InkText variant="label">{hole.status === "sold_out" ? "Sold out" : hole.status === "ended" ? "Played" : "Announced"}</InkText>
         )}
       </View>
-    </Animated.View>
+    </Shell>
   )
 }
 
@@ -166,18 +162,10 @@ export function coreCounts(product: Product | undefined) {
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: colors.white, borderRadius: radius.xxl, overflow: "hidden" },
-  image: { width: "100%", aspectRatio: 1, backgroundColor: colors.white },
-  badge: { position: "absolute", top: 10, left: 10 },
-  info: { padding: 16, paddingBottom: 8, gap: 4 },
-  swatches: { flexDirection: "row", gap: 2, marginTop: 4 },
-  addRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    paddingTop: 4,
-  },
-  add: { flexDirection: "row", alignItems: "center", gap: 4 },
+  cell: { padding: 14, gap: 14, flex: 1, justifyContent: "space-between" },
+  fill: { flex: 1 },
+  flex: { flex: 1 },
+  gap: { gap: 14 },
+  text: { gap: 4 },
+  foot: { flexDirection: "row", alignItems: "center", gap: 12 },
 })

@@ -7,7 +7,7 @@ import { StyleSheet, View } from "react-native"
 import { Button } from "@/components/button"
 import { BottomSheet } from "@/components/sheet"
 import { Text } from "@/components/text"
-import { colors, radius } from "@/constants/theme"
+import { colors } from "@/constants/theme"
 
 export type AddedLine = { title: string; detail?: string | null; price?: string | null; image?: string | null }
 
@@ -16,8 +16,8 @@ type Ctx = { show: (line: AddedLine) => void }
 const AddedSheetContext = createContext<Ctx>({ show: () => {} })
 
 /**
- * The Added sheet (APP_SPEC v5 §5.1): Allbirds' cart drawer as a native bottom
- * sheet (M20), opened by every add to bag.
+ * The Added sheet (APP_SPEC v7 §5.6): the box's bottom flap, opened by every
+ * add to bag. The line in a small window, then Keep shopping and View bag.
  */
 export function AddedSheetProvider({ children }: { children: React.ReactNode }) {
   const [line, setLine] = useState<AddedLine | null>(null)
@@ -34,12 +34,14 @@ export function AddedSheetProvider({ children }: { children: React.ReactNode }) 
       {children}
       <BottomSheet visible={visible} onClose={close}>
         <View style={styles.head} accessibilityLiveRegion="polite">
-          <Ionicons name="checkmark-circle-outline" size={18} color={colors.green} />
-          <Text variant="label">Added to your bag</Text>
+          <Ionicons name="checkmark" size={22} color={colors.ink} />
+          <Text variant="cardHeading" accessibilityRole="header">
+            Added to your bag
+          </Text>
         </View>
         {line ? (
           <View style={styles.line}>
-            {line.image ? <Image source={line.image} style={styles.image} contentFit="contain" /> : <View style={styles.image} />}
+            <View style={styles.window}>{line.image ? <Image source={line.image} style={styles.image} contentFit="contain" /> : null}</View>
             <View style={styles.lineText}>
               <Text variant="cardTitle" numberOfLines={2}>
                 {line.title}
@@ -74,7 +76,16 @@ export const useAddedSheet = () => useContext(AddedSheetContext)
 const styles = StyleSheet.create({
   head: { flexDirection: "row", alignItems: "center", gap: 8 },
   line: { flexDirection: "row", alignItems: "center", gap: 12 },
-  image: { width: 85, height: 85, borderRadius: radius.tile, backgroundColor: colors.naturalWhite25 },
+  window: {
+    width: 80,
+    height: 80,
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: colors.ink,
+    backgroundColor: colors.paper,
+    overflow: "hidden",
+  },
+  image: { position: "absolute", top: "8%", left: "8%", right: "8%", bottom: "8%" },
   lineText: { flex: 1, gap: 4 },
   actions: { flexDirection: "row", gap: 10 },
   flex: { flex: 1 },

@@ -1,12 +1,14 @@
 import { Pressable, ScrollView, StyleSheet, View } from "react-native"
 
-import { colors, golf, radius, type } from "@/constants/theme"
+import { colors, type } from "@/constants/theme"
 
+import { usePanelInk } from "./box"
 import { Text } from "./text"
 
 /**
- * Allbirds' pill segmented control (APP_SPEC v5 §3) with the golf-green
- * active segment (G.2.2): white label on #1E3B2F.
+ * Printed tabs (APP_SPEC v7 §3), the way a box prints its index on a panel
+ * edge: semi-condensed caps, the active tab underlined with a 3pt rule in the
+ * face's ink. Every tab is a 44pt target.
  */
 export function SegmentedControl<T extends string>({
   options,
@@ -19,11 +21,13 @@ export function SegmentedControl<T extends string>({
   value: T
   onChange: (value: T) => void
   scroll?: boolean
-  /** On a golf-green band: white outline and labels, white active segment. */
+  /** On an inked face: print in white. */
   inverse?: boolean
 }) {
+  const ink = usePanelInk()
+  const line = inverse ? colors.paper : ink.ink
   const row = (
-    <View style={[styles.pill, inverse && { borderColor: colors.white }]} accessibilityRole="tablist">
+    <View style={[styles.row, { borderBottomColor: line }]} accessibilityRole="tablist">
       {options.map((o) => {
         const active = o.value === value
         return (
@@ -32,14 +36,8 @@ export function SegmentedControl<T extends string>({
             accessibilityRole="tab"
             accessibilityState={{ selected: active }}
             onPress={() => onChange(o.value)}
-            style={[styles.segment, active && (inverse ? styles.activeInverse : styles.active)]}>
-            <Text
-              style={[
-                type.button,
-                { fontSize: 11, color: inverse ? (active ? golf.green : colors.white) : active ? colors.white : colors.black },
-              ]}>
-              {o.label}
-            </Text>
+            style={[styles.tab, { borderBottomColor: active ? line : "transparent" }]}>
+            <Text style={[type.tab, { color: line, opacity: active ? 1 : 0.72 }]}>{o.label}</Text>
           </Pressable>
         )
       })}
@@ -47,29 +45,13 @@ export function SegmentedControl<T extends string>({
   )
   if (!scroll) return row
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 0 }}>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
       {row}
     </ScrollView>
   )
 }
 
 const styles = StyleSheet.create({
-  pill: {
-    flexDirection: "row",
-    alignSelf: "flex-start",
-    borderWidth: 1,
-    borderColor: colors.black,
-    borderRadius: radius.full,
-    padding: 4,
-    gap: 4,
-  },
-  segment: {
-    height: 33,
-    paddingHorizontal: 12,
-    borderRadius: radius.full,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  active: { backgroundColor: golf.green },
-  activeInverse: { backgroundColor: colors.white },
+  row: { flexDirection: "row", alignSelf: "flex-start", gap: 20, borderBottomWidth: 1 },
+  tab: { minHeight: 44, minWidth: 44, alignItems: "center", justifyContent: "center", borderBottomWidth: 3, marginBottom: -1 },
 })

@@ -3,28 +3,30 @@ import { Image } from "expo-image"
 import { router, useLocalSearchParams } from "expo-router"
 import { StyleSheet, View } from "react-native"
 
+import { Box, Digits, Face, InkText, Panel, type Ink } from "@/components/box"
 import { Button } from "@/components/button"
 import { Screen } from "@/components/screen"
 import { ErrorState, LoadingState } from "@/components/state-views"
 import { Text } from "@/components/text"
-import { colors, radius } from "@/constants/theme"
+import { colors } from "@/constants/theme"
 import { useCatalog } from "@/hooks/use-products"
 import { formatMoney } from "@/lib/format"
 import { sdk } from "@/lib/medusa"
 import { editionOf, lineImage, lineMeta } from "@/lib/product"
 
 /**
- * Order confirmation (APP_SPEC v5 §5.1, G.5): a white radius-24 card. Edition
- * lines whose product prints numbers inside say so; a specific number is
- * never shown (G.1.5).
+ * Order confirmation (APP_SPEC v7 §5.6): a two-face box, the thanks printed in
+ * navy, then the lines, totals and address. Edition lines whose product prints
+ * numbers inside say so; a specific number is never shown (G.1.5).
  */
 export default function OrderScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
-  const { data: order, isLoading, error, refetch } = useQuery({
-    queryKey: ["order", id],
-    queryFn: async () => (await sdk.store.order.retrieve(id!)).order,
-    enabled: !!id,
-  })
+  const {
+    data: order,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({ queryKey: ["order", id], queryFn: async () => (await sdk.store.order.retrieve(id!)).order, enabled: !!id })
   const catalog = useCatalog()
   const done = <Button title="Keep shopping" onPress={() => router.replace("/")} />
 
@@ -38,14 +40,16 @@ export default function OrderScreen() {
   if (error || !order) {
     return (
       <Screen header={false} under="safe">
-        <View style={styles.card}>
-          <Text variant="eyebrow">Order confirmed</Text>
+        <Panel style={styles.wrap}>
+          <Text variant="panelTitle" accessibilityRole="header">
+            Order confirmed
+          </Text>
           <Text variant="body" tone="muted">
             Your order is in. We couldn&apos;t load the details just now; you&apos;ll get a confirmation email.
           </Text>
           <ErrorState error={error} onRetry={() => refetch()} />
           {done}
-        </View>
+        </Panel>
       </Screen>
     )
   }
@@ -55,58 +59,65 @@ export default function OrderScreen() {
   const first = a?.first_name ?? ""
   return (
     <Screen header={false} under="safe">
-      <View style={styles.card}>
-        <Text variant="eyebrow">Order confirmed · #{order.display_id}</Text>
-        <Text variant="section">Thanks{first ? `, ${first}` : ""}.</Text>
-        <Text variant="body" tone="muted">
-          We&apos;ve sent a confirmation to {order.email}. We&apos;ll email again when it ships.
-        </Text>
+      <View style={styles.wrap}>
+        <Box>
+          <Face ink={NAVY}>
+            <InkText variant="panelTitle" accessibilityRole="header">
+              Thanks{first ? `, ${first}` : ""}.
+            </InkText>
+            <InkText variant="specLine">Order confirmed · No. {order.display_id}</InkText>
+            <InkText variant="body">We&apos;ve sent a confirmation to {order.email}. We&apos;ll email again when it ships.</InkText>
+          </Face>
+          <Face>
+            <View style={styles.lines}>
+              {(order.items ?? []).map((item) => {
+                const image = lineImage(catalog.data, item)
+                const product = catalog.data?.find((p) => p.id === item.product_id)
+                const edition = editionOf(product)
+                return (
+                  <View key={item.id} style={styles.line}>
+                    <View style={styles.thumb}>
+                      {image ? <Image source={image} style={styles.thumbImage} contentFit="contain" /> : null}
+                    </View>
+                    <View style={styles.flex}>
+                      <Text variant="cardTitle" numberOfLines={2}>
+                        {item.product_title ?? item.title}
+                      </Text>
+                      <Text variant="meta" tone="muted">
+                        {[lineMeta(product, item), `Qty ${item.quantity}`].filter(Boolean).join(" · ")}
+                      </Text>
+                      {edition && edition.hole >= 2 && edition.numberedInside ? (
+                        <Text variant="meta" tone="muted">
+                          Your edition number is printed inside the cap.
+                        </Text>
+                      ) : null}
+                    </View>
+                    <Text variant="priceSm">{formatMoney(item.total, currency)}</Text>
+                  </View>
+                )
+              })}
+            </View>
+            <View style={styles.divider} />
+            <Row label="Subtotal" value={formatMoney(order.item_subtotal, currency)} />
+            <Row label="Shipping" value={order.shipping_total === 0 ? "Free" : formatMoney(order.shipping_total, currency)} />
+            <Row label="Tax" value={formatMoney(order.tax_total, currency)} />
+            <Row label="Total" value={formatMoney(order.total, currency)} strong />
 
-        <View style={styles.lines}>
-          {(order.items ?? []).map((item) => {
-            const image = lineImage(catalog.data, item)
-            const product = catalog.data?.find((p) => p.id === item.product_id)
-            const edition = editionOf(product)
-            return (
-              <View key={item.id} style={styles.line}>
-                {image ? <Image source={image} style={styles.thumb} contentFit="contain" /> : <View style={styles.thumb} />}
-                <View style={styles.flex}>
-                  <Text variant="cardTitle" numberOfLines={2}>
-                    {item.product_title ?? item.title}
-                  </Text>
-                  <Text variant="meta" tone="muted">
-                    {[lineMeta(product, item), `Qty ${item.quantity}`].filter(Boolean).join(" · ")}
-                  </Text>
-                  {edition && edition.hole >= 2 && edition.numberedInside ? (
-                    <Text variant="meta" tone="muted">
-                      Your edition number is printed inside the cap.
-                    </Text>
-                  ) : null}
-                </View>
-                <Text variant="priceSm">{formatMoney(item.total, currency)}</Text>
+            {a ? (
+              <View style={styles.address}>
+                <Text variant="label">Shipping to</Text>
+                <Text variant="body">
+                  {[a.first_name, a.last_name].filter(Boolean).join(" ")}
+                  {"\n"}
+                  {[a.address_1, a.address_2].filter(Boolean).join(", ")}
+                  {"\n"}
+                  {[a.city, a.province, a.postal_code].filter(Boolean).join(" ")}
+                </Text>
               </View>
-            )
-          })}
-        </View>
-        <View style={styles.divider} />
-        <Row label="Subtotal" value={formatMoney(order.item_subtotal, currency)} />
-        <Row label="Shipping" value={order.shipping_total === 0 ? "Free" : formatMoney(order.shipping_total, currency)} />
-        <Row label="Tax" value={formatMoney(order.tax_total, currency)} />
-        <Row label="Total" value={formatMoney(order.total, currency)} strong />
-
-        {a ? (
-          <View style={styles.address}>
-            <Text variant="label">Shipping to</Text>
-            <Text variant="body">
-              {[a.first_name, a.last_name].filter(Boolean).join(" ")}
-              {"\n"}
-              {[a.address_1, a.address_2].filter(Boolean).join(", ")}
-              {"\n"}
-              {[a.city, a.province, a.postal_code].filter(Boolean).join(" ")}
-            </Text>
-          </View>
-        ) : null}
-        {done}
+            ) : null}
+            {done}
+          </Face>
+        </Box>
       </View>
     </Screen>
   )
@@ -118,20 +129,35 @@ function Row({ label, value, strong }: { label: string; value: string; strong?: 
       <Text variant={strong ? "cardTitle" : "body"} tone={strong ? "default" : "muted"}>
         {label}
       </Text>
-      <Text variant={strong ? "price" : "body"} tone={strong ? "default" : "muted"}>
-        {value}
-      </Text>
+      {strong ? (
+        <Digits value={value} variant="digitsSm" />
+      ) : (
+        <Text variant="body" tone="muted">
+          {value}
+        </Text>
+      )}
     </View>
   )
 }
 
+const NAVY: Ink = { panel: colors.ink, ink: colors.paper, edge: colors.ink }
+
 const styles = StyleSheet.create({
-  card: { margin: 10, backgroundColor: colors.white, borderRadius: radius.xxxl, padding: 24, gap: 14 },
-  lines: { gap: 12, marginTop: 8 },
+  wrap: { marginHorizontal: 12 },
+  lines: { gap: 12 },
   line: { flexDirection: "row", gap: 12, alignItems: "center" },
-  thumb: { width: 64, height: 64, borderRadius: radius.xl, backgroundColor: colors.naturalWhite25 },
+  thumb: {
+    width: 64,
+    height: 64,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: colors.ink,
+    backgroundColor: colors.paper,
+    overflow: "hidden",
+  },
+  thumbImage: { position: "absolute", top: "8%", left: "8%", right: "8%", bottom: "8%" },
   flex: { flex: 1, gap: 2 },
-  divider: { height: 1, backgroundColor: colors.page },
+  divider: { height: 2, backgroundColor: colors.ink },
   row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   address: { gap: 6, marginTop: 8 },
 })

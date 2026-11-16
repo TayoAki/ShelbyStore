@@ -1,18 +1,15 @@
 import Ionicons from "@expo/vector-icons/Ionicons"
-import { Image } from "expo-image"
 import { useState } from "react"
 import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from "react-native"
 
+import { Box, Digits, Face, InkText, Plate, Window, type Ink } from "@/components/box"
 import { Button } from "@/components/button"
 import { QuantityStepper } from "@/components/quantity-stepper"
-import { Scorecard } from "@/components/scorecard"
 import { Screen } from "@/components/screen"
 import { Swatch } from "@/components/swatch"
 import { Text } from "@/components/text"
-import { Veil } from "@/components/veil"
 import { TextField } from "@/components/text-field"
-import { ValueTile } from "@/components/value-tile"
-import { colors, CORE_COLOURWAYS, golf, radius } from "@/constants/theme"
+import { colors, CORE_COLOURWAYS } from "@/constants/theme"
 import { track, trackTap } from "@/lib/analytics"
 import { readAttribution } from "@/lib/attribution"
 import { submitCustomQuote } from "@/lib/catalog"
@@ -36,9 +33,10 @@ const FACTS = [
 type Errors = Partial<Record<"name" | "email" | "organisation" | "quantity" | "colors" | "needed_by" | "artwork_url" | "rights", string>>
 
 /**
- * Custom club and outing orders (APP_SPEC G.5 Custom, web G.6.10): the facts
- * scorecard on this screen's golf-green band, how it works, and a quote form
- * that posts to POST /store/custom-quotes.
+ * Custom club and outing orders (APP_SPEC v7 §5.7): one box. The front face in
+ * navy (window, name, terms in the meta line), the terms on a keylined plate,
+ * the three steps numbered in tight figures, and the quote form that posts to
+ * POST /store/custom-quotes.
  */
 export default function CustomScreen() {
   const [name, setName] = useState("")
@@ -111,140 +109,167 @@ export default function CustomScreen() {
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <Screen back>
-        <View style={styles.hero}>
-          <Image source={hatImage("rope-clubhouse.jpg")} style={StyleSheet.absoluteFill} contentFit="cover" />
-          <Veil alpha={0.7} />
-          <View style={styles.heroText}>
-            <Text variant="heroEyebrow" tone="inverse">
-              Custom
-            </Text>
-            <Text variant="hero" tone="inverse" accessibilityRole="header">
-              Rope caps for your club or outing
-            </Text>
-            <Text variant="kicker" tone="inverse">
-              Your logo above the rope. Twenty-four caps or more.
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.band}>
-          <Scorecard title="Custom orders" rows={FACTS} />
-        </View>
-
-        <View style={styles.tiles}>
-          <ValueTile eyebrow="01 Send your logo" body="Tell us the club, the colors and the count. A link to your artwork helps." />
-          <ValueTile eyebrow="02 Approve a proof" body="We send a stitched proof of your mark above the rope, with the set-up quote." />
-          <ValueTile eyebrow="03 We make and ship" body="Two to four weeks after you approve the proof, the caps ship to you." />
-        </View>
-
-        <View style={styles.form}>
-          {done ? (
-            <View style={styles.done} accessibilityLiveRegion="polite">
-              <Ionicons name="checkmark-circle-outline" size={24} color={golf.green} />
-              <Text variant="section">Thanks, {done}. We&apos;ll reply within two business days.</Text>
-            </View>
-          ) : (
-            <>
-              <Text variant="eyebrow">Request a quote</Text>
-              <TextField label="Name" value={name} onChangeText={setName} autoComplete="name" error={errors.name} />
-              <TextField
-                label="Email"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoComplete="email"
-                error={errors.email}
-              />
-              <TextField label="Club or organisation" value={organisation} onChangeText={setOrganisation} error={errors.organisation} />
-              <TextField label="Quantity" value={quantity} onChangeText={setQuantity} keyboardType="number-pad" error={errors.quantity} />
-              <View style={styles.colours}>
-                <Text variant="label">Colors (in twelves)</Text>
-                {CORE_COLOURWAYS.map((c) => (
-                  <View key={c} style={styles.colourRow}>
-                    <Swatch name={c} size={20} />
-                    <Text variant="body" style={styles.flex}>
-                      {c}
-                    </Text>
-                    <QuantityStepper
-                      label={c}
-                      value={colours[c] ?? 0}
-                      step={12}
-                      max={9996}
-                      onChange={(n) => setColours((s) => ({ ...s, [c]: n }))}
-                    />
+        <View style={styles.wrap}>
+          <Box>
+            <Face ink={NAVY}>
+              <Window source={hatImage("rope-clubhouse.jpg")} alt="Rope caps on a clubhouse bench" aspectRatio={4 / 3} contentFit="cover" />
+              <View style={styles.gap8}>
+                <InkText variant="model" accessibilityRole="header">
+                  Club caps
+                </InkText>
+                <InkText variant="specLine">Custom · 24 caps minimum · $40 a cap</InkText>
+              </View>
+              <InkText variant="bodyLong">Your logo embroidered above the rope, for the club, the society or the outing.</InkText>
+            </Face>
+            <Face>
+              <InkText variant="panelTitle" accessibilityRole="header">
+                The terms
+              </InkText>
+              <Plate columns={1}>
+                {FACTS.map((f) => (
+                  <View key={f.label} style={styles.unit}>
+                    <InkText variant="label">{f.label}</InkText>
+                    <InkText variant="body">{f.value}</InkText>
                   </View>
                 ))}
-                <Text variant="meta" tone={errors.colors ? "error" : "muted"}>
-                  {errors.colors ?? `Total: ${total} caps`}
-                </Text>
-              </View>
-              <TextField
-                label="Needed by (optional)"
-                value={neededBy}
-                onChangeText={setNeededBy}
-                placeholder="YYYY-MM-DD"
-                keyboardType="numbers-and-punctuation"
-                error={errors.needed_by}
-              />
-              <TextField
-                label="Artwork link (optional)"
-                value={artwork}
-                onChangeText={setArtwork}
-                autoCapitalize="none"
-                keyboardType="url"
-                placeholder="https://"
-                error={errors.artwork_url}
-              />
-              <TextField label="Notes (optional)" value={notes} onChangeText={setNotes} multiline />
-              <Pressable
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: rights }}
-                onPress={() => setRights((r) => !r)}
-                style={styles.check}>
-                <View style={[styles.box, rights && styles.boxOn]}>{rights ? <Ionicons name="checkmark" size={14} color={colors.white} /> : null}</View>
-                <Text variant="body" style={styles.flex}>
-                  I have the right to use this artwork
-                </Text>
-              </Pressable>
-              {errors.rights ? (
-                <Text variant="meta" tone="error">
-                  {errors.rights}
-                </Text>
-              ) : null}
-              <Button title="Request a quote" size="atc" onPress={submit} loading={busy} />
-              {error ? (
-                <Text variant="meta" tone="error">
-                  {error}
-                </Text>
-              ) : null}
-            </>
-          )}
+              </Plate>
+            </Face>
+            <Face>
+              <InkText variant="panelTitle" accessibilityRole="header">
+                How it works
+              </InkText>
+              {STEPS.map((step, i) => (
+                <View key={step.title} style={styles.step}>
+                  <Digits value={String(i + 1).padStart(2, "0")} variant="holeNumber" style={styles.stepNo} />
+                  <View style={styles.flexGap}>
+                    <InkText variant="cardTitle">{step.title}</InkText>
+                    <InkText variant="body">{step.body}</InkText>
+                  </View>
+                </View>
+              ))}
+            </Face>
+            <Face>
+              {done ? (
+                <View style={styles.gap8} accessibilityLiveRegion="polite">
+                  <InkText variant="panelTitle" accessibilityRole="header">
+                    Thanks, {done}.
+                  </InkText>
+                  <InkText variant="bodyLong">We&apos;ll reply within two business days.</InkText>
+                </View>
+              ) : (
+                <>
+                  <InkText variant="panelTitle" accessibilityRole="header">
+                    Request a quote
+                  </InkText>
+                  <TextField label="Name" value={name} onChangeText={setName} autoComplete="name" error={errors.name} />
+                  <TextField
+                    label="Email"
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoComplete="email"
+                    error={errors.email}
+                  />
+                  <TextField label="Club or organisation" value={organisation} onChangeText={setOrganisation} error={errors.organisation} />
+                  <TextField
+                    label="Quantity"
+                    value={quantity}
+                    onChangeText={setQuantity}
+                    keyboardType="number-pad"
+                    error={errors.quantity}
+                  />
+                  <View style={styles.colours}>
+                    <Text variant="label">Colors, in twelves</Text>
+                    {CORE_COLOURWAYS.map((c) => (
+                      <View key={c} style={styles.colourRow}>
+                        <Swatch name={c} size={20} />
+                        <Text variant="body" style={styles.flex}>
+                          {c}
+                        </Text>
+                        <QuantityStepper
+                          label={c}
+                          value={colours[c] ?? 0}
+                          step={12}
+                          max={9996}
+                          onChange={(n) => setColours((s) => ({ ...s, [c]: n }))}
+                        />
+                      </View>
+                    ))}
+                    <Text variant="meta" tone={errors.colors ? "error" : "default"}>
+                      {errors.colors ?? `Total: ${total} caps`}
+                    </Text>
+                  </View>
+                  <TextField
+                    label="Needed by (optional)"
+                    value={neededBy}
+                    onChangeText={setNeededBy}
+                    placeholder="YYYY-MM-DD"
+                    keyboardType="numbers-and-punctuation"
+                    error={errors.needed_by}
+                  />
+                  <TextField
+                    label="Artwork link (optional)"
+                    value={artwork}
+                    onChangeText={setArtwork}
+                    autoCapitalize="none"
+                    keyboardType="url"
+                    placeholder="https://"
+                    error={errors.artwork_url}
+                  />
+                  <TextField label="Notes (optional)" value={notes} onChangeText={setNotes} multiline />
+                  <Pressable
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: rights }}
+                    onPress={() => setRights((r) => !r)}
+                    style={styles.check}>
+                    <View style={[styles.box, rights && styles.boxOn]}>
+                      {rights ? <Ionicons name="checkmark" size={16} color={colors.paper} /> : null}
+                    </View>
+                    <Text variant="body" style={styles.flex}>
+                      I have the right to use this artwork
+                    </Text>
+                  </Pressable>
+                  {errors.rights ? (
+                    <Text variant="meta" tone="error">
+                      {errors.rights}
+                    </Text>
+                  ) : null}
+                  <Button title="Request a quote" variant="ink" size="atc" onPress={submit} loading={busy} />
+                  {error ? (
+                    <Text variant="meta" tone="error">
+                      {error}
+                    </Text>
+                  ) : null}
+                </>
+              )}
+            </Face>
+          </Box>
         </View>
       </Screen>
     </KeyboardAvoidingView>
   )
 }
 
+const NAVY: Ink = { panel: colors.ink, ink: colors.paper, edge: colors.ink }
+
+const STEPS = [
+  { title: "Send your logo", body: "Tell us the club, the colors and the count. A link to your artwork helps." },
+  { title: "Approve a proof", body: "We send a stitched proof of your mark above the rope, with the set-up quote." },
+  { title: "We make and ship", body: "Two to four weeks after you approve the proof, the caps ship to you." },
+]
+
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  hero: { marginHorizontal: 10, aspectRatio: 0.85, borderRadius: radius.tile, overflow: "hidden", justifyContent: "flex-end" },
-  heroText: { padding: 32, gap: 10 },
-  band: { backgroundColor: golf.green, margin: 10, marginTop: 30, borderRadius: radius.xxxl, padding: 20 },
-  tiles: { gap: 10, marginHorizontal: 10, marginTop: 20 },
-  form: { margin: 10, marginTop: 30, backgroundColor: colors.white, borderRadius: radius.xxxl, padding: 24, gap: 16 },
+  flexGap: { flex: 1, gap: 4 },
+  wrap: { marginHorizontal: 12 },
+  gap8: { gap: 8 },
+  unit: { paddingHorizontal: 14, paddingVertical: 12, gap: 2 },
+  step: { flexDirection: "row", gap: 14, alignItems: "flex-start" },
+  stepNo: { width: 44 },
   colours: { gap: 10 },
   colourRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  check: { flexDirection: "row", alignItems: "center", gap: 10 },
-  box: {
-    width: 20,
-    height: 20,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: colors.black,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  boxOn: { backgroundColor: golf.green, borderColor: golf.green },
-  done: { gap: 12, paddingVertical: 12 },
+  check: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 44 },
+  box: { width: 24, height: 24, borderWidth: 2, borderColor: colors.ink, alignItems: "center", justifyContent: "center" },
+  boxOn: { backgroundColor: colors.ink },
 })

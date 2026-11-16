@@ -2,206 +2,337 @@ import { Platform, type TextStyle } from "react-native"
 import { Easing, ReduceMotion } from "react-native-reanimated"
 
 /**
- * Shelby v6: Allbirds' theme (APP_SPEC v5 §2) with the golf layer (Part G.2).
+ * Shelby v7: The Ball Box (APP_SPEC v7; web `.impeccable/surfaces/web-src-app-page-tsx.md`).
+ * The app is a golf-ball box printed flat: coated white board, two-ink print
+ * (navy base ink plus each colourway's own ink), heavy printed keylines,
+ * die-cut photo windows, compressed model type. Token names are kept from v6
+ * so every screen re-inks from here; values are the box world's.
  * Letter-spacing values are points (= em × font size).
  */
 export const colors = {
-  black: "#212121", // text, primary CTA, footer, ticker
-  white: "#FFFFFF", // cards, header pill, buy card, sheets
-  naturalWhite: "#E0DACF", // badges, pills, progress track
-  page: "#ECE9E2", // every screen background
-  naturalWhite25: "#F5F4F1", // quiet panels
-  charcoal: "#52525B", // long-form body
-  muted: "#575757", // meta, breadcrumbs, fit notes
-  mutedFill: "rgba(87, 87, 87, 0.19)",
-  swatchRing: "rgba(87, 87, 87, 0.7)",
-  stroke: "#CDCDCD",
-  red: "#9C0F0F", // low stock only
-  green: "#10714E", // in stock only, never golf green
-  gray200: "#E5E7EB",
-  gray300: "#D1D5DC",
-  gray400: "#99A1AF",
-  gray500: "#6A7282",
-  gray600: "#4A5565",
-  neutral800: "#262626",
-  overlay: "rgba(33, 33, 33, 0.5)",
-  overlayMenu: "rgba(33, 33, 33, 0.3)",
+  // the box's inks and board (new names)
+  ink: "#14213D", // base ink: text, keylines, primary blocks
+  ink2: "#3F4A64", // long-form body on board
+  ink3: "#5D667C", // meta (6.1:1 on white board)
+  board: "#FFFFFF", // board-white: every screen is the flattened box's board
+  paper: "#FFFFFF", // panels
+  wash: "#E7E9EE", // disabled fills, quiet rows
+  crease: "rgba(20, 33, 61, 0.35)", // dieline creases
+  rule: "rgba(20, 33, 61, 0.15)", // hairlines inside panels
+  stripe: "#C8302A", // sleeve red: numbered editions only
+  stripeTint: "#FBE9E7",
+  pine: "#1E3B2F",
+  pineInk: "#F1ECE0",
+  navy: "#1B2A4A",
+  fescue: "#CFC3A6",
+
+  // v6 names, re-pointed into the box world
+  black: "#14213D",
+  white: "#FFFFFF",
+  naturalWhite: "#E7E9EE",
+  page: "#FFFFFF",
+  naturalWhite25: "#F8F9F7",
+  charcoal: "#3F4A64",
+  muted: "#5D667C",
+  mutedFill: "rgba(20, 33, 61, 0.15)",
+  swatchRing: "rgba(20, 33, 61, 0.6)",
+  stroke: "rgba(20, 33, 61, 0.25)",
+  red: "#A3341F", // low stock only
+  green: "#1D6A44", // in stock only
+  gray200: "#E7E9EE",
+  gray300: "#C9CED8",
+  gray400: "#6B7488",
+  gray500: "#5D667C",
+  gray600: "#3F4A64",
+  neutral800: "#0B1427",
+  overlay: "rgba(11, 20, 39, 0.5)",
+  overlayMenu: "rgba(11, 20, 39, 0.3)",
   tileVeil: "rgba(0, 0, 0, 0.15)",
-  ringFill: "rgba(33, 33, 33, 0.1)",
+  ringFill: "rgba(20, 33, 61, 0.1)",
   ringStroke2: "rgba(255, 255, 255, 0.7)",
   ringStroke3: "rgba(255, 255, 255, 0.4)",
-  pillBorder: "rgba(33, 33, 33, 0.5)",
+  pillBorder: "rgba(20, 33, 61, 0.5)",
 } as const
 
-/** Part G.2: one golf-green band per screen, links and selected states. */
-export const golf = {
-  green: "#1E3B2F",
-  greenPressed: "#104734",
-  tint: "#EEF5E8",
-  midnight: "#03143B",
-  sage: "#B9B78D",
-} as const
+/** v6 golf names; in the box the "golf" ink is Pine, and midnight is the base ink. */
+export const golf = { green: "#1E3B2F", greenPressed: "#142A21", tint: "#E9EEE9", midnight: "#14213D", sage: "#CFC3A6" } as const
 
 export type ColourwayGroup = "core" | "limited"
-export type Colourway = { crown: string; rope: string; ropeName: string; group: ColourwayGroup }
-
-/** web G.2.1: crown + rope per colourway (swatches, rope rule). */
-export const colourways: Record<string, Colourway> = {
-  "Tour White": { crown: "#F4F2EE", rope: "#1F2A44", ropeName: "Navy", group: "core" },
-  "Clubhouse Navy": { crown: "#26314A", rope: "#F4F2EE", ropeName: "White", group: "core" },
-  Pine: { crown: "#1E3B2F", rope: "#EDE6D6", ropeName: "Cream", group: "core" },
-  Fescue: { crown: "#C9C1AE", rope: "#1F2A44", ropeName: "Navy", group: "core" },
-  Azalea: { crown: "#F4F2EE", rope: "#D8648A", ropeName: "Azalea pink", group: "limited" },
-  Cypress: { crown: "#2E4B4A", rope: "#CDBB98", ropeName: "Sand", group: "limited" },
-  Haar: { crown: "#A7ABA8", rope: "#EDE6D6", ropeName: "Cream", group: "limited" },
+/**
+ * `crown` and `rope` paint the ink chips; `panel`, `ink` and `edge` are the
+ * colours a box panel is printed in when that colourway is chosen (the
+ * colourway's ink floods the front panel). Design values, not measured.
+ */
+export type Colourway = {
+  crown: string
+  rope: string
+  ropeName: string
+  group: ColourwayGroup
+  light: boolean
+  panel: string
+  ink: string
+  edge: string
 }
+
+export const colourways: Record<string, Colourway> = {
+  // The box inks opposite its cap so a white cap never sits white-on-white:
+  // Tour White prints on navy with white knock-out type, Clubhouse Navy on white board.
+  "Tour White": {
+    crown: "#F4F2EE",
+    rope: "#1F2A44",
+    ropeName: "Navy",
+    group: "core",
+    light: true,
+    panel: "#14213D",
+    ink: "#FFFFFF",
+    edge: "#14213D",
+  },
+  "Clubhouse Navy": {
+    crown: "#26314A",
+    rope: "#F4F2EE",
+    ropeName: "White",
+    group: "core",
+    light: false,
+    panel: "#FFFFFF",
+    ink: "#14213D",
+    edge: "#14213D",
+  },
+  Pine: {
+    crown: "#1E3B2F",
+    rope: "#EDE6D6",
+    ropeName: "Cream",
+    group: "core",
+    light: false,
+    panel: "#1E3B2F",
+    ink: "#F1ECE0",
+    edge: "#10241B",
+  },
+  Fescue: {
+    crown: "#C9C1AE",
+    rope: "#1F2A44",
+    ropeName: "Navy",
+    group: "core",
+    light: true,
+    panel: "#CFC3A6",
+    ink: "#14213D",
+    edge: "#14213D",
+  },
+  Azalea: {
+    crown: "#F4F2EE",
+    rope: "#D8648A",
+    ropeName: "Azalea pink",
+    group: "limited",
+    light: true,
+    panel: "#8E2B4E",
+    ink: "#FFFFFF",
+    edge: "#14213D",
+  },
+  Cypress: {
+    crown: "#2E4B4A",
+    rope: "#CDBB98",
+    ropeName: "Sand",
+    group: "limited",
+    light: false,
+    panel: "#2E4B4A",
+    ink: "#F1E8D2",
+    edge: "#1A2D2C",
+  },
+  Haar: {
+    crown: "#A7ABA8",
+    rope: "#EDE6D6",
+    ropeName: "Cream",
+    group: "limited",
+    light: true,
+    panel: "#4A4F4C",
+    ink: "#FFFFFF",
+    edge: "#14213D",
+  },
+}
+
+const FALLBACK_COLOURWAY: Colourway = {
+  crown: "#8C867C",
+  rope: "#EDE6D6",
+  ropeName: "",
+  group: "core",
+  light: true,
+  panel: "#FFFFFF",
+  ink: "#14213D",
+  edge: "#14213D",
+}
+
+export const colourwayOf = (name: string | null | undefined): Colourway => (name && colourways[name]) || FALLBACK_COLOURWAY
 
 export const CORE_COLOURWAYS = ["Tour White", "Clubhouse Navy", "Pine", "Fescue"] as const
 
-/** Light crowns keep the swatch's inner ring so they show on white. */
+/** Light crowns keep the chip's inner keyline so they show on white board. */
 export const LIGHT_CROWNS = new Set(["Tour White", "Azalea", "Haar", "Fescue"])
 
 /** Image slug per colourway: /hats/rope-cap-<slug>-<n>.jpg */
-export const colourwaySlug = (name: string) => name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-")
+export const colourwaySlug = (name: string) =>
+  name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
 
 /**
- * Plus Jakarta Sans (Geograph's heading roles), Inter (Geograph body),
- * IBM Plex Mono (Akkurat Mono) and Libre Caslon Text (the serif role, G.2.3).
+ * One superfamily, set the way a box's print is set: Sofia Sans Extra
+ * Condensed for model names and every numeral, Semi Condensed for printed
+ * labels and controls, Sofia Sans for running copy. There is no serif and no
+ * mono in this world; the v6 role names point at the box faces.
  * The family carries the weight: never set fontWeight or fontStyle with these.
  */
 export const fonts = {
-  display: "PlusJakartaSans_400Regular",
-  displayMedium: "PlusJakartaSans_500Medium",
-  displaySemi: "PlusJakartaSans_600SemiBold",
-  serif: "LibreCaslonText_400Regular",
-  serifItalic: "LibreCaslonText_400Regular_Italic",
-  body: "Inter_400Regular",
-  bodyMedium: "Inter_500Medium",
-  bodyBold: "Inter_700Bold",
-  mono: "IBMPlexMono_400Regular",
-  monoMedium: "IBMPlexMono_500Medium",
+  model: "SofiaSansExtraCondensed_800ExtraBold",
+  modelBold: "SofiaSansExtraCondensed_700Bold",
+  label: "SofiaSansSemiCondensed_700Bold",
+  labelSemi: "SofiaSansSemiCondensed_600SemiBold",
+  body: "SofiaSans_400Regular",
+  bodyMedium: "SofiaSans_500Medium",
+  bodySemi: "SofiaSans_600SemiBold",
+  bodyBold: "SofiaSans_700Bold",
+  // v6 role names
+  display: "SofiaSansExtraCondensed_800ExtraBold",
+  displayMedium: "SofiaSansExtraCondensed_700Bold",
+  displaySemi: "SofiaSansExtraCondensed_800ExtraBold",
+  serif: "SofiaSans_400Regular",
+  serifItalic: "SofiaSans_500Medium",
+  mono: "SofiaSansSemiCondensed_600SemiBold",
+  monoMedium: "SofiaSansSemiCondensed_700Bold",
 } as const
 
 export const spacing = { xxs: 2, xs: 4, sm: 8, md: 10, lg: 16, xl: 20, xxl: 24, xxxl: 32, section: 40 } as const
 
-/** Allbirds' 10pt edge gutter for rounded blocks and its 20pt text padding. */
+/**
+ * The flat header bar (the box's top flap) is 52pt under the status bar with a
+ * 2pt keyline; panels sit 12pt in from the screen edge with 20pt padding.
+ * The v6 pill names are kept for the screens that read them.
+ */
 export const layout = {
-  edge: 10,
+  edge: 12,
   text: 20,
-  pillTop: 20,
-  pillHeight: 40,
-  pillSide: 20,
-  contentTop: 20 + 40 + 8,
+  panelPad: 20,
+  gap: 12,
+  keyline: 2,
+  header: 52,
+  pillTop: 0,
+  pillHeight: 52,
+  pillSide: 0,
+  contentTop: 52 + 12,
   ticker: 32,
 } as const
 
-export const radius = {
-  xs: 2,
-  sm: 4,
-  md: 6,
-  lg: 8,
-  xl: 12,
-  xxl: 16,
-  xxxl: 24,
-  tile: 20,
-  pill: 250,
-  full: 9999,
-} as const
+/** Board is cut square: panels and controls have square corners; only windows are die-cut round. */
+export const radius = { xs: 0, sm: 0, md: 0, lg: 0, xl: 0, xxl: 0, xxxl: 0, tile: 0, panel: 0, pill: 0, window: 28, full: 9999 } as const
 
 const upper = "uppercase" as const
 const tabular: TextStyle["fontVariant"] = ["tabular-nums"]
 
+/** Text roles. Nothing below 11pt; Text keeps allowFontScaling so sizes follow the system setting. */
 export const type = {
-  heroEyebrow: { fontFamily: fonts.monoMedium, fontSize: 12, lineHeight: 20, letterSpacing: 1.2, textTransform: upper },
-  hero: { fontFamily: fonts.display, fontSize: 24, lineHeight: 32, letterSpacing: 0.6 },
-  section: { fontFamily: fonts.display, fontSize: 24, lineHeight: 32 },
-  tile: { fontFamily: fonts.serifItalic, fontSize: 30, lineHeight: 38 },
-  pdpTitle: { fontFamily: fonts.serifItalic, fontSize: 24, lineHeight: 32 },
-  quote: { fontFamily: fonts.serifItalic, fontSize: 16, lineHeight: 24 },
-  kicker: { fontFamily: fonts.serifItalic, fontSize: 16, lineHeight: 24 },
-  articleH1: { fontFamily: fonts.serif, fontSize: 30, lineHeight: 38, letterSpacing: -0.15 },
-  tab: { fontFamily: fonts.monoMedium, fontSize: 16, lineHeight: 24, letterSpacing: 0.8, textTransform: upper },
-  eyebrow: { fontFamily: fonts.mono, fontSize: 12, lineHeight: 16, letterSpacing: 1.2, textTransform: upper },
-  subline: { fontFamily: fonts.mono, fontSize: 12, lineHeight: 16, letterSpacing: 0.6, textTransform: upper },
-  label: { fontFamily: fonts.monoMedium, fontSize: 12, lineHeight: 16, letterSpacing: 0.6, textTransform: upper },
-  scoreLabel: { fontFamily: fonts.monoMedium, fontSize: 11, lineHeight: 16, letterSpacing: 2.2, textTransform: upper },
-  scoreNumber: { fontFamily: fonts.monoMedium, fontSize: 12, lineHeight: 16, letterSpacing: 1.2, fontVariant: tabular },
-  edition: { fontFamily: fonts.monoMedium, fontSize: 12, lineHeight: 16, letterSpacing: 1.8, textTransform: upper, fontVariant: tabular },
-  ticker: { fontFamily: fonts.mono, fontSize: 10, lineHeight: 16, letterSpacing: 2.0, textTransform: upper, fontVariant: tabular },
-  holeNumber: { fontFamily: fonts.display, fontSize: 32, lineHeight: 40, letterSpacing: -0.32, fontVariant: tabular },
-  cardHeading: { fontFamily: fonts.display, fontSize: 24, lineHeight: 32 },
-  menuItem: { fontFamily: fonts.bodyMedium, fontSize: 14, lineHeight: 21, letterSpacing: 0.7, textTransform: upper },
-  cardTitle: { fontFamily: fonts.bodyMedium, fontSize: 12, lineHeight: 16, letterSpacing: 0.6, textTransform: upper },
-  cardMeta: { fontFamily: fonts.body, fontSize: 12, lineHeight: 16, letterSpacing: 0.6 },
-  price: { fontFamily: fonts.bodyMedium, fontSize: 18, lineHeight: 28, letterSpacing: 0.9 },
-  priceSm: { fontFamily: fonts.bodyMedium, fontSize: 12, lineHeight: 16, letterSpacing: 0.6 },
-  pricePill: { fontFamily: fonts.bodyMedium, fontSize: 12, lineHeight: 16, letterSpacing: 0.6, textTransform: upper },
-  badge: { fontFamily: fonts.bodyMedium, fontSize: 10, lineHeight: 10, letterSpacing: 0.5, textTransform: upper },
-  button: { fontFamily: fonts.bodyMedium, fontSize: 12, lineHeight: 15, letterSpacing: 0.3, textTransform: upper },
-  buttonLarge: { fontFamily: fonts.bodyMedium, fontSize: 14, lineHeight: 20, letterSpacing: 0.35, textTransform: upper },
-  size: { fontFamily: fonts.bodyMedium, fontSize: 12, lineHeight: 16 },
-  body: { fontFamily: fonts.body, fontSize: 14, lineHeight: 21 },
-  bodyLong: { fontFamily: fonts.body, fontSize: 14, lineHeight: 22, letterSpacing: 0.35 },
-  article: { fontFamily: fonts.body, fontSize: 16, lineHeight: 26 },
-  meta: { fontFamily: fonts.body, fontSize: 12, lineHeight: 16 },
-  caption: { fontFamily: fonts.body, fontSize: 12, lineHeight: 16 },
-  announcement: { fontFamily: fonts.body, fontSize: 10, lineHeight: 15, letterSpacing: 0.5 },
-  empty: { fontFamily: fonts.body, fontSize: 20, lineHeight: 28 },
-  tabBar: { fontFamily: fonts.bodyMedium, fontSize: 10, lineHeight: 12, letterSpacing: 0.5, textTransform: upper },
-  wordmark: { fontFamily: fonts.displaySemi, fontSize: 20, lineHeight: 24, letterSpacing: -0.4 },
-  countBadge: { fontFamily: fonts.bodyMedium, fontSize: 9, lineHeight: 13.5 },
-  countdown: { fontFamily: fonts.display, fontSize: 40, lineHeight: 48, fontVariant: tabular },
+  // box roles
+  model: { fontFamily: fonts.model, fontSize: 56, lineHeight: 50, letterSpacing: -0.5, textTransform: upper },
+  panelTitle: { fontFamily: fonts.model, fontSize: 40, lineHeight: 38, letterSpacing: -0.2, textTransform: upper },
+  specLine: { fontFamily: fonts.label, fontSize: 15, lineHeight: 20, letterSpacing: 1.5, textTransform: upper, fontVariant: tabular },
+  digits: { fontFamily: fonts.model, fontSize: 44, lineHeight: 44, fontVariant: tabular },
+  digitsSm: { fontFamily: fonts.model, fontSize: 28, lineHeight: 28, fontVariant: tabular },
+  // v6 role names, re-set in the box faces
+  heroEyebrow: { fontFamily: fonts.label, fontSize: 13, lineHeight: 18, letterSpacing: 1, textTransform: upper },
+  hero: { fontFamily: fonts.model, fontSize: 40, lineHeight: 38, letterSpacing: -0.2, textTransform: upper },
+  section: { fontFamily: fonts.model, fontSize: 34, lineHeight: 33, letterSpacing: -0.1, textTransform: upper },
+  tile: { fontFamily: fonts.model, fontSize: 30, lineHeight: 30, textTransform: upper },
+  pdpTitle: { fontFamily: fonts.model, fontSize: 56, lineHeight: 50, letterSpacing: -0.5, textTransform: upper },
+  quote: { fontFamily: fonts.bodyMedium, fontSize: 17, lineHeight: 26 },
+  kicker: { fontFamily: fonts.body, fontSize: 17, lineHeight: 26 },
+  articleH1: { fontFamily: fonts.model, fontSize: 40, lineHeight: 38, textTransform: upper },
+  tab: { fontFamily: fonts.label, fontSize: 15, lineHeight: 20, letterSpacing: 1, textTransform: upper },
+  eyebrow: { fontFamily: fonts.label, fontSize: 13, lineHeight: 18, letterSpacing: 1, textTransform: upper },
+  subline: { fontFamily: fonts.label, fontSize: 13, lineHeight: 18, letterSpacing: 1.2, textTransform: upper },
+  label: { fontFamily: fonts.label, fontSize: 13, lineHeight: 18, letterSpacing: 1, textTransform: upper },
+  scoreLabel: { fontFamily: fonts.label, fontSize: 12, lineHeight: 16, letterSpacing: 1, textTransform: upper },
+  scoreNumber: { fontFamily: fonts.label, fontSize: 15, lineHeight: 20, letterSpacing: 0.5, fontVariant: tabular },
+  edition: { fontFamily: fonts.label, fontSize: 13, lineHeight: 18, letterSpacing: 1.3, textTransform: upper, fontVariant: tabular },
+  ticker: { fontFamily: fonts.label, fontSize: 12, lineHeight: 16, letterSpacing: 1, textTransform: upper, fontVariant: tabular },
+  holeNumber: { fontFamily: fonts.model, fontSize: 40, lineHeight: 40, fontVariant: tabular },
+  cardHeading: { fontFamily: fonts.model, fontSize: 28, lineHeight: 28, textTransform: upper },
+  menuItem: { fontFamily: fonts.label, fontSize: 17, lineHeight: 22, letterSpacing: 1, textTransform: upper },
+  cardTitle: { fontFamily: fonts.bodySemi, fontSize: 16, lineHeight: 21 },
+  cardMeta: { fontFamily: fonts.body, fontSize: 14, lineHeight: 19 },
+  price: { fontFamily: fonts.model, fontSize: 30, lineHeight: 30, fontVariant: tabular },
+  priceSm: { fontFamily: fonts.bodySemi, fontSize: 15, lineHeight: 20, fontVariant: tabular },
+  pricePill: { fontFamily: fonts.label, fontSize: 13, lineHeight: 18, letterSpacing: 1, textTransform: upper },
+  badge: { fontFamily: fonts.label, fontSize: 12, lineHeight: 14, letterSpacing: 1.2, textTransform: upper },
+  button: { fontFamily: fonts.label, fontSize: 15, lineHeight: 18, letterSpacing: 1, textTransform: upper },
+  buttonLarge: { fontFamily: fonts.label, fontSize: 17, lineHeight: 20, letterSpacing: 1.1, textTransform: upper },
+  size: { fontFamily: fonts.label, fontSize: 15, lineHeight: 18, letterSpacing: 0.9 },
+  body: { fontFamily: fonts.body, fontSize: 16, lineHeight: 24 },
+  bodyLong: { fontFamily: fonts.body, fontSize: 16, lineHeight: 25 },
+  article: { fontFamily: fonts.body, fontSize: 17, lineHeight: 27 },
+  meta: { fontFamily: fonts.body, fontSize: 14, lineHeight: 20 },
+  caption: { fontFamily: fonts.body, fontSize: 13, lineHeight: 18 },
+  announcement: { fontFamily: fonts.label, fontSize: 12, lineHeight: 16, letterSpacing: 1, textTransform: upper },
+  empty: { fontFamily: fonts.bodyMedium, fontSize: 22, lineHeight: 28 },
+  tabBar: { fontFamily: fonts.label, fontSize: 11, lineHeight: 13, letterSpacing: 0.8, textTransform: upper },
+  wordmark: { fontFamily: fonts.model, fontSize: 26, lineHeight: 28, letterSpacing: 1.6, textTransform: upper },
+  countBadge: { fontFamily: fonts.label, fontSize: 11, lineHeight: 13 },
+  countdown: { fontFamily: fonts.model, fontSize: 48, lineHeight: 48, fontVariant: tabular },
 } satisfies Record<string, TextStyle>
 
+/** Printed board barely casts a shadow: only sheets and the sticky strip lift off it. */
 export const shadow = {
-  /** Tailwind `shadow-sm`: header pill, buy card, discs. */
   sm: Platform.select({
-    ios: { shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 3, shadowOffset: { width: 0, height: 1 } },
+    ios: { shadowColor: "#0B1427", shadowOpacity: 0.12, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
     android: { elevation: 2 },
-    default: { boxShadow: "0 1px 3px 0 #0000001a, 0 1px 2px -1px #0000001a" },
+    default: { boxShadow: "0 2px 4px #0b14271f" },
   }),
-  /** The floating-image shadow (web `0 .85rem 1rem rgba(0,0,0,.25)`). */
   float: Platform.select({
-    ios: { shadowColor: "#000", shadowOpacity: 0.25, shadowRadius: 16, shadowOffset: { width: 0, height: 13 } },
-    android: { elevation: 10 },
-    default: { boxShadow: "0 13.6px 16px #00000040" },
+    ios: { shadowColor: "#0B1427", shadowOpacity: 0.18, shadowRadius: 12, shadowOffset: { width: 0, height: 8 } },
+    android: { elevation: 8 },
+    default: { boxShadow: "0 8px 12px #0b14272e" },
   }),
-  /** Tailwind `shadow-xl`: sheets. */
   xl: Platform.select({
-    ios: { shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 25, shadowOffset: { width: 0, height: 20 } },
+    ios: { shadowColor: "#0B1427", shadowOpacity: 0.16, shadowRadius: 18, shadowOffset: { width: 0, height: -6 } },
     android: { elevation: 16 },
-    default: { boxShadow: "0 20px 25px -5px #0000001a, 0 8px 10px -6px #0000001a" },
+    default: { boxShadow: "0 -6px 18px #0b142729" },
   }),
 }
 
-/** web §2.4.2: GSAP eases as Reanimated beziers. */
+/**
+ * One motion grammar: a single beat on one exponential ease-out (web
+ * `--ease-box`). Every v6 ease name points at it so nothing moves on its own clock.
+ */
+const box = Easing.bezier(0.16, 1, 0.3, 1)
+const boxInOut = Easing.bezier(0.65, 0, 0.35, 1)
 export const ease = {
-  sineOut: Easing.bezier(0.61, 1, 0.88, 1),
-  sineIn: Easing.bezier(0.12, 0, 0.39, 0),
-  sineInOut: Easing.bezier(0.37, 0, 0.63, 1),
-  power3Out: Easing.bezier(0.25, 1, 0.5, 1),
-  power3In: Easing.bezier(0.5, 0, 0.75, 0),
-  power3InOut: Easing.bezier(0.76, 0, 0.24, 1),
-  tailwind: Easing.bezier(0.4, 0, 0.2, 1),
+  box,
+  boxInOut,
+  sineOut: box,
+  sineIn: Easing.bezier(0.7, 0, 0.84, 0),
+  sineInOut: boxInOut,
+  power3Out: box,
+  power3In: Easing.bezier(0.7, 0, 0.84, 0),
+  power3InOut: boxInOut,
+  tailwind: box,
   linear: Easing.linear,
 }
 
-/** web §2.4.1 timing constants, in ms. */
+/** The beat (web `--beat: .42s`) and the quick press beat, in ms. */
+export const BEAT = 420
 export const dur = {
-  section: 800,
-  hover: 600,
-  hoverDelay: 100,
-  dropdown: 300,
-  slide: 600,
-  accordion: 300,
-  carouselFade: 200,
-  quickViewIn: 400,
+  beat: BEAT,
+  section: BEAT,
+  hover: 180,
+  hoverDelay: 0,
+  dropdown: BEAT,
+  slide: BEAT,
+  accordion: BEAT,
+  carouselFade: BEAT,
+  quickViewIn: BEAT,
   quickViewOut: 200,
   marquee: 10000,
   orbitMobile: 15000,
-  sheetOverlay: 400,
-  sheetPanel: 800,
-  button: 200,
+  sheetOverlay: BEAT,
+  sheetPanel: BEAT,
+  button: 180,
 }
 
 export const motion = { reduceMotion: ReduceMotion.System } as const

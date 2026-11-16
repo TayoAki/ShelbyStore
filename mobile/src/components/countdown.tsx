@@ -37,10 +37,12 @@ export function Countdown({ target, inverse = false, small = false }: { target: 
       {units.map(([n, label], i) => (
         <View key={label} style={styles.unitWrap}>
           <View style={styles.unit}>
-            <Text variant="countdown" tone={inverse ? "inverse" : "default"} style={digit}>
-              {String(n).padStart(2, "0")}
-            </Text>
-            <Text variant="badge" tone={inverse ? "inverse" : "muted"} style={inverse ? styles.unitInverse : undefined}>
+            <View style={[styles.cell, inverse && styles.cellInverse]}>
+              <Text variant="countdown" tone={inverse ? "inverse" : "default"} style={digit}>
+                {String(n).padStart(2, "0")}
+              </Text>
+            </View>
+            <Text variant="badge" tone={inverse ? "inverse" : "charcoal"}>
               {label}
             </Text>
           </View>
@@ -58,8 +60,10 @@ export function Countdown({ target, inverse = false, small = false }: { target: 
 const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "flex-start" },
   unitWrap: { flexDirection: "row", alignItems: "flex-start" },
-  unit: { alignItems: "center", gap: 4 },
-  unitInverse: { opacity: 0.8 },
-  sep: { marginHorizontal: 6 },
-  digitSmall: { fontSize: 24, lineHeight: 30 },
+  unit: { alignItems: "center", gap: 6 },
+  // measurements and countdowns sit in printed digit cells
+  cell: { borderWidth: 2, borderColor: "#14213D", paddingHorizontal: 6, paddingTop: 6, paddingBottom: 2 },
+  cellInverse: { borderColor: "#FFFFFF" },
+  sep: { marginHorizontal: 4, marginTop: 8 },
+  digitSmall: { fontSize: 28, lineHeight: 30 },
 })

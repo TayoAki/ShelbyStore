@@ -1,11 +1,6 @@
-import { IBMPlexMono_400Regular, IBMPlexMono_500Medium } from "@expo-google-fonts/ibm-plex-mono"
-import { Inter_400Regular, Inter_500Medium, Inter_700Bold } from "@expo-google-fonts/inter"
-import { LibreCaslonText_400Regular, LibreCaslonText_400Regular_Italic } from "@expo-google-fonts/libre-caslon-text"
-import {
-  PlusJakartaSans_400Regular,
-  PlusJakartaSans_500Medium,
-  PlusJakartaSans_600SemiBold,
-} from "@expo-google-fonts/plus-jakarta-sans"
+import { SofiaSans_400Regular, SofiaSans_500Medium, SofiaSans_600SemiBold, SofiaSans_700Bold } from "@expo-google-fonts/sofia-sans"
+import { SofiaSansExtraCondensed_700Bold, SofiaSansExtraCondensed_800ExtraBold } from "@expo-google-fonts/sofia-sans-extra-condensed"
+import { SofiaSansSemiCondensed_600SemiBold, SofiaSansSemiCondensed_700Bold } from "@expo-google-fonts/sofia-sans-semi-condensed"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { useFonts } from "expo-font"
 import * as Notifications from "expo-notifications"
@@ -24,35 +19,27 @@ import { CartProvider, useCart } from "@/providers/cart-provider"
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined)
 
-const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
-})
+const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 30_000 } } })
 
 if (Platform.OS !== "web") {
   Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowBanner: true,
-      shouldShowList: true,
-      shouldPlaySound: false,
-      shouldSetBadge: false,
-    }),
+    handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: false, shouldSetBadge: false }),
   })
 }
 
 export default function RootLayout() {
-  // APP_SPEC v5 §2 + G.2: Plus Jakarta Sans, Inter, IBM Plex Mono and Libre
-  // Caslon Text (its italic is a separate family). Keep the splash until all load.
+  // APP_SPEC v7: one superfamily, as a box's print is set. Extra Condensed for
+  // model names and numerals, Semi Condensed for labels, Sofia Sans for copy.
+  // Keep the splash until all load.
   const [loaded, error] = useFonts({
-    PlusJakartaSans_400Regular,
-    PlusJakartaSans_500Medium,
-    PlusJakartaSans_600SemiBold,
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_700Bold,
-    IBMPlexMono_400Regular,
-    IBMPlexMono_500Medium,
-    LibreCaslonText_400Regular,
-    LibreCaslonText_400Regular_Italic,
+    SofiaSans_400Regular,
+    SofiaSans_500Medium,
+    SofiaSans_600SemiBold,
+    SofiaSans_700Bold,
+    SofiaSansSemiCondensed_600SemiBold,
+    SofiaSansSemiCondensed_700Bold,
+    SofiaSansExtraCondensed_700Bold,
+    SofiaSansExtraCondensed_800ExtraBold,
   })
   useEffect(() => {
     if (loaded || error) SplashScreen.hideAsync().catch(() => undefined)
@@ -75,7 +62,7 @@ export default function RootLayout() {
                 headerTintColor: colors.black,
                 headerShadowVisible: false,
                 headerBackButtonDisplayMode: "minimal",
-                headerTitleStyle: { fontFamily: fonts.monoMedium, fontSize: 12 },
+                headerTitleStyle: { fontFamily: fonts.label, fontSize: 15 },
                 contentStyle: { backgroundColor: colors.page },
               }}>
               <Stack.Screen name="(tabs)" options={{ headerShown: false, title: "Shelby" }} />

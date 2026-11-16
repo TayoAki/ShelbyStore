@@ -1,29 +1,21 @@
-import { Image } from "expo-image"
 import { Redirect, router, useLocalSearchParams } from "expo-router"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { FlatList, StyleSheet, useWindowDimensions, View } from "react-native"
 import Animated, { runOnUI, scrollTo, useAnimatedRef, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
-import { useHeaderInset } from "@/components/app-header"
+import { Box, confirmHaptic, Face, InkText, inkFor } from "@/components/box"
+import { crownRange, SideFace } from "@/components/box-faces"
 import { BundleRows } from "@/components/bundle-rows"
 import { Button } from "@/components/button"
-import { EditionBadge } from "@/components/edition-badge"
-import { FitScale } from "@/components/fit-scale"
-import { Gallery } from "@/components/gallery"
-import { Badge } from "@/components/badge"
+import { FrontFace } from "@/components/front-panel"
 import { TeeSheet } from "@/components/notify-me"
 import { ColourwayCard, EditionCard } from "@/components/product-card"
-import { MaterialRing } from "@/components/ring"
-import { RopeRule } from "@/components/rope-rule"
-import { productScoreRows, Scorecard } from "@/components/scorecard"
 import { Screen } from "@/components/screen"
-import { SegmentedControl } from "@/components/segmented-control"
 import { ErrorState, LoadingState } from "@/components/state-views"
-import { StockLine } from "@/components/stock-line"
 import { Swatch } from "@/components/swatch"
 import { Text } from "@/components/text"
-import { colors, CORE_COLOURWAYS, ease, golf, motion, radius, shadow } from "@/constants/theme"
+import { BEAT, colors, colourwayOf, CORE_COLOURWAYS, ease, motion } from "@/constants/theme"
 import { holeDate, holeDay, unitsLeft, useHoles } from "@/hooks/use-holes"
 import { useProduct } from "@/hooks/use-products"
 import { useQuickAdd } from "@/hooks/use-quick-add"
@@ -32,33 +24,28 @@ import { trackTap, useTrackOnce } from "@/lib/analytics"
 import { formatMoney } from "@/lib/format"
 import { holeByProduct } from "@/lib/holes"
 import { openWeb } from "@/lib/links"
-import { Reveal } from "@/lib/motion"
+import { TurnFace } from "@/lib/motion"
 import { POLICY } from "@/lib/policy"
 import {
   colorCounts,
   colorOptionOf,
-  crownCmOf,
   defaultSelection,
   detailsOf,
   editionOf,
   findVariant,
-  fitProfileOf,
-  hatImage,
   imagesFor,
   isOffer,
   productMeta,
   productPrice,
-  ropeNameFor,
   variantPrice,
   variantStock,
   type Product,
 } from "@/lib/product"
 
-type Group = "all" | "core" | "limited"
-
 /**
- * The Rope Cap PDP and each edition's PDP (APP_SPEC G.5 Product): web G.6.3
- * in v5's native buy card, with the scorecard band as this screen's golf band.
+ * The Rope Cap PDP and each edition's PDP (APP_SPEC v7 §5.1): the box's front
+ * face (window, model, meta line, ink stripes, price and Add to bag), its side
+ * face (the crown on the ruler, the spec) and a details face, joined by one rope line.
  */
 export default function ProductScreen() {
   const { handle, color, section } = useLocalSearchParams<{ handle: string; color?: string; section?: string }>()
@@ -82,7 +69,10 @@ export default function ProductScreen() {
     // Editions are drafts until their hole goes live: send the shopper to the hole.
     const hole = handle ? holeByProduct(handle) : null
     if (hole?.releaseHandle && !error) return <Redirect href={{ pathname: "/card/[handle]", params: { handle: hole.releaseHandle } }} />
-    if (handle && /^(everyday-cap|trucker|ribbed-beanie|performance-cap|corduroy-cap|bucket-hat|waxed-field-cap|everyday-two-pack)$/.test(handle)) {
+    if (
+      handle &&
+      /^(everyday-cap|trucker|ribbed-beanie|performance-cap|corduroy-cap|bucket-hat|waxed-field-cap|everyday-two-pack)$/.test(handle)
+    ) {
       return <Redirect href="/products/rope-cap" />
     }
     return (
@@ -95,9 +85,7 @@ export default function ProductScreen() {
 }
 
 function ProductView({ product, initialColor, openScorecard }: { product: Product; initialColor: string | null; openScorecard: boolean }) {
-  const { width } = useWindowDimensions()
   const insets = useSafeAreaInsets()
-  const pillInset = useHeaderInset()
   const quick = useQuickAdd()
   const { holes } = useHoles()
   const colorOpt = colorOptionOf(product)
@@ -106,24 +94,20 @@ function ProductView({ product, initialColor, openScorecard }: { product: Produc
   // The core PDP opens on Tour White unless a colour was asked for (?color=).
   const preferred = initialColor ?? CORE_COLOURWAYS.find((c) => colorOpt?.values.includes(c)) ?? null
   const [selection, setSelection] = useState<Record<string, string>>(() => defaultSelection(product, preferred))
-  const [group, setGroup] = useState<Group>(isEditionPdp ? "limited" : "all")
-  const colour = colorOpt ? selection[colorOpt.id] ?? null : null
+  const colour = colorOpt ? (selection[colorOpt.id] ?? null) : null
   const variant = findVariant(product, selection)
   const stock = variant ? variantStock(variant) : null
   const price = (variant && variantPrice(variant)) ?? productPrice(product)
   const meta = productMeta(product)
-  const fit = fitProfileOf(product)
-  const crownCm = crownCmOf(product)
-  const rope = ropeNameFor(product, colour)
-  const hole = isEditionPdp ? holes.find((h) => h.number === edition!.hole) ?? null : null
+  const hole = isEditionPdp ? (holes.find((h) => h.number === edition!.hole) ?? null) : null
   const left = isEditionPdp ? unitsLeft(product) : null
   const scrollRef = useAnimatedRef<Animated.ScrollView>()
   const [scorecardY, setScorecardY] = useState(0)
   const scrolled = useRef(false)
-  const [cta, setCta] = useState({ buyY: 0, y: 0, h: 0 })
+  const [cta, setCta] = useState({ y: 0, h: 0 })
   const [sticky, setSticky] = useState(false)
   const stickyO = useSharedValue(0)
-  const stickyStyle = useAnimatedStyle(() => ({ opacity: stickyO.value }))
+  const stickyStyle = useAnimatedStyle(() => ({ opacity: stickyO.value, transform: [{ translateY: (1 - stickyO.value) * 24 }] }))
 
   useTrackOnce("product_viewed", product.id, () => ({ product_id: product.id, handle: product.handle, hole: edition?.hole }))
 
@@ -138,7 +122,7 @@ function ProductView({ product, initialColor, openScorecard }: { product: Produc
 
   useEffect(() => {
     if (!openScorecard || !scorecardY || scrolled.current) return
-    const y = scorecardY - 80
+    const y = scorecardY
     const t = setTimeout(() => {
       scrolled.current = true
       runOnUI(() => {
@@ -150,12 +134,12 @@ function ProductView({ product, initialColor, openScorecard }: { product: Produc
   }, [openScorecard, scorecardY, scrollRef])
 
   useEffect(() => {
-    stickyO.set(withTiming(sticky ? 1 : 0, { duration: 150, easing: ease.tailwind, reduceMotion: motion.reduceMotion }))
+    stickyO.set(withTiming(sticky ? 1 : 0, { duration: BEAT, easing: ease.box, reduceMotion: motion.reduceMotion }))
   }, [sticky, stickyO])
 
   const images = useMemo(() => imagesFor(product, colour), [colour, product])
-  const coreColours = [...CORE_COLOURWAYS]
   const limitedHoles = holes.filter((h) => h.number >= 2 && h.colourway && (h.status === "live" || h.status === "upcoming"))
+  const counts = colorCounts(product)
 
   const selectCore = (c: string) => {
     if (isEditionPdp) {
@@ -174,287 +158,137 @@ function ProductView({ product, initialColor, openScorecard }: { product: Produc
   }
 
   const upcomingEdition = isEditionPdp && hole?.status === "upcoming"
-  const ctaLabel = stock?.state === "sold_out" ? "Sold out" : `Add to bag – ${price ? formatMoney(price.amount, price.currency) : ""}`
-  const subline = isEditionPdp
-    ? `Hole ${edition!.hole} · Limited edition · ${hole?.status === "upcoming" ? "Releases" : "Released"} ${holeDate(hole?.dateIso).split(" · ")[0]}`
-    : "One size · Core color"
+  const crown = crownRange(product)
+  const crownText = crown ? `Mid crown ${crown[0] === crown[1] ? crown[0] : `${crown[0]}\u2060–\u2060${crown[1]}`}\u00A0cm` : "Mid crown"
+  const metaLine = isEditionPdp
+    ? `No. ${String(edition!.hole).padStart(2, "0")} · Hole ${edition!.hole}${edition!.size ? ` · Edition of ${edition!.size}` : ""} · ${hole?.status === "upcoming" ? "Releases" : "Released"} ${holeDate(hole?.dateIso).split(" · ")[0]}`
+    : `No.\u00A001 · Core · ${crownText} · One\u00A0size`
   const details = Object.fromEntries(detailsOf(product))
-  const slide = Math.min(width, 720) - 20
+  const rope = colourwayOf(colour).rope
+  // Content starts 12pt under the header; the face's keyline is 2pt and its padding 20pt.
+  const ctaBottom = 12 + 2 + 20 + cta.y + cta.h
 
   return (
     <Screen
       back
       scrollRef={scrollRef}
-      onScrollY={(y) => {
-        const bottom = cta.buyY + cta.y + cta.h
-        setSticky(bottom > 0 && y + pillInset > bottom)
-      }}
+      onScrollY={(y) => setSticky(cta.h > 0 && y > ctaBottom)}
       overlay={
-        <Animated.View
-          pointerEvents={sticky ? "auto" : "none"}
-          style={[styles.sticky, shadow.xl, { paddingBottom: 20 + insets.bottom }, stickyStyle]}>
-          <Text variant="body" style={styles.centerText} numberOfLines={1}>
-            {product.title}
-            {colour && !isEditionPdp ? `, ${colour}` : ""} · {price ? formatMoney(price.amount, price.currency) : ""}
-          </Text>
-          {upcomingEdition ? null : (
-            <Button
-              title={ctaLabel}
-              size="atc"
-              disabled={!variant || stock?.state === "sold_out"}
-              loading={quick.pending !== null}
-              onPress={() => {
-                trackTap("sticky_add_to_cart")
-                add()
-              }}
-            />
-          )}
-        </Animated.View>
-      }>
-      <Text variant="meta" tone="muted" style={styles.crumb}>
-        Home / The Rope Cap{isEditionPdp ? ` / ${hole?.name ?? product.title}` : ""}
-      </Text>
-      <View style={styles.galleryWrap}>
-        <Gallery images={images} title={`${product.title}${colour ? `, ${colour}` : ""}`} colourKey={colour} />
-        <View style={styles.galleryBadge} pointerEvents="none">
-          {isEditionPdp ? <EditionBadge hole={edition!.hole} size={edition!.size} /> : <Badge label="Core" white />}
-        </View>
-      </View>
-
-      <View
-        style={styles.buyCard}
-        onLayout={(e) => {
-          const y = e.nativeEvent.layout.y
-          setCta((c) => (c.buyY === y ? c : { ...c, buyY: y }))
-        }}>
-        <Text variant="pdpTitle" accessibilityRole="header">
-          {product.title}
-        </Text>
-        <Text variant="subline" tone="muted">
-          {subline}
-        </Text>
-        <View style={styles.priceRow}>
-          {price ? <Text variant="price">{formatMoney(price.amount, price.currency)}</Text> : null}
-          <View style={styles.pricePill}>
-            <Text variant="pricePill">+ Any two ship free</Text>
-          </View>
-        </View>
-        <RopeRule colourway={colour} />
-
-        <View style={styles.block}>
-          <View style={styles.colorLabel}>
-            <Text variant="label">Color:</Text>
-            <Text variant="meta">{colour}</Text>
-            <Text variant="meta" tone="muted">
-              {isEditionPdp ? `(Hole ${edition!.hole}${edition!.size ? `, edition of ${edition!.size}` : ""})` : "(Core)"}
-            </Text>
-          </View>
-          {rope ? (
-            <Text variant="meta" tone="muted">
-              {rope} rope
-            </Text>
-          ) : null}
-          {limitedHoles.length ? (
-            <SegmentedControl
-              options={[
-                { value: "all", label: "All" },
-                { value: "core", label: "Core" },
-                { value: "limited", label: "Limited" },
-              ]}
-              value={group}
-              onChange={(g: Group) => {
-                trackTap("color_pill", { group: g })
-                setGroup(g)
-              }}
-            />
-          ) : null}
-          <View style={styles.swatches}>
-            {group !== "limited"
-              ? coreColours.map((c) => (
-                  <Swatch
-                    key={c}
-                    name={c}
-                    selected={!isEditionPdp && c === colour}
-                    soldOut={!isEditionPdp && colorCounts(product).find((x) => x.color === c)?.state === "sold_out"}
-                    onPress={() => selectCore(c)}
-                  />
-                ))
-              : null}
-            {group !== "core"
-              ? limitedHoles.map((h) => (
-                  <Swatch
-                    key={h.number}
-                    name={h.colourway!}
-                    selected={isEditionPdp && h.number === edition!.hole}
-                    caption={h.status === "upcoming" ? holeDay(h.releaseAt ?? h.dateIso) : null}
-                    accessibilityHint={h.status === "upcoming" ? "Opens the hole on The Card" : "Opens the edition"}
-                    onPress={() => {
-                      trackTap("pdp_edition_link", { hole: h.number })
-                      if (h.status === "live" && h.product?.handle) router.push(`/products/${h.product.handle}`)
-                      else if (h.handle) router.push(`/card/${h.handle}`)
-                    }}
-                  />
-                ))
-              : null}
-          </View>
-        </View>
-
-        <View style={styles.oneSize}>
-          <Text variant="body">
-            <Text variant="body" style={{ fontFamily: "Inter_500Medium" }}>
-              One size
-            </Text>{" "}
-            · {POLICY.oneSize}
-          </Text>
-          <Button
-            title="Fit guide"
-            variant="link"
-            onPress={() => {
-              trackTap("fit_guide")
-              openWeb("/fit-guide")
-            }}
-          />
-        </View>
-
-        {fit ? (
-          <View style={styles.block}>
-            <FitScale
-              label="Crown height"
-              value={`${fit.crown}${crownCm ? ` · about ${crownCm} cm` : ""}`}
-              steps={["Low", "Mid", "Tall"]}
-              active={["Low", "Mid", "Tall"].indexOf(fit.crown)}
-            />
-            <FitScale
-              label="Structure"
-              value={fit.structure}
-              steps={["Unstructured", "Semi", "Structured"]}
-              active={["Unstructured", "Semi-structured", "Structured"].indexOf(fit.structure)}
-            />
-          </View>
-        ) : null}
-
-        <View
-          onLayout={(e) => {
-            const { y, height } = e.nativeEvent.layout
-            setCta((c) => (c.y === y && c.h === height ? c : { ...c, y, h: height }))
-          }}
-          style={styles.block}>
-          {upcomingEdition && hole?.release ? (
-            <TeeSheet releaseId={hole.release.id} hole={hole.number} name={hole.name} />
-          ) : (
-            <Button
-              title={ctaLabel}
-              size="atc"
-              disabled={!variant || stock?.state === "sold_out"}
-              loading={quick.pending !== null}
-              onPress={add}
-            />
-          )}
-          <Text variant="meta" tone="muted" style={styles.centerText}>
-            {POLICY.shipping}
-          </Text>
-          {stock ? <StockLine state={stock.state} quantity={stock.quantity} /> : null}
-          {isEditionPdp ? (
-            <>
-              {edition!.size ? (
-                <Text variant="edition" tone="midnight">
-                  Edition of {edition!.size}
-                  {left != null ? ` · ${left} left` : ""}
+        upcomingEdition ? null : (
+          <Animated.View
+            pointerEvents={sticky ? "auto" : "none"}
+            style={[styles.sticky, { paddingBottom: 12 + insets.bottom }, stickyStyle]}>
+            <View style={styles.stickyRow}>
+              <View style={styles.flex}>
+                <Text variant="cardTitle" numberOfLines={1}>
+                  {product.title}
+                  {colour && !isEditionPdp ? `, ${colour}` : ""}
                 </Text>
-              ) : null}
-              <Text variant="meta" tone="muted">
-                {POLICY.limitedRun}
-              </Text>
-            </>
-          ) : null}
-        </View>
-
-        {!isEditionPdp ? <BundleRows /> : null}
-
-        <Button
-          title="Not sure which color? Take the 30-second quiz"
-          variant="link"
-          onPress={() => {
-            trackTap("pdp_quiz")
-            openWeb("/quiz")
-          }}
-        />
+                {price ? <Text variant="priceSm">{formatMoney(price.amount, price.currency)}</Text> : null}
+              </View>
+              <Button
+                title={stock?.state === "sold_out" ? "Sold out" : "Add to bag"}
+                variant="secondary"
+                disabled={!variant || stock?.state === "sold_out"}
+                loading={quick.pending !== null}
+                onPress={() => {
+                  trackTap("sticky_add_to_cart")
+                  confirmHaptic()
+                  add()
+                }}
+              />
+            </View>
+          </Animated.View>
+        )
+      }>
+      <View style={styles.wrap}>
+        <Box rope={rope}>
+          <FrontFace
+            title={product.title ?? "The Rope Cap"}
+            meta={metaLine}
+            colourways={isEditionPdp ? [colour ?? hole?.colourway ?? ""].filter(Boolean) : CORE_COLOURWAYS}
+            colour={colour}
+            onSelect={selectCore}
+            images={images}
+            ink={inkFor(colour)}
+            price={price}
+            stock={stock}
+            soldOut={isEditionPdp ? [] : counts.filter((c) => c.state === "sold_out").map((c) => c.color)}
+            pending={quick.pending !== null}
+            onAdd={variant ? add : undefined}
+            onCtaLayout={(y, h) => setCta((c) => (c.y === y && c.h === h ? c : { y, h }))}
+            action={
+              upcomingEdition && hole?.release ? (
+                <TeeSheet releaseId={hole.release.id} hole={hole.number} name={hole.name} showEyebrow={false} />
+              ) : undefined
+            }>
+            <InkText variant="meta">
+              Any two caps ship free ($85+). {POLICY.returns}.
+              {isEditionPdp && edition!.size
+                ? ` Edition of ${edition!.size}${left != null ? `, ${left} left` : ""}. ${POLICY.limitedRun}`
+                : ""}
+            </InkText>
+            {limitedHoles.length || isEditionPdp ? (
+              <View style={styles.gap8}>
+                <InkText variant="label">{isEditionPdp ? "Core colors" : "Numbered editions"}</InkText>
+                <View style={styles.chips}>
+                  {isEditionPdp
+                    ? CORE_COLOURWAYS.map((c) => (
+                        <Swatch key={c} name={c} onPress={() => selectCore(c)} accessibilityHint="Opens the core cap in this color" />
+                      ))
+                    : limitedHoles.map((h) => (
+                        <Swatch
+                          key={h.number}
+                          name={h.colourway!}
+                          caption={h.status === "upcoming" ? holeDay(h.releaseAt ?? h.dateIso) : `Hole ${h.number}`}
+                          accessibilityHint={h.status === "upcoming" ? "Opens the hole on The Card" : "Opens the edition"}
+                          onPress={() => {
+                            trackTap("pdp_edition_link", { hole: h.number })
+                            if (h.status === "live" && h.product?.handle) router.push(`/products/${h.product.handle}`)
+                            else if (h.handle) router.push(`/card/${h.handle}`)
+                          }}
+                        />
+                      ))}
+                </View>
+              </View>
+            ) : null}
+            {!isEditionPdp ? <BundleRows /> : null}
+            <View style={styles.linkRow}>
+              <Button
+                title="Fit guide"
+                variant="link"
+                onPress={() => {
+                  trackTap("fit_guide")
+                  openWeb("/fit-guide")
+                }}
+              />
+              <Button
+                title="Which color? Take the quiz"
+                variant="link"
+                onPress={() => {
+                  trackTap("pdp_quiz")
+                  openWeb("/quiz")
+                }}
+              />
+            </View>
+          </FrontFace>
+          <View onLayout={(e) => setScorecardY(e.nativeEvent.layout.y + 12)}>
+            <TurnFace>
+              <SideFace product={product} colour={colour} />
+            </TurnFace>
+          </View>
+          <Face>
+            <InkText variant="panelTitle" accessibilityRole="header">
+              The details
+            </InkText>
+            {product.description ? <InkText variant="bodyLong">{product.description}</InkText> : null}
+            {meta.fitNotes ? <InkText variant="bodyLong">{meta.fitNotes}</InkText> : null}
+            <InkText variant="bodyLong">{[details.Care, `${POLICY.returns}.`, POLICY.dispatch + "."].filter(Boolean).join(" ")}</InkText>
+          </Face>
+        </Box>
+        <AlsoLike product={product} colour={colour} />
       </View>
-
-      <View style={styles.scoreBand} onLayout={(e) => setScorecardY(e.nativeEvent.layout.y)}>
-        <Reveal threshold={openScorecard ? 50 : 0.85}>
-          <ScorecardBand product={product} colour={colour} edition={isEditionPdp ? { size: edition!.size, left } : null} slide={slide} />
-        </Reveal>
-      </View>
-
-      <Reveal style={styles.details}>
-        <Text variant="label">The details</Text>
-        {product.description ? (
-          <Text variant="bodyLong" tone="charcoal">
-            {product.description}
-          </Text>
-        ) : null}
-        {meta.fitNotes ? (
-          <Text variant="bodyLong" tone="charcoal">
-            {meta.fitNotes}
-          </Text>
-        ) : null}
-        <Text variant="label" style={{ marginTop: 12 }}>
-          Care & returns
-        </Text>
-        <Text variant="bodyLong" tone="charcoal">
-          {[details.Care, `${POLICY.returns}.`, POLICY.dispatch + "."].filter(Boolean).join(" ")}
-        </Text>
-      </Reveal>
-
-      {Object.keys(details).length >= 4 ? (
-        <MaterialRing
-          background={hatImage("rope-clubhouse.jpg")}
-          centre={images[0] ?? null}
-          callouts={[
-            { title: "Crown", body: details.Crown ?? "" },
-            { title: "Rope", body: details.Rope ?? "" },
-            { title: "Brim", body: details.Brim ?? "" },
-            { title: "Closure", body: details.Closure ?? "" },
-          ].filter((c) => !!c.body)}
-        />
-      ) : null}
-
-      <AlsoLike product={product} colour={colour} />
     </Screen>
-  )
-}
-
-function ScorecardBand({
-  product,
-  colour,
-  edition,
-  slide,
-}: {
-  product: Product
-  colour: string | null
-  edition: { size: number | null; left: number | null } | null
-  slide: number
-}) {
-  const side = imagesFor(product, colour)[2] ?? imagesFor(product, colour)[0]
-  return (
-    <View style={styles.band}>
-      <Text variant="eyebrow" tone="tint">
-        The scorecard
-      </Text>
-      <Text variant="section" tone="inverse">
-        Every spec, on one card.
-      </Text>
-      <Text variant="kicker" tone="tint">
-        Ruled like the card in your back pocket.
-      </Text>
-      {side ? (
-        <View style={[styles.sidePhoto, { height: (slide - 40) * 0.7 }]}>
-          <Image source={side} style={styles.fill} contentFit="contain" />
-        </View>
-      ) : null}
-      <Scorecard title={product.title ?? "The Rope Cap"} rows={productScoreRows(product, colour, edition)} />
-    </View>
   )
 }
 
@@ -462,7 +296,7 @@ function AlsoLike({ product, colour }: { product: Product; colour: string | null
   const { width } = useWindowDimensions()
   const { holes } = useHoles()
   const core = product.handle === "rope-cap" ? product : null
-  const cardW = Math.round(Math.min(width, 720) / 1.3)
+  const cardW = Math.round(Math.min(width, 720) * 0.72)
   const items: { key: string; node: React.ReactNode }[] = []
   if (core) {
     for (const c of CORE_COLOURWAYS) {
@@ -476,9 +310,9 @@ function AlsoLike({ product, colour }: { product: Product; colour: string | null
   }
   if (!items.length) return null
   return (
-    <Reveal style={styles.also}>
-      <Text variant="tab" style={styles.alsoTitle}>
-        You may also like
+    <View style={styles.also}>
+      <Text variant="section" accessibilityRole="header">
+        The other colors
       </Text>
       <FlatList
         data={items}
@@ -487,43 +321,31 @@ function AlsoLike({ product, colour }: { product: Product; colour: string | null
         showsHorizontalScrollIndicator={false}
         snapToInterval={cardW + 10}
         decelerationRate="fast"
-        contentContainerStyle={{ paddingHorizontal: 10, gap: 10 }}
+        contentContainerStyle={styles.alsoList}
         renderItem={({ item }) => <View onTouchStart={() => trackTap("pdp_also_like")}>{item.node}</View>}
       />
-    </Reveal>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
-  fill: { width: "100%", height: "100%" },
-  crumb: { marginHorizontal: 20, marginBottom: 12 },
-  galleryWrap: { position: "relative" },
-  galleryBadge: { position: "absolute", top: 10, left: 20 },
-  buyCard: { margin: 10, backgroundColor: colors.white, borderRadius: radius.xl, padding: 20, gap: 24 },
-  priceRow: { flexDirection: "row", alignItems: "center", gap: 10, flexWrap: "wrap" },
-  pricePill: { backgroundColor: colors.naturalWhite, borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 4 },
-  block: { gap: 12 },
-  colorLabel: { flexDirection: "row", gap: 6, alignItems: "baseline", flexWrap: "wrap" },
-  swatches: { flexDirection: "row", flexWrap: "wrap", gap: 4 },
-  oneSize: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" },
-  centerText: { textAlign: "center" },
-  scoreBand: { marginTop: 30 },
-  band: { backgroundColor: golf.green, marginHorizontal: 10, borderRadius: radius.xl, padding: 20, gap: 14 },
-  sidePhoto: { backgroundColor: colors.white, borderRadius: radius.xxl, overflow: "hidden" },
-  details: { margin: 10, marginTop: 20, backgroundColor: colors.white, borderRadius: radius.xl, padding: 20, gap: 8 },
-  also: { marginTop: 30, gap: 12 },
-  alsoTitle: { paddingHorizontal: 20 },
+  flex: { flex: 1 },
+  wrap: { marginHorizontal: 12 },
+  gap8: { gap: 8 },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  linkRow: { flexDirection: "row", flexWrap: "wrap", columnGap: 18 },
+  also: { marginTop: 28, gap: 12 },
+  alsoList: { gap: 10 },
   sticky: {
     position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: colors.white,
-    borderTopLeftRadius: radius.md,
-    borderTopRightRadius: radius.md,
-    paddingHorizontal: 28,
-    paddingTop: 20,
-    gap: 12,
+    backgroundColor: colors.paper,
+    borderTopWidth: 2,
+    borderTopColor: colors.ink,
+    paddingHorizontal: 16,
+    paddingTop: 12,
   },
+  stickyRow: { flexDirection: "row", alignItems: "center", gap: 12 },
 })
-

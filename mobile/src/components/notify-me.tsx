@@ -2,7 +2,7 @@ import Ionicons from "@expo/vector-icons/Ionicons"
 import { useState } from "react"
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Switch, TextInput, View } from "react-native"
 
-import { colors, fonts, golf, radius, type } from "@/constants/theme"
+import { colors, fonts, type } from "@/constants/theme"
 import { useReminderList } from "@/hooks/use-reminders"
 import { track, trackTap } from "@/lib/analytics"
 import { errorMessage } from "@/lib/medusa"
@@ -15,9 +15,9 @@ import { Text } from "./text"
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 /**
- * The tee sheet (APP_SPEC G.3): the waitlist for a hole. A pill input with a
- * white JOIN button, plus an opt-in for a push at the real release time (the
- * same moment the web goes live; no app-only drops or early access).
+ * The tee sheet (APP_SPEC G.3, v7): the waitlist for a hole, printed as a
+ * square-cut field with a JOIN ink block, plus an opt-in for a push at the
+ * real release time (the same moment the web goes live; no app-only drops).
  */
 export function TeeSheet({
   releaseId,
@@ -43,7 +43,7 @@ export function TeeSheet({
   if (reminders.has(releaseId)) {
     return (
       <View style={styles.done} accessibilityLiveRegion="polite">
-        <Ionicons name="checkmark-circle-outline" size={16} color={inverse ? colors.white : golf.green} />
+        <Ionicons name="checkmark-circle-outline" size={18} color={inverse ? colors.white : colors.ink} />
         <Text variant="meta" tone={inverse ? "inverse" : "default"} style={styles.flexShrink}>
           You&apos;re on the tee sheet for Hole {hole}. We&apos;ll email you when it goes live.
         </Text>
@@ -98,14 +98,12 @@ export function TeeSheet({
           accessibilityRole="button"
           accessibilityLabel="Join"
           onPress={submitting ? undefined : submit}
-          style={({ pressed }) => [styles.join, pressed && { backgroundColor: colors.black }]}>
-          {({ pressed }) =>
-            submitting ? (
-              <ActivityIndicator size="small" color={colors.black} />
-            ) : (
-              <Text style={[type.button, { color: pressed ? colors.white : colors.black }]}>Join</Text>
-            )
-          }
+          style={({ pressed }) => [styles.join, inverse && styles.joinInverse, pressed && { opacity: 0.85 }]}>
+          {submitting ? (
+            <ActivityIndicator size="small" color={inverse ? colors.ink : colors.paper} />
+          ) : (
+            <Text style={[type.button, { color: inverse ? colors.ink : colors.paper }]}>Join</Text>
+          )}
         </Pressable>
       </View>
       {Platform.OS !== "web" ? (
@@ -117,8 +115,8 @@ export function TeeSheet({
           <Switch
             value={push}
             onValueChange={setPush}
-            trackColor={{ true: inverse ? colors.white : golf.green, false: colors.naturalWhite }}
-            thumbColor={push && inverse ? golf.green : colors.white}
+            trackColor={{ true: inverse ? colors.paper : colors.ink, false: colors.gray300 }}
+            thumbColor={push && inverse ? colors.ink : colors.paper}
             accessibilityLabel="Send me a push at release time"
           />
         </View>
@@ -135,28 +133,20 @@ export function TeeSheet({
 const styles = StyleSheet.create({
   wrap: { gap: 10, alignSelf: "stretch" },
   pill: {
-    height: 42,
+    minHeight: 52,
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.black,
-    backgroundColor: colors.white,
-    paddingLeft: 16,
-    paddingRight: 4,
+    borderWidth: 2,
+    borderColor: colors.ink,
+    backgroundColor: colors.paper,
+    paddingLeft: 14,
+    paddingRight: 3,
+    gap: 6,
   },
-  pillInverse: { borderColor: colors.white },
-  input: { flex: 1, fontFamily: fonts.body, fontSize: 16, color: colors.black, paddingVertical: 0 },
-  join: {
-    height: 33,
-    paddingHorizontal: 16,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.black,
-    backgroundColor: colors.white,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  pillInverse: { borderColor: colors.paper },
+  input: { flex: 1, minHeight: 44, fontFamily: fonts.body, fontSize: 16, color: colors.ink, paddingVertical: 0 },
+  join: { minHeight: 44, minWidth: 76, paddingHorizontal: 16, backgroundColor: colors.ink, alignItems: "center", justifyContent: "center" },
+  joinInverse: { backgroundColor: colors.paper },
   pushRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   flex: { flex: 1 },
   flexShrink: { flexShrink: 1 },

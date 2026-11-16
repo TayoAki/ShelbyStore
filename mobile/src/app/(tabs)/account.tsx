@@ -4,13 +4,14 @@ import { router } from "expo-router"
 import { useState } from "react"
 import { Pressable, StyleSheet, View } from "react-native"
 
+import { Box, Face } from "@/components/box"
 import { Button } from "@/components/button"
 import { SegmentedControl } from "@/components/segmented-control"
 import { Screen } from "@/components/screen"
 import { ErrorState, LoadingState } from "@/components/state-views"
 import { Text } from "@/components/text"
 import { TextField } from "@/components/text-field"
-import { colors, radius } from "@/constants/theme"
+import { colors } from "@/constants/theme"
 import { trackTap } from "@/lib/analytics"
 import { openWeb } from "@/lib/links"
 import { formatMoney, formatShortDate } from "@/lib/format"
@@ -21,25 +22,34 @@ export default function AccountScreen() {
   const { customer, isLoading } = useAuth()
   return (
     <Screen>
-      <View style={styles.header}>
-        <Text variant="section" accessibilityRole="header">
-          Account
-        </Text>
-      </View>
-      {isLoading ? <LoadingState /> : customer ? <SignedIn /> : <AuthForms />}
-      <View style={[styles.body, { marginTop: 10 }]}>
-        <View style={styles.card}>
-          <Text variant="label">Help</Text>
-          <AccountLink
-            label="Custom orders for your club"
-            onPress={() => {
-              trackTap("nav_custom")
-              router.push("/custom")
-            }}
-          />
-          <AccountLink label="Fit guide" onPress={() => openWeb("/fit-guide")} />
-          <AccountLink label="Shipping & returns" onPress={() => openWeb("/help/shipping-returns")} />
-        </View>
+      <View style={styles.wrap}>
+        <Box>
+          {isLoading ? (
+            <Face>
+              <LoadingState />
+            </Face>
+          ) : customer ? (
+            <SignedIn />
+          ) : (
+            <AuthForms />
+          )}
+          <Face>
+            <Text variant="cardHeading" accessibilityRole="header">
+              Help
+            </Text>
+            <View>
+              <AccountLink
+                label="Custom orders for your club"
+                onPress={() => {
+                  trackTap("nav_custom")
+                  router.push("/custom")
+                }}
+              />
+              <AccountLink label="Fit guide" onPress={() => openWeb("/fit-guide")} />
+              <AccountLink label="Shipping & returns" onPress={() => openWeb("/help/shipping-returns")} />
+            </View>
+          </Face>
+        </Box>
       </View>
     </Screen>
   )
@@ -61,21 +71,20 @@ function SignedIn() {
   })
 
   return (
-    <View style={styles.body}>
-      <View style={styles.card}>
-        <Text variant="eyebrow" tone="muted">
-          Signed in
+    <Face>
+      <View style={styles.gap8}>
+        <Text variant="panelTitle" accessibilityRole="header">
+          {[customer?.first_name, customer?.last_name].filter(Boolean).join(" ") || "Account"}
         </Text>
-        <Text variant="cardTitle">
-          {[customer?.first_name, customer?.last_name].filter(Boolean).join(" ") || customer?.email}
-        </Text>
-        <Text variant="body" tone="muted">
-          {customer?.email}
+        <Text variant="meta" tone="muted">
+          Signed in · {customer?.email}
         </Text>
       </View>
 
-      <View style={styles.card}>
-        <Text variant="label">Orders</Text>
+      <View>
+        <Text variant="cardHeading" accessibilityRole="header" style={styles.ordersHead}>
+          Orders
+        </Text>
         {orders.isLoading ? <LoadingState /> : null}
         {orders.error ? <ErrorState error={orders.error} onRetry={() => orders.refetch()} /> : null}
         {orders.data && !orders.data.length ? (
@@ -90,20 +99,20 @@ function SignedIn() {
             onPress={() => router.push(`/order/${order.id}`)}
             style={({ pressed }) => [styles.orderRow, pressed && { opacity: 0.8 }]}>
             <View style={styles.flex}>
-              <Text variant="cardTitle">Order #{order.display_id}</Text>
+              <Text variant="cardTitle">Order No. {order.display_id}</Text>
               <Text variant="meta" tone="muted">
                 {formatShortDate(order.created_at as unknown as string)} · {order.items?.length ?? 0} item
                 {(order.items?.length ?? 0) === 1 ? "" : "s"} · {humanStatus(order.fulfillment_status)}
               </Text>
             </View>
             <Text variant="priceSm">{formatMoney(order.total, order.currency_code)}</Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.black} />
+            <Ionicons name="chevron-forward" size={18} color={colors.ink} />
           </Pressable>
         ))}
       </View>
 
       <Button title="Sign out" variant="outlineBlack" onPress={() => logout()} />
-    </View>
+    </Face>
   )
 }
 
@@ -165,7 +174,10 @@ function AuthForms() {
   }
 
   return (
-    <View style={styles.body}>
+    <Face>
+      <Text variant="panelTitle" accessibilityRole="header">
+        Account
+      </Text>
       <SegmentedControl
         options={[
           { value: "login", label: "Sign in" },
@@ -179,9 +191,7 @@ function AuthForms() {
       />
 
       <Text variant="body" tone="muted">
-        {mode === "login"
-          ? "Track orders and check out faster."
-          : "Save your details, see your orders, and join the tee sheet faster."}
+        {mode === "login" ? "Track orders and check out faster." : "Save your details, see your orders, and join the tee sheet faster."}
       </Text>
 
       <View style={styles.form}>
@@ -223,8 +233,12 @@ function AuthForms() {
           textContentType={mode === "login" ? "password" : "newPassword"}
           onSubmitEditing={submit}
         />
-        {error ? <Text variant="meta" tone="error">{error}</Text> : null}
-        <Button title={mode === "login" ? "Sign in" : "Create account"} size="atc" onPress={submit} loading={submitting} />
+        {error ? (
+          <Text variant="meta" tone="error">
+            {error}
+          </Text>
+        ) : null}
+        <Button title={mode === "login" ? "Sign in" : "Create account"} variant="ink" size="atc" onPress={submit} loading={submitting} />
         <Button
           title={mode === "login" ? "Create account" : "Sign in"}
           variant="outlineBlack"
@@ -234,7 +248,7 @@ function AuthForms() {
           }}
         />
       </View>
-    </View>
+    </Face>
   )
 }
 
@@ -244,25 +258,26 @@ function AccountLink({ label, onPress }: { label: string; onPress: () => void })
       <Text variant="menuItem" style={styles.flex}>
         {label}
       </Text>
-      <Ionicons name="chevron-forward" size={16} color={colors.black} />
+      <Ionicons name="chevron-forward" size={18} color={colors.ink} />
     </Pressable>
   )
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 20, paddingBottom: 12 },
-  body: { paddingHorizontal: 10, gap: 10 },
-  card: { padding: 20, gap: 10, backgroundColor: colors.white, borderRadius: radius.xxl },
+  wrap: { marginHorizontal: 12 },
+  gap8: { gap: 6 },
+  ordersHead: { paddingBottom: 8, borderBottomWidth: 2, borderBottomColor: colors.ink },
   orderRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
     paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.page,
+    minHeight: 56,
+    borderBottomWidth: 1.5,
+    borderBottomColor: colors.ink,
   },
-  linkRow: { flexDirection: "row", alignItems: "center", height: 48, borderBottomWidth: 1, borderBottomColor: colors.page },
+  linkRow: { flexDirection: "row", alignItems: "center", minHeight: 52, borderBottomWidth: 1.5, borderBottomColor: colors.ink },
   flex: { flex: 1 },
-  form: { gap: 16, backgroundColor: colors.white, borderRadius: radius.xxl, padding: 20 },
+  form: { gap: 16 },
   row: { flexDirection: "row", gap: 12 },
 })

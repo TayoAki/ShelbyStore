@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useRef, type ReactNode } from "react"
 import { RefreshControl, type LayoutChangeEvent, type StyleProp, type ViewStyle } from "react-native"
 import Animated, {
+  measure,
   runOnJS,
   useAnimatedReaction,
   useAnimatedRef,
@@ -190,3 +191,29 @@ export function stadiumPoint(p: number, w: number, h: number) {
   return { x: r + r * Math.cos(a), y: r + r * Math.sin(a) }
 }
 
+/**
+ * The page's one authored scroll moment (APP_SPEC v7 §5.3): the box turns
+ * from its front face to its side face. As the wrapped face rises into the
+ * lower third of the screen it rotates from 9° about its top edge to flat,
+ * tied to the scroll position, so it plays backwards too. Reduce Motion: flat.
+ */
+export function TurnFace({ children }: { children: ReactNode }) {
+  const ctx = useRevealScroll()
+  const reduce = useReducedMotion()
+  const ref = useAnimatedRef<Animated.View>()
+  const style = useAnimatedStyle(() => {
+    if (reduce || !ctx) return { transform: [] }
+    // read the scroll offset so the style re-runs as the page moves
+    const _y = ctx.scrollY.value
+    const m = measure(ref)
+    if (!m || _y < -10000) return { transform: [] }
+    const vh = ctx.viewportH.value
+    const p = Math.min(1, Math.max(0, (vh - m.pageY) / (vh * 0.4)))
+    return { transform: [{ perspective: 1600 }, { rotateX: `${(1 - p) * 9}deg` }] }
+  })
+  return (
+    <Animated.View ref={ref} style={[{ transformOrigin: "50% 0%" }, style]}>
+      {children}
+    </Animated.View>
+  )
+}

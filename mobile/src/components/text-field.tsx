@@ -1,10 +1,10 @@
 import { StyleSheet, TextInput, View, type StyleProp, type TextInputProps, type ViewStyle } from "react-native"
 
-import { colors, fonts, radius } from "@/constants/theme"
+import { colors, fonts } from "@/constants/theme"
 
 import { Text } from "./text"
 
-/** v5 inputs: 42pt pill, 1pt #212121, white; mono label above, red error below. */
+/** v7 fields: a 48pt square-cut field with a 2pt ink keyline; the label sits above, the error below. */
 export function TextField({
   label,
   error,
@@ -19,7 +19,7 @@ export function TextField({
         {...props}
         multiline={multiline}
         accessibilityLabel={label}
-        placeholderTextColor={colors.gray500}
+        placeholderTextColor={colors.ink3}
         style={[styles.input, multiline && styles.multiline, !!error && { borderColor: colors.red }]}
       />
       {error ? (
@@ -34,16 +34,15 @@ export function TextField({
 const styles = StyleSheet.create({
   wrap: { gap: 6 },
   input: {
-    height: 42,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.black,
-    backgroundColor: colors.white,
-    paddingHorizontal: 16,
+    height: 48,
+    borderWidth: 2,
+    borderColor: colors.ink,
+    backgroundColor: colors.paper,
+    paddingHorizontal: 14,
     paddingVertical: 0,
     fontFamily: fonts.body,
     fontSize: 16,
-    color: colors.black,
+    color: colors.ink,
   },
-  multiline: { height: 110, borderRadius: radius.xl, paddingTop: 12, textAlignVertical: "top" },
+  multiline: { height: 120, paddingTop: 12, textAlignVertical: "top" },
 })

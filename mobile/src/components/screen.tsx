@@ -2,23 +2,22 @@ import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native"
 import Animated, { type AnimatedRef } from "react-native-reanimated"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
-import { colors, layout, MAX_CONTENT_WIDTH } from "@/constants/theme"
+import { colors, MAX_CONTENT_WIDTH } from "@/constants/theme"
 import { RevealScrollView } from "@/lib/motion"
 
-import { Ticker } from "./announcement-bar"
-import { AppHeader, useHeaderInset } from "./app-header"
+import { Announcement } from "./announcement-bar"
+import { AppHeader } from "./app-header"
 
 /**
- * A v5 page: the natural-white background, an optional ticker (Home) and the
- * floating header pill, and a scroll view that drives the reveal motion.
- * `under="pill"` starts content under the pill; `under="ticker"` lets a hero
- * sit 10pt under the ticker so the pill floats over the photo.
+ * A v7 screen: white board, the announcement line (Home) and the header bar
+ * as the box's top flap, laid out in the flow above the content (never
+ * floating over it), and a scroll view that drives the box's motion.
  */
 export function Screen({
   children,
   header = true,
   ticker = false,
-  under = "pill",
+  under: _under = "pill",
   scroll = true,
   refreshing,
   onRefresh,
@@ -27,12 +26,13 @@ export function Screen({
   footer,
   scrollRef,
   contentStyle,
-  background = colors.page,
+  background = colors.board,
   back = false,
 }: {
   children: React.ReactNode
   header?: boolean
   ticker?: boolean
+  /** v6 option kept for call sites; content always starts 12pt under the header. */
   under?: "pill" | "ticker" | "safe"
   scroll?: boolean
   refreshing?: boolean
@@ -43,21 +43,17 @@ export function Screen({
   scrollRef?: AnimatedRef<Animated.ScrollView>
   contentStyle?: StyleProp<ViewStyle>
   background?: string
-  /** Stack screens show a back chevron in the pill. */
+  /** Stack screens show a back chevron in the header. */
   back?: boolean
 }) {
   const insets = useSafeAreaInsets()
-  const pillInset = useHeaderInset(ticker)
-  const top =
-    under === "pill" && header ? pillInset - (ticker ? layout.ticker + insets.top : 0) : under === "ticker" ? 10 : insets.top + 10
-  const body = <View style={[styles.column, { paddingTop: top }, contentStyle]}>{children}</View>
+  const body = <View style={[styles.column, contentStyle]}>{children}</View>
   return (
     <View style={[styles.root, { backgroundColor: background }]}>
-      {ticker ? (
-        <View style={{ paddingTop: insets.top, backgroundColor: colors.black }}>
-          <Ticker />
-        </View>
-      ) : null}
+      <View style={{ paddingTop: insets.top, backgroundColor: ticker ? colors.ink : header ? colors.paper : background }}>
+        {ticker ? <Announcement /> : null}
+      </View>
+      {header ? <AppHeader back={back} /> : null}
       <View style={styles.flex}>
         {scroll ? (
           <RevealScrollView
@@ -74,7 +70,6 @@ export function Screen({
         {overlay}
       </View>
       {footer}
-      {header ? <AppHeader belowTicker={ticker} back={back} /> : null}
     </View>
   )
 }
@@ -82,6 +77,6 @@ export function Screen({
 const styles = StyleSheet.create({
   root: { flex: 1 },
   flex: { flex: 1 },
-  scrollContent: { paddingBottom: 48 },
+  scrollContent: { paddingTop: 12, paddingBottom: 48 },
   column: { width: "100%", maxWidth: MAX_CONTENT_WIDTH, alignSelf: "center" },
 })

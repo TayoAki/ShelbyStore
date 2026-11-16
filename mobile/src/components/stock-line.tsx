@@ -4,20 +4,31 @@ import { colors } from "@/constants/theme"
 import type { StockState } from "@/lib/product"
 import { POLICY } from "@/lib/policy"
 
+import { usePanelInk } from "./box"
 import { Text } from "./text"
 
-/** Live stock (APP_SPEC v5 §3): green in stock, red low (with the real count), muted sold out. */
+/**
+ * Live stock, printed on whatever face it sits on: on white board the state
+ * colours (green in stock, red low with the real count, ink sold out); on an
+ * inked face everything prints in that face's ink so it keeps its contrast.
+ */
 export function StockLine({ state, quantity, inverse = false }: { state: StockState; quantity: number | null; inverse?: boolean }) {
-  const color = inverse ? colors.white : state === "in_stock" ? colors.green : state === "low" ? colors.red : colors.muted
+  const ink = usePanelInk()
+  const onBoard = ink.panel.toUpperCase() === colors.paper
+  const color = inverse
+    ? colors.paper
+    : !onBoard
+      ? ink.ink
+      : state === "in_stock"
+        ? colors.green
+        : state === "low"
+          ? colors.red
+          : colors.ink3
   const label =
-    state === "in_stock"
-      ? `In stock · ${POLICY.dispatch.toLowerCase()}`
-      : state === "low"
-        ? `Only ${quantity} left`
-        : "Sold out"
+    state === "in_stock" ? `In stock · ${POLICY.dispatch.toLowerCase()}` : state === "low" ? `Only ${quantity} left` : "Sold out"
   return (
     <View style={styles.row} accessibilityLiveRegion="polite">
-      <View style={[styles.dot, { backgroundColor: color }]} />
+      <View style={[styles.mark, { backgroundColor: color }]} />
       <Text variant="meta" style={{ color }}>
         {label}
       </Text>
@@ -25,7 +36,4 @@ export function StockLine({ state, quantity, inverse = false }: { state: StockSt
   )
 }
 
-const styles = StyleSheet.create({
-  row: { flexDirection: "row", alignItems: "center", gap: 8 },
-  dot: { width: 6, height: 6, borderRadius: 3 },
-})
+const styles = StyleSheet.create({ row: { flexDirection: "row", alignItems: "center", gap: 8 }, mark: { width: 8, height: 8 } })

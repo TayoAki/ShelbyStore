@@ -1,4 +1,7 @@
-# Shelby app: complete specification (v6, one golf rope cap on the Allbirds theme)
+# Shelby app: complete specification (v7, The Ball Box; v6 behaviours)
+
+> **v7 is the binding visual layer** (Part V7 below). It replaces every visual value in Part G,
+> v5 and Appendix A. Behaviour, data, analytics and verification stay as Part G → v5 → Appendix A.
 
 The single source of truth for rebuilding the Expo app (`mobile/`) so it matches the website
 (`web/SITE_SPEC.md` v6). **v6 = Part G (the golf layer and the single Rope Cap, below) on top of v5
@@ -29,6 +32,165 @@ Where this file is silent, the web spec's mobile values apply.
 **Precedence:** §1–§6 of this file replace every visual value (colour, font, size, radius, height,
 motion) in Appendix A. Appendix A (v4 §3–§8, verbatim) stays binding for screens, data, behaviour,
 analytics and verification.
+
+---
+
+# Part V7: The Ball Box (visual layer, binding over G, v5 and A for visuals)
+
+The app mirrors the web redesign (`web/src/app/globals.css`, `web/src/app/layout.tsx`, the box
+components, `.impeccable/surfaces/web-src-app-page-tsx.md`). The world: **the cap's retail box,
+printed flat**. Each screen is one flattened box on a white board. Its faces join at dashed
+creases, and one braided rope line runs down the box's left gutter through every face. Translated
+for native use, not copied: the tab bar, the stack navigation, the edge-swipe back gesture, the
+haptics and the safe areas stay native.
+
+**§1 Rules.**
+- Square corners everywhere. Only die-cut photo windows are rounded: 28pt on a front face, 14–18pt
+  on a small window.
+- No shadows on windows, buttons, sheets or the tab bar.
+- No pills, tickers, nested cards or veils over photos.
+- No label above a heading. Status and tags go in the meta line under the heading, never on a photo.
+- Nothing under 11pt.
+- Contrast is WCAG AA on every ink pair.
+- Prices, hole numbers and counts use tight tabular figures. Digit cells are only for countdowns
+  and measurements.
+- No invented proof or urgency.
+
+**§2 Tokens** (`src/constants/theme.ts`).
+- **Inks:**
+
+  | Token | Value |
+  |---|---|
+  | `ink` | #14213D |
+  | `ink2` | #3F4A64 |
+  | `ink3` | #5D667C (meta, 6.1:1 on white) |
+  | `board`, `paper` | #FFFFFF |
+  | `wash` | #E7E9EE |
+  | `stripe` | #C8302A (numbered editions only) |
+  | `pine` | #1E3B2F |
+  | `pineInk` | #F1ECE0 |
+  | `fescue` | #CFC3A6 |
+
+- **Each colourway has a panel, an ink and an edge.** The panel is inked opposite to its cap, so a
+  white cap never sits white-on-white:
+
+  | Colourway | Panel | Ink |
+  |---|---|---|
+  | Tour White | navy | white |
+  | Clubhouse Navy | white | navy |
+  | Pine | pine | cream |
+  | Fescue | fescue | navy |
+  | Azalea | #8E2B4E | white |
+  | Cypress | #2E4B4A | sand |
+  | Haar | #4A4F4C | white |
+
+- **Fonts:** Sofia Sans only, via `@expo-google-fonts`.
+  - Extra Condensed 700/800 for the model name, panel titles and digits.
+  - Semi Condensed 600/700 for labels and buttons.
+  - Sofia Sans 400–700 for body text.
+  - The Plus Jakarta, Inter and Plex Mono fonts were removed.
+- **Type:**
+
+  | Role | Size |
+  |---|---|
+  | `model` | 56/50, caps |
+  | `panelTitle` | 40/38 |
+  | `specLine` | 15, caps, tracked, tabular |
+  | `digits` | 44 |
+  | `digitsSm` | 28 |
+  | `holeNumber` | 40 |
+  | body | 16/24 |
+  | meta | 14/20 |
+  | caption | 13 |
+  | `tabBar` | 11 |
+
+- **Layout:** 12pt board margin, 20pt face padding (30pt left with the rope), 2pt keylines,
+  1.5pt rules inside a face.
+
+**§3 Components** (`src/components/`).
+- **`box.tsx`:**
+  - `Box` (the flattened box, `Fold` creases, the animated rope gutter), `Face` (the ink context;
+    re-inks on the beat) and `Panel` (a one-face box).
+  - `InkText`, `Window`, `Digits`, `Tag`, `Plate` (units on one keylined plate with shared rules).
+  - `InkStripes`: the colour control, a radio group of printed crown+rope bands at least 52pt
+    tall, with a light haptic on select.
+  - `confirmHaptic` (success on add), `useBeatIn`, `inkFor`.
+- **`front-panel.tsx`:** `FrontFace`.
+  - A paging die-cut window about 0.44× the screen height (260–460pt) with a 1/n counter.
+  - The model name, then the meta line: "No. 01 · Core · Mid crown 11–11.5 cm · One size".
+  - The ink stripes, the price in digits beside the ink Add to bag block (56pt), and the stock line.
+- **`box-faces.tsx`:**
+  - `SideFace`: the crown copy and `CrownCompare`, then the spec on a plate.
+  - `HolesFace`: six numbered units, the next hole's countdown and tee sheet.
+  - `SleeveFace`: The Pair in pine, The Foursome in navy. Each has 2 or 4 die-cut windows in a row,
+    with the price, the per-cap price and the CTA at the foot.
+  - `StoryFace` and `CloseFace`.
+- **`crown-compare.tsx`:** two cap profiles drawn with react-native-svg, the Rope Cap and a 12 cm
+  high crown, on one ruler and one baseline at true proportion. The Rope Cap is filled in its
+  colourway with a rope stroke; the other is a dashed outline.
+- **Buttons:** square blocks with a 2pt keyline and a caps label, at least 44pt tall. `ink` prints
+  in the face's own ink pair.
+- **Fields and search:** a 48pt square field with a 2pt ink keyline.
+- **Sheets:** square bottom and top flaps with a 2pt keyline edge.
+- **Tab bar:** white, with a 2pt top keyline and a 3pt ink rule under the active label. The badge
+  is a square ink cell.
+- **Removed:** `pill-window`, `ring`, `gallery`, `fit-scale`, `scroll-thumb`, `credibility-strip`,
+  `scorecard`, `veil`, `hole-band`, `hole-card`, `rope-rule`, `badge`.
+
+**§4 Motion.**
+- **One beat:** 420ms on `ease.box` (cubic-bezier .16,1,.3,1).
+- **Choosing a colour** re-inks the face fill, the text, the rope and the digits, and swaps the
+  window photo, all on that same beat (`withTiming`, plus the `expo-image` cross-dissolve).
+- **`TurnFace`:** while the side face scrolls in, it tilts from 9° rotateX to flat as if the box
+  were turning.
+- **Short beats:** the button press darkens over 180ms. The sheets open on the beat and close in
+  300ms. The tab icon presses in and out once on the beat.
+- **Reduce Motion:** every timing uses `ReduceMotion.System` and checks `useReducedMotion()`. Under
+  it, cuts replace re-inking, there is no tilt, no photo dissolve and no tab press, and the
+  skeleton holds still.
+
+**§5 Screens** (behaviour unchanged from G/A).
+1. **Home:** one box.
+   - The front face, then the side face (via `TurnFace`) and the holes face.
+   - The Pair and Foursome sleeves, the story face, and the navy bottom flap.
+   - The rope runs in the chosen colourway's rope colour.
+2. **PDP:** the same front face, side face, Pair and Foursome rows, and fit accordions, with a
+   sticky strip after the CTA leaves view.
+3. **Offer:** the sleeve as the front face (2 or 4 windows), the pickers, the price and CTA at the
+   foot, and the offer-headline experiment.
+4. **Shop:** a heading face with the group tabs.
+   - The colourways as a two-column sheet of inked cells with shared keylines.
+   - The editions on a second sheet, then the sleeves.
+5. **The Card:** a heading face, then the next hole printed in its edition's ink (window,
+   countdown, tee sheet or Shop). The six holes follow as one ruled scorecard (number, small
+   window, name, meta line, phase action).
+6. **Bag, Checkout and Order:**
+   - **Bag:** one box (the heading and the free-shipping bar, then ruled lines, bundles, Make it
+     two, and the summary with Checkout).
+   - **Checkout:** numbered faces (01 Contact, 02 Delivery, 03 Payment) under the summary face.
+   - **Order:** a navy thanks face, then the lines and totals.
+   - **The Added sheet:** a bottom flap with a small window.
+7. **Custom:** a navy front face, the terms on a plate, the three numbered steps, and the quote form.
+8. **Account and not-found:** single boxes, with ruled link rows at least 52pt tall.
+
+**§6 Kept behaviour** (verify list).
+- Catalog, edition and kit logic; cart; checkout; The Card and tee-sheet opt-in; custom quotes.
+- **Analytics:**
+  - `page_type` and `source`.
+  - `cta_click` labels: `shop_by_color`, `add_to_cart`, `hero_shop_pair`, `home_pair`,
+    `home_foursome` (with `page_type: collection` on Shop), `card_hole`, `hero_shop_drop`,
+    `cart_complete_look`, `cart_checkout`, `quick_add`, `offer_*`, `custom_submit`.
+  - The events `checkout_started`, `product_viewed`, `drop_viewed` and
+    `custom_quote_submitted`, and the offer-headline exposure.
+- Attribution and deep links are unchanged.
+
+**§7 Verify.**
+- `npm run typecheck` and `npm run lint` pass.
+- An `expo export -p web` build, served behind the store-API proxy and captured with Playwright at
+  390×844, covers home, Shop, PDP with a colour switch, Pair, Bag, The Card and Account, plus one
+  reduced-motion run. The shots go to `.impeccable/review/app/`.
+- The web export is evidence for layout and ink only. Haptics, gestures, the native tab bar and
+  iOS/Android Reduce Motion need a simulator or a device.
 
 ---
 

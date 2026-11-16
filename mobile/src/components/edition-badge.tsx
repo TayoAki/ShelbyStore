@@ -1,12 +1,13 @@
 import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native"
 
-import { colors, golf, radius } from "@/constants/theme"
+import { colors } from "@/constants/theme"
 
 import { Text } from "./text"
 
 /**
- * The edition badge (APP_SPEC G.3): "EDITION OF 200", or "143 OF 200 LEFT"
- * while live (live stock only), or a hole label ("HOLE 2 · EDITION OF 200").
+ * The edition stripe (APP_SPEC v7 §3): sleeve red, the only place red prints.
+ * "EDITION OF 200", "143 OF 200 LEFT" while live (live stock only), or with
+ * its hole ("HOLE 2 · EDITION OF 200"). Sits in the meta line, never on a photo.
  */
 export function EditionBadge({
   size,
@@ -25,7 +26,7 @@ export function EditionBadge({
   if (size) parts.push(left != null ? `${left} of ${size} left` : `Edition of ${size}`)
   return (
     <View style={[styles.badge, style]}>
-      <Text variant="edition" tone="midnight">
+      <Text variant="edition" style={{ color: colors.paper }}>
         {parts.join(" · ")}
       </Text>
     </View>
@@ -33,14 +34,5 @@ export function EditionBadge({
 }
 
 const styles = StyleSheet.create({
-  badge: {
-    alignSelf: "flex-start",
-    height: 24,
-    paddingHorizontal: 10,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: golf.midnight,
-    backgroundColor: colors.white,
-    justifyContent: "center",
-  },
+  badge: { alignSelf: "flex-start", minHeight: 26, paddingHorizontal: 10, backgroundColor: colors.stripe, justifyContent: "center" },
 })

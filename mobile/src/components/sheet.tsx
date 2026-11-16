@@ -3,12 +3,12 @@ import { Modal, Pressable, StyleSheet, View, useWindowDimensions, type StyleProp
 import Animated, { runOnJS, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withTiming } from "react-native-reanimated"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
-import { colors, ease, layout, motion, radius, shadow } from "@/constants/theme"
+import { colors, ease, layout, motion } from "@/constants/theme"
 
 /**
- * Allbirds' drawer as a native bottom sheet (M20): overlay 0 → 1 (400ms
- * sine.out), sheet translateY 100% → 0 (800ms power3.out); closing reverses
- * with power3.in / sine.in (M20b). Reduced motion: opacity only, instant.
+ * A bottom sheet printed as a box's bottom flap (APP_SPEC v7 §4): square
+ * corners, a 2pt keyline along its top edge, no shadow. Overlay and sheet move
+ * on one beat (420ms, the box ease); Reduce Motion: opacity only, instant.
  */
 export function BottomSheet({
   visible,
@@ -37,15 +37,19 @@ export function BottomSheet({
 
   useEffect(() => {
     if (visible) {
-      overlay.set(withTiming(1, { duration: reduce ? 0 : 400, easing: ease.sineOut, reduceMotion: motion.reduceMotion }))
+      overlay.set(withTiming(1, { duration: reduce ? 0 : 420, easing: ease.box, reduceMotion: motion.reduceMotion }))
       y.set(reduce ? 0 : height)
-      y.set(withTiming(0, { duration: reduce ? 0 : 800, easing: ease.power3Out, reduceMotion: motion.reduceMotion }))
+      y.set(withTiming(0, { duration: reduce ? 0 : 420, easing: ease.box, reduceMotion: motion.reduceMotion }))
     } else {
-      overlay.set(withTiming(0, { duration: reduce ? 0 : 400, easing: ease.sineIn, reduceMotion: motion.reduceMotion }))
+      overlay.set(withTiming(0, { duration: reduce ? 0 : 300, easing: ease.boxInOut, reduceMotion: motion.reduceMotion }))
       y.set(
-        withTiming(reduce ? 0 : height, { duration: reduce ? 0 : 800, easing: ease.power3In, reduceMotion: motion.reduceMotion }, (done) => {
-          if (done) runOnJS(setClosing)(false)
-        })
+        withTiming(
+          reduce ? 0 : height,
+          { duration: reduce ? 0 : 300, easing: ease.boxInOut, reduceMotion: motion.reduceMotion },
+          (done) => {
+            if (done) runOnJS(setClosing)(false)
+          }
+        )
       )
     }
   }, [height, overlay, reduce, visible, y])
@@ -59,17 +63,15 @@ export function BottomSheet({
         <Pressable accessibilityLabel="Close" style={StyleSheet.absoluteFill} onPress={onClose} />
       </Animated.View>
       <View style={styles.anchor} pointerEvents="box-none">
-        <Animated.View style={[styles.sheet, shadow.xl, { paddingBottom: 20 + insets.bottom }, sheetStyle, style]}>
-          {children}
-        </Animated.View>
+        <Animated.View style={[styles.sheet, { paddingBottom: 20 + insets.bottom }, sheetStyle, style]}>{children}</Animated.View>
       </View>
     </Modal>
   )
 }
 
 /**
- * The search sheet under the header pill (M17): scaleY 0 → 1 from the top
- * (300ms power3.in-out), overlay 0 → 1 (240ms sine.out), content after 150ms.
+ * The search sheet under the header: unfolds from the top edge (scaleY 0 → 1
+ * on the beat), the content printed in after it. Square, keylined, no shadow.
  */
 export function TopSheet({ visible, onClose, children }: { visible: boolean; onClose: () => void; children: React.ReactNode }) {
   const reduce = useReducedMotion()
@@ -86,12 +88,12 @@ export function TopSheet({ visible, onClose, children }: { visible: boolean; onC
 
   useEffect(() => {
     if (visible) {
-      p.set(withTiming(1, { duration: reduce ? 0 : 300, easing: ease.power3InOut, reduceMotion: motion.reduceMotion }))
-      content.set(withDelay(reduce ? 0 : 150, withTiming(1, { duration: reduce ? 0 : 150, easing: ease.sineOut })))
+      p.set(withTiming(1, { duration: reduce ? 0 : 420, easing: ease.box, reduceMotion: motion.reduceMotion }))
+      content.set(withDelay(reduce ? 0 : 160, withTiming(1, { duration: reduce ? 0 : 200, easing: ease.box })))
     } else {
       content.set(withTiming(0, { duration: reduce ? 0 : 120 }))
       p.set(
-        withTiming(0, { duration: reduce ? 0 : 240, easing: ease.sineIn }, (done) => {
+        withTiming(0, { duration: reduce ? 0 : 240, easing: ease.boxInOut }, (done) => {
           if (done) runOnJS(setClosing)(false)
         })
       )
@@ -107,7 +109,7 @@ export function TopSheet({ visible, onClose, children }: { visible: boolean; onC
       <Animated.View style={[StyleSheet.absoluteFill, styles.overlayMenu, overlayStyle]}>
         <Pressable accessibilityLabel="Close search" style={StyleSheet.absoluteFill} onPress={onClose} />
       </Animated.View>
-      <Animated.View style={[styles.top, shadow.xl, { paddingTop: insets.top + layout.contentTop }, sheetStyle]}>
+      <Animated.View style={[styles.top, { paddingTop: insets.top + layout.contentTop }, sheetStyle]}>
         <Animated.View style={contentStyle}>{children}</Animated.View>
       </Animated.View>
     </Modal>
@@ -119,9 +121,9 @@ const styles = StyleSheet.create({
   overlayMenu: { backgroundColor: colors.overlayMenu },
   anchor: { flex: 1, justifyContent: "flex-end" },
   sheet: {
-    backgroundColor: colors.white,
-    borderTopLeftRadius: radius.xxl,
-    borderTopRightRadius: radius.xxl,
+    backgroundColor: colors.paper,
+    borderTopWidth: 2,
+    borderTopColor: colors.ink,
     paddingHorizontal: 20,
     paddingTop: 20,
     gap: 16,
@@ -132,9 +134,9 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     top: 0,
-    backgroundColor: colors.page,
-    borderBottomLeftRadius: radius.xl,
-    borderBottomRightRadius: radius.xl,
+    backgroundColor: colors.paper,
+    borderBottomWidth: 2,
+    borderBottomColor: colors.ink,
     paddingHorizontal: 20,
     paddingBottom: 20,
     transformOrigin: "top",

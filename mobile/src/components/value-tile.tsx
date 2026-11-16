@@ -1,10 +1,10 @@
 import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native"
 
-import { colors, radius } from "@/constants/theme"
+import { colors } from "@/constants/theme"
 
 import { Text } from "./text"
 
-/** Allbirds' value tile (APP_SPEC v5 §3): white, radius 16, eyebrow + body. */
+/** A printed fact unit (APP_SPEC v7 §3): keylined, square-cut, its label above its line of body. */
 export function ValueTile({
   eyebrow,
   body,
@@ -18,7 +18,7 @@ export function ValueTile({
 }) {
   return (
     <View style={[styles.tile, style]}>
-      <Text variant="eyebrow">{eyebrow}</Text>
+      <Text variant="label">{eyebrow}</Text>
       {body ? <Text variant="body">{body}</Text> : null}
       {children}
     </View>
@@ -27,21 +27,9 @@ export function ValueTile({
 
 /** The three true facts (web G.6.1). */
 export const VALUE_TILES = [
-  {
-    eyebrow: "One size, adjustable",
-    body: "The strap fits 21.5–23.75 in (55–60 cm). The crown sits mid, about 11–11.5 cm.",
-  },
+  { eyebrow: "One size, adjustable", body: "The strap fits 21.5–23.75 in (55–60 cm). The crown sits mid, about 11–11.5 cm." },
   { eyebrow: "Always in stock", body: "Four core colors that never run out. We show the live count for each." },
   { eyebrow: "Free shipping on $85+", body: "Any two caps ship free. Under $85, standard shipping is $6. 30-day returns." },
 ]
 
-const styles = StyleSheet.create({
-  tile: {
-    backgroundColor: colors.white,
-    borderRadius: radius.xxl,
-    paddingTop: 40,
-    paddingBottom: 32,
-    paddingHorizontal: 20,
-    gap: 20,
-  },
-})
+const styles = StyleSheet.create({ tile: { backgroundColor: colors.paper, borderWidth: 2, borderColor: colors.ink, padding: 16, gap: 6 } })
