@@ -10,6 +10,7 @@ import { POLICY } from "@/lib/policy"
 import { findVariant, optionGroups, price, stockState, valueAvailability } from "@/lib/product"
 import type { Product, VariantStock } from "@/lib/types"
 import { Button } from "../ui/button"
+import { useSelection } from "./selection"
 import { SizeGuide, type SizeChart } from "./size-guide"
 
 type Props = {
@@ -32,9 +33,15 @@ export function BuyBox({ product, stock, release, fitNotes, modelInfo, sizeChart
   const sizeGroup = groups.find((g) => /size/i.test(g.title))
   const otherGroups = groups.filter((g) => g !== sizeGroup)
 
-  const [selection, setSelection] = useState<Record<string, string>>(() =>
-    Object.fromEntries(otherGroups.map((g) => [g.title, g.values[0]]))
-  )
+  const { color, setColor } = useSelection()
+  const [selection, setSelection] = useState<Record<string, string>>(() => {
+    const init: Record<string, string> = Object.fromEntries(
+      otherGroups.map((g) => [g.title, /colou?r/i.test(g.title) && color && g.values.includes(color) ? color : g.values[0]])
+    )
+    // One-size hats need no size pick.
+    if (sizeGroup?.values.length === 1) init[sizeGroup.title] = sizeGroup.values[0]
+    return init
+  })
   const [added, setAdded] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
@@ -107,6 +114,7 @@ export function BuyBox({ product, stock, release, fitNotes, modelInfo, sizeChart
                   onClick={() => {
                     setAdded(false)
                     setSelection((s) => ({ ...s, [g.title]: v }))
+                    if (/colou?r/i.test(g.title)) setColor(v)
                   }}
                   className={`h-11 min-w-[88px] rounded-[2px] border px-4 text-[14px] transition-colors duration-150 ${
                     active ? "border-ink bg-ink text-white" : "border-line hover:border-ink"

@@ -14,7 +14,7 @@ import type { Product, Region, StoreRelease } from "../types"
 
 export const CORE_COLLECTION_HANDLE = "core"
 
-const PRODUCT_FIELDS = "*variants.calculated_price,*variants.options,*options,*options.values,*images,+metadata,*collection"
+const PRODUCT_FIELDS = "*variants.calculated_price,*variants.options,*variants.images,*options,*options.values,*images,+metadata,*collection"
 
 export async function getRegion(): Promise<Region | null> {
   "use cache"

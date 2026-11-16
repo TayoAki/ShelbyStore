@@ -5,6 +5,7 @@ import { Container } from "@/components/container"
 import { ContinuityBanner } from "@/components/continuity-banner"
 import { BuyBox } from "@/components/pdp/buy-box"
 import { Gallery } from "@/components/pdp/gallery"
+import { SelectionProvider } from "@/components/pdp/selection"
 import { ProductCard } from "@/components/product-card"
 import { Track } from "@/components/track"
 import { Badge } from "@/components/ui/badge"
@@ -12,7 +13,7 @@ import { getProduct, getRegion, liveReleaseIndex, listProducts } from "@/lib/dat
 import { getStock } from "@/lib/data/stock"
 import { formatMoney } from "@/lib/format"
 import { POLICY } from "@/lib/policy"
-import { meta, modelInfoOf, price, sizeChartOf } from "@/lib/product"
+import { colorThumbs, detailsOf, imagesFor, meta, modelInfoOf, price, sizeChartOf } from "@/lib/product"
 import type { Product } from "@/lib/types"
 
 export async function generateMetadata({ params }: PageProps<"/products/[handle]">): Promise<Metadata> {
@@ -42,7 +43,9 @@ async function ProductContent({ params }: { params: PageProps<"/products/[handle
   const release = releases[product.id] ?? null
   const isCore = product.collection?.handle === "core"
   const md = (product.metadata ?? {}) as Record<string, unknown>
-  const images = [...new Set([product.thumbnail, ...(product.images ?? []).map((i) => i.url)].filter(Boolean) as string[])]
+  const images = imagesFor(product)
+  const colors = colorThumbs(product).map((c) => c.color)
+  const imagesByColor = Object.fromEntries(colors.map((c) => [c, imagesFor(product, c)]))
   const p = price(product)
   const fitNotes = meta(product, "fit_notes")
   const modelInfo = modelInfoOf(product)
@@ -56,9 +59,10 @@ async function ProductContent({ params }: { params: PageProps<"/products/[handle
       <Suspense fallback={null}>
         <ContinuityBanner />
       </Suspense>
+      <SelectionProvider initialColor={colors[0] ?? null}>
       <Container className="grid gap-6 pb-12 lg:grid-cols-12 lg:gap-12 lg:py-10">
         <div className="lg:col-span-7">
-          <Gallery images={images} title={product.title} videoUrl={typeof md.video_url === "string" ? md.video_url : null} />
+          <Gallery images={images} imagesByColor={imagesByColor} title={product.title} videoUrl={typeof md.video_url === "string" ? md.video_url : null} />
         </div>
         <div className="flex flex-col gap-6 lg:sticky lg:top-28 lg:col-span-5 lg:self-start">
           <div className="flex flex-col gap-3">
@@ -85,6 +89,7 @@ async function ProductContent({ params }: { params: PageProps<"/products/[handle
           <Details product={product} fitNotes={fitNotes} modelInfo={modelInfo} />
         </div>
       </Container>
+      </SelectionProvider>
       {pairs.length > 0 && (
         <Container className="flex flex-col gap-6 py-12 lg:py-16">
           <h2 className="font-display text-section">Pairs with</h2>
@@ -108,7 +113,24 @@ async function LiveBuyBox(props: Omit<Parameters<typeof BuyBox>[0], "stock">) {
 
 function Details({ product, fitNotes, modelInfo }: { product: Product; fitNotes: string | null; modelInfo: string | null }) {
   const sections: { title: string; body: React.ReactNode; open?: boolean }[] = [
-    { title: "Details", body: product.description },
+    {
+      title: "Details",
+      body: (
+        <>
+          {product.description}
+          {detailsOf(product).length > 0 && (
+            <dl className="mt-4 grid grid-cols-[auto_1fr] gap-x-6 gap-y-2">
+              {detailsOf(product).map(([k, v]) => (
+                <div key={k} className="contents">
+                  <dt className="text-ink">{k}</dt>
+                  <dd>{v}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+        </>
+      ),
+    },
     { title: "Fit", body: [fitNotes, modelInfo].filter(Boolean).join(" ") || null, open: true },
     { title: "Shipping & returns", body: `${POLICY.shipping}. ${POLICY.dispatch}. ${POLICY.returns}.` },
   ]

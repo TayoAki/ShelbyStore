@@ -1,7 +1,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import { formatMoney } from "@/lib/format"
-import { optionGroups, price, valueAvailability } from "@/lib/product"
+import { colorThumbs, imageUrl, imagesFor, optionGroups, price, valueAvailability } from "@/lib/product"
 import type { Product, VariantStock } from "@/lib/types"
 import { Badge } from "./ui/badge"
 
@@ -25,9 +25,10 @@ export function ProductCard({
   releaseTitle?: string
   preload?: boolean
 }) {
-  const images = (product.images ?? []).map((i) => i.url).filter(Boolean)
-  const first = product.thumbnail ?? images[0]
-  const second = images.find((u) => u !== first)
+  // Lead with the first colour's photos; the hover image is that colour's second shot.
+  const gallery = imagesFor(product, colorThumbs(product)[0]?.color)
+  const first = gallery[0] ?? imageUrl(product.thumbnail)
+  const second = gallery.find((u) => u !== first)
   const p = price(product)
   const sizeGroup = optionGroups(product).find((g) => /size/i.test(g.title))
 

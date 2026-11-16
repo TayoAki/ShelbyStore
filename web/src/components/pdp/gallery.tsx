@@ -1,18 +1,37 @@
 "use client"
 
 import Image from "next/image"
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
+import { useSelection } from "./selection"
 
 /**
  * Mobile: full-width 4:5 swipe gallery with dots (11/11 studied sites).
  * Desktop: two-column image grid. Optional try-on video in slot 2
  * (+14.5% apparel sales in a field experiment; SITE_SPEC §6.4.1).
  */
-export function Gallery({ images, title, videoUrl }: { images: string[]; title: string; videoUrl?: string | null }) {
-  const slides: { kind: "image" | "video"; src: string }[] = images.map((src) => ({ kind: "image", src }))
+export function Gallery({
+  images,
+  imagesByColor,
+  title,
+  videoUrl,
+}: {
+  images: string[]
+  /** Per-colour galleries; the colour picked in the buy box selects one. */
+  imagesByColor?: Record<string, string[]>
+  title: string
+  videoUrl?: string | null
+}) {
+  const { color } = useSelection()
+  const shown = color && imagesByColor?.[color]?.length ? imagesByColor[color] : images
+  const slides: { kind: "image" | "video"; src: string }[] = shown.map((src) => ({ kind: "image", src }))
   if (videoUrl) slides.splice(Math.min(1, slides.length), 0, { kind: "video", src: videoUrl })
   const [index, setIndex] = useState(0)
   const scroller = useRef<HTMLDivElement>(null)
+  // A new colour starts its gallery from the first photo.
+  useEffect(() => {
+    setIndex(0)
+    scroller.current?.scrollTo({ left: 0 })
+  }, [color])
 
   if (!slides.length) {
     return <div className="aspect-[4/5] w-full bg-surface" />
