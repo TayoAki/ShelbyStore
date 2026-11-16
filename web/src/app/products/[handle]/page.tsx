@@ -3,23 +3,22 @@ import Image from "next/image"
 import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
 import { Suspense } from "react"
+import { Sleeves } from "@/components/box/back-panel"
+import { SelectedBoxRope } from "@/components/box/selected-rope"
 import { SidePanel } from "@/components/box/side-panel"
-import { BundleRows } from "@/components/bundle-rows"
 import { ContinuityBanner } from "@/components/continuity-banner"
 import { BuyCard, type LimitedSwatch } from "@/components/pdp/buy-card"
 import { SelectionProvider } from "@/components/pdp/selection"
-import { ProductCard } from "@/components/product-card"
 import { getStock } from "@/lib/data/stock"
 import { RecordView } from "@/components/recently-viewed"
 import { Track } from "@/components/track"
 import { EditionBadge } from "@/components/ui/badge"
 import { getProduct, getRegion } from "@/lib/data/catalog"
 import { listSeries } from "@/lib/data/content"
-import { liveStock, ropeCatalog } from "@/lib/data/rope"
+import { ropeCatalog } from "@/lib/data/rope"
 import { POLICY } from "@/lib/policy"
 import { colorThumbs, fitProfileOf, imagesFor, meta, offerOf } from "@/lib/product"
 import { CORE_COLORS, crownCm, editionOf, holeDate, ROPE_CAP, ropeName } from "@/lib/rope"
-import type { Product } from "@/lib/types"
 
 export async function generateMetadata({ params }: PageProps<"/products/[handle]">): Promise<Metadata> {
   const { handle } = await params
@@ -80,8 +79,7 @@ async function ProductContent({ params, searchParams }: { params: PageProps<"/pr
       }
   const { day } = holeDate(release?.release_at ?? release?.published_at ?? null)
   const editionInfo = isEdition ? { hole: ed!.hole, size: ed!.size, dateLabel: day, released: release?.phase === "live" } : null
-  const bundles = !isEdition ? <BundleRows pair={c.pair} foursome={c.foursome} /> : null
-  const tag = isEdition ? <EditionBadge>{`Hole ${ed!.hole}${ed!.size ? ` · ${ed!.size} made` : ""}`}</EditionBadge> : <span className="badge">Core</span>
+  const tag = isEdition ? <EditionBadge>{`Hole ${ed!.hole}${ed!.size ? ` · ${ed!.size} made` : ""}`}</EditionBadge> : null
   const buyProps = {
     product,
     colors,
@@ -90,7 +88,7 @@ async function ProductContent({ params, searchParams }: { params: PageProps<"/pr
     edition: editionInfo,
     releaseId: release?.phase === "live" ? release.id : null,
     crown: fit ? { value: fit.crown, note: crownCm(product) ? `about ${crownCm(product)} cm` : null, structure: fit.structure } : null,
-    bundles,
+    bundles: null,
     imagesByColor,
     fallbackImages: imagesFor(product),
     modelNumber: isEdition ? ed!.hole : 1,
@@ -104,8 +102,8 @@ async function ProductContent({ params, searchParams }: { params: PageProps<"/pr
       <Suspense fallback={null}>
         <ContinuityBanner />
       </Suspense>
-      <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-3 pt-3 md:gap-6 md:px-6 md:pt-5">
-        <nav aria-label="Breadcrumb" className="label !text-[12px] text-ink-2">
+      <div className="box mt-3 md:mt-5">
+        <nav aria-label="Breadcrumb" className="box-flush label px-[var(--panel-pad)] py-3 !text-[12px] text-ink-2">
           <Link href="/" className="hover:underline">
             Home
           </Link>{" "}
@@ -116,16 +114,16 @@ async function ProductContent({ params, searchParams }: { params: PageProps<"/pr
           {isEdition && <> / Hole {ed!.hole}</>}
         </nav>
         <SelectionProvider initialColor={initial}>
-          <div className="grid items-start gap-4 md:gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          <div className="box-row">
             <Suspense fallback={<BuyCard {...buyProps} stock={null} />}>
               <LiveBuyCard {...buyProps} />
             </Suspense>
-            <SidePanel product={product} />
+            <SidePanel product={product} fallbackColor={initial ?? colors[0]} />
           </div>
+          <SelectedBoxRope fallback={initial ?? colors[0]} />
         </SelectionProvider>
 
         <section aria-labelledby="details-title" className="panel overflow-hidden">
-          <span className="panel-inner" aria-hidden />
           <div className="relative grid grid-cols-[minmax(0,1fr)] gap-6 p-[var(--panel-pad)] md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:items-center">
             <div className="window aspect-[4/3]">
               <Image src="/hats/rope-brim.jpg" alt="A hand setting the brim of a navy rope cap on the course" fill sizes="(min-width: 768px) 40vw, 92vw" className="object-cover" />
@@ -152,9 +150,7 @@ async function ProductContent({ params, searchParams }: { params: PageProps<"/pr
           </div>
         </section>
 
-        <Suspense fallback={null}>
-          <AlsoLike exclude={product} active={initial} />
-        </Suspense>
+        {!isEdition && <Sleeves pair={c.pair} foursome={c.foursome} tracks={{ pair: "pdp_offer", foursome: "pdp_foursome" }} />}
         <Suspense fallback={null}>
           <SeriesBand />
         </Suspense>
@@ -168,34 +164,11 @@ async function LiveBuyCard(props: Omit<Parameters<typeof BuyCard>[0], "stock">) 
   return <BuyCard {...props} stock={stock} />
 }
 
-/** The rest of the range: the other core colourways and the live editions, as units on one plate. */
-async function AlsoLike({ exclude, active }: { exclude: Product; active: string | null }) {
-  const c = await ropeCatalog()
-  const { stock } = await liveStock(c)
-  const cards: { product: Product; color: string; key: string }[] = []
-  if (c.core) for (const col of CORE_COLORS) if (!(c.core.id === exclude.id && col === active)) cards.push({ product: c.core, color: col, key: `core-${col}` })
-  for (const e of c.editions) if (e.id !== exclude.id) cards.push({ product: e, color: colorThumbs(e)[0]?.color ?? e.title, key: e.handle })
-  if (!cards.length) return null
-  return (
-    <section aria-labelledby="range-title" className="flex flex-col gap-4">
-      <h2 id="range-title" className="panel-title">
-        The rest of the range
-      </h2>
-      <div className="grid grid-cols-2 plate md:grid-cols-4">
-        {cards.map((x) => (
-          <ProductCard key={x.key} product={x.product} color={x.color} colors={x.product.id === c.core?.id ? [...CORE_COLORS] : undefined} stock={stock} badge={x.product.id === c.core?.id ? undefined : "LIMITED"} track="pdp_also_like" />
-        ))}
-      </div>
-    </section>
-  )
-}
-
 async function SeriesBand() {
   const series = (await listSeries())[0]
   if (!series?.stance) return null
   return (
     <section aria-labelledby="series-title" className="panel">
-      <span className="panel-inner" aria-hidden />
       <div className="relative flex flex-col gap-4 p-[var(--panel-pad)] md:flex-row md:items-end md:justify-between">
         <div className="flex max-w-[60ch] flex-col gap-3">
           <h2 id="series-title" className="panel-title">

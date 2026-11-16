@@ -22,3 +22,26 @@ export function RopeRule({ color, className = "", vertical = false }: { color: s
     </svg>
   )
 }
+
+/**
+ * The box's one rope: a braided cord laid full width across the fold between
+ * the front and side panels and the back panel, in the rope colour of the
+ * chosen cap. The twist is a repeating diagonal lay (one per page, so one id).
+ */
+export function BoxRope({ color }: { color: string | null | undefined }) {
+  const rope = colorway(color).rope
+  return (
+    <div className="box-rope" aria-hidden>
+      <svg className="block h-[14px] w-full" role="presentation">
+        <defs>
+          <pattern id="box-rope-lay" width="10" height="14" patternUnits="userSpaceOnUse">
+            <path d="M-2 15 L9 -1" stroke="#00000047" strokeWidth="3.2" />
+            <path d="M3 15 L14 -1" stroke="#ffffff38" strokeWidth="1.4" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="14" fill={rope} style={{ transition: "fill .42s var(--ease-box)" }} />
+        <rect width="100%" height="14" fill="url(#box-rope-lay)" />
+      </svg>
+    </div>
+  )
+}

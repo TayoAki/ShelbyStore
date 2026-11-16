@@ -1,6 +1,7 @@
 import { POLICY } from "@/lib/policy"
 import { crownCm } from "@/lib/rope"
 import type { Product } from "@/lib/types"
+import { CrownProfiles } from "./crown-profiles"
 
 const ORDER = ["Crown", "Panels", "Rope", "Brim", "Closure", "Fabric", "Sweatband", "Care"]
 
@@ -13,66 +14,21 @@ function range(cm: string | null): [number, number] | null {
 }
 
 /**
- * The box's side panel: the crown drawn to true size beside a high-crown rope
- * cap's published 12 cm, then the printed spec block. On scroll the box turns
- * from its front to this panel (the page's one authored scroll moment).
+ * The box's side panel: two cap profiles drawn to one scale on a shared ruler
+ * baseline (the Rope Cap in the chosen ink against a 12 cm high crown), then
+ * the printed spec plate. On scroll the box turns from its front to this panel
+ * (the page's one authored scroll moment).
  */
-export function SidePanel({ product, id = "spec", headingLevel = "h2" }: { product: Product; id?: string; headingLevel?: "h2" | "h3" }) {
+export function SidePanel({ product, id = "spec", headingLevel = "h2", fallbackColor = "Tour White" }: { product: Product; id?: string; headingLevel?: "h2" | "h3"; fallbackColor?: string }) {
   const H = headingLevel
   const cm = range(crownCm(product))
   const details = ((product.metadata as { details?: Record<string, string> } | null)?.details ?? {}) as Record<string, string>
   const rows = ORDER.filter((k) => details[k]).map((k) => [k, details[k]] as const)
-  const top = cm ? cm[1] : null
-  const low = cm ? cm[0] : null
 
   return (
     <section id={id} aria-labelledby={`${id}-title`} className="panel panel-turn">
-      <span className="panel-inner" aria-hidden />
-      <div className="relative grid grid-cols-[minmax(0,1fr)] gap-10 p-[var(--panel-pad)] lg:grid-cols-[auto_minmax(0,1fr)] lg:gap-16">
-        {top !== null && low !== null && (
-          <figure className="flex flex-col gap-4">
-            <svg
-              role="img"
-              aria-label={`The Rope Cap's crown, ${crownCm(product)} cm, drawn beside a 12 cm high crown`}
-              width="7.2cm"
-              height="13.4cm"
-              viewBox="0 0 72 134"
-              className="max-w-full overflow-visible text-ink"
-            >
-              {/* ruler: a tick every centimetre, a longer tick every five */}
-              <line x1="6" y1="4" x2="6" y2="130" stroke="currentColor" strokeWidth="0.6" />
-              {Array.from({ length: 13 }, (_, i) => (
-                <g key={i}>
-                  <line x1="6" x2={i % 5 === 0 ? 1 : 3} y1={130 - i * 10} y2={130 - i * 10} stroke="currentColor" strokeWidth="0.6" />
-                  {i % 2 === 0 && (
-                    <text x="9" y={130 - i * 10 + 1.4} fontSize="3.6" fill="currentColor" fontFamily="var(--font-label)" fontWeight="700">
-                      {i}
-                    </text>
-                  )}
-                </g>
-              ))}
-              {/* the high crown, outlined */}
-              <rect x="20" y={130 - 120} width="20" height="120" fill="none" stroke="currentColor" strokeWidth="0.7" strokeDasharray="2 1.6" />
-              {/* Shelby's crown: solid to the low end of the range, lighter to the high end */}
-              <rect x="46" y={130 - low * 10} width="20" height={low * 10} fill="currentColor" />
-              {top > low && <rect x="46" y={130 - top * 10} width="20" height={(top - low) * 10} fill="currentColor" fillOpacity="0.45" />}
-              <line x1="16" x2="70" y1={130 - 120} y2={130 - 120} stroke="currentColor" strokeWidth="0.4" strokeDasharray="1 1" />
-              <line x1="16" x2="70" y1="130" y2="130" stroke="currentColor" strokeWidth="0.8" />
-            </svg>
-            <figcaption className="grid max-w-[18rem] grid-cols-2 gap-3 text-[0.875rem] leading-5">
-              <span>
-                <span className="label block">High crown</span>12 cm, published spec
-              </span>
-              <span>
-                <span className="label block">The Rope Cap</span>
-                {crownCm(product)} cm
-              </span>
-            </figcaption>
-            <p className="text-[0.8125rem] text-ink-2">Drawn to scale. Exact at standard screen density.</p>
-          </figure>
-        )}
-
-        <div className="flex flex-col gap-6">
+      <div className="relative flex flex-col gap-8 p-[var(--panel-pad)]">
+        <div className="flex flex-col gap-4">
           <H id={`${id}-title`} className="panel-title max-w-[14ch]">
             The crown sits lower.
           </H>
@@ -81,8 +37,17 @@ export function SidePanel({ product, id = "spec", headingLevel = "h2" }: { produ
           </p>
         </div>
 
-        {/* The spec, printed as a plate of units across the panel's foot. */}
-        <dl className="plate grid-cols-1 sm:grid-cols-2 lg:col-span-2 lg:grid-cols-3">
+        {cm && (
+          <figure className="flex flex-col gap-3">
+            <CrownProfiles low={cm[0]} top={cm[1]} fallbackColor={fallbackColor} />
+            <figcaption className="max-w-[46ch] text-[0.9375rem] leading-6 text-ink-2">
+              Both crowns drawn to one scale against the ruler, in centimetres. The high crown is the published 12 cm of the best-selling rope caps.
+            </figcaption>
+          </figure>
+        )}
+
+        {/* The spec, printed as a keylined plate of units at the panel's foot. */}
+        <dl className="plate grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
           {[...rows, ["Fit", `One size, ${POLICY.oneSize}`] as const].map(([k, v]) => (
             <div key={k} className="flex flex-col gap-1 p-4">
               <dt className="label">{k}</dt>

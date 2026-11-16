@@ -7,6 +7,7 @@ import type { Product } from "@/lib/types"
 import { BundleRows } from "./bundle-rows"
 import { BuyCard } from "./pdp/buy-card"
 import { SelectionProvider } from "./pdp/selection"
+import { SidePanel } from "./box/side-panel"
 
 /**
  * The core Rope Cap's front panel for landing pages (story, listicle,
@@ -20,6 +21,7 @@ export async function RopeBuyBlock({
   withGallery = false,
   aside,
   bundleTrack,
+  withSide = false,
 }: {
   initialColor?: string | null
   showBundles?: boolean
@@ -30,6 +32,8 @@ export async function RopeBuyBlock({
   aside?: ReactNode
   /** data-track names for the bundle rows (the quiz result uses `quiz_bundle`). */
   bundleTrack?: { pair: string; foursome: string }
+  /** Open the front panel beside the side panel, as one box row (landing pages inside a box). */
+  withSide?: boolean
 }) {
   const c = await ropeCatalog()
   if (!c.core) return null
@@ -67,12 +71,25 @@ export async function RopeBuyBlock({
     </Suspense>
   )
   // The front panel carries its own die-cut window; `withGallery` sets it beside the aside on wide screens.
+  // Inside a flattened box the panels butt edge to edge: a box row (front beside side, or the aside beside the front).
   return (
     <SelectionProvider initialColor={initial} syncUrl={false}>
-      <div className={withGallery && aside ? "grid items-start gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]" : "flex flex-col gap-4"}>
-        {aside}
-        {card}
-      </div>
+      {withSide ? (
+        <div className="box-row">
+          {card}
+          <SidePanel product={c.core} id={`${source}-spec`} headingLevel="h3" fallbackColor={initial} />
+        </div>
+      ) : withGallery && aside ? (
+        <div className="box-row">
+          {aside}
+          {card}
+        </div>
+      ) : (
+        <div className="box-flush">
+          {aside}
+          {card}
+        </div>
+      )}
     </SelectionProvider>
   )
 }

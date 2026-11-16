@@ -3,15 +3,15 @@
 import { CaretLeft, CaretRight } from "@phosphor-icons/react"
 import Image from "next/image"
 import Link from "next/link"
-import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react"
+import { useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react"
 import { formatMoney } from "@/lib/format"
 import { POLICY } from "@/lib/policy"
 import { findVariant, LOW_STOCK, price } from "@/lib/product"
 import { colorway } from "@/lib/swatches"
 import type { Product, VariantStock } from "@/lib/types"
 import { useAddToBag } from "../cart/use-add-to-bag"
+import { useNotScrolledPast } from "@/lib/use-not-scrolled-past"
 import { Digits } from "../digits"
-import { RopeRule } from "../rope-rule"
 import { SwatchFace, SwatchLink } from "../swatch"
 import { useSelection } from "./selection"
 
@@ -84,7 +84,7 @@ export function BuyCard({
   const soldOut = stock !== null && typeof n === "number" && n <= 0
   const p = price(product, variant)
   const ink = colorway(active)
-  const dark = !ink.light
+  const dark = ink.panelDark
 
   const images = (active && imagesByColor?.[active]?.length ? imagesByColor[active] : fallbackImages) ?? []
   const [shot, setShot] = useState(0)
@@ -118,14 +118,7 @@ export function BuyCard({
   }
 
   const cta = useRef<HTMLDivElement>(null)
-  const [ctaVisible, setCtaVisible] = useState(true)
-  useEffect(() => {
-    const el = cta.current
-    if (!el || !sticky) return
-    const io = new IntersectionObserver(([e]) => setCtaVisible(e.isIntersecting || e.boundingClientRect.top > 0))
-    io.observe(el)
-    return () => io.disconnect()
-  }, [sticky])
+  const ctaVisible = useNotScrolledPast(cta, sticky)
 
   const label = soldOut ? "Sold out" : "Add to bag"
   const spec = crown ? `${crown.value} crown${crown.note ? ` · ${crown.note.replace(/^about /, "")}` : ""} · One size` : "One size"
@@ -149,21 +142,14 @@ export function BuyCard({
     "--window-edge": ink.edge,
     "--btn-bg": dark ? ink.ink : "#14213D",
     "--btn-fg": dark ? ink.panel : "#FFFFFF",
+    "--inner-crease": dark ? "#ffffff66" : "#14213d59",
   } as CSSProperties
 
   return (
     <section aria-label={`${product.title}, buy`} className={`panel overflow-hidden ${dark ? "ink-dark" : ""}`} style={panelStyle}>
-      <span className="panel-inner" aria-hidden />
       <div className="relative flex flex-col gap-4 p-[var(--panel-pad)]">
-        <div className="flex items-start justify-between gap-3">
-          <p className="label">
-            Rope cap · No. <Digits value={String(modelNumber ?? edition?.hole ?? 1).padStart(2, "0")} />
-          </p>
-          {tag ?? (edition ? <span className="badge-edition">Hole {edition.hole}{edition.size ? ` · ${edition.size} made` : ""}</span> : <span className="badge">Core</span>)}
-        </div>
-
         {imagesByColor && src && (
-          <div className="window aspect-[4/3] w-full md:aspect-[5/4] lg:aspect-auto lg:h-[clamp(280px,calc(100svh-570px),520px)]">
+          <div className="window h-[clamp(240px,calc(100svh-470px),440px)] w-full md:aspect-[5/4] md:h-auto lg:aspect-auto lg:h-[clamp(300px,calc(100svh-520px),540px)]">
             <Image key={src} src={src} alt={`${product.title} in ${active}, photo ${shot + 1} of ${images.length}`} fill preload sizes="(min-width: 1024px) 40vw, 92vw" className="animate-[fade-in_var(--beat)_var(--ease-box)_both] object-contain p-[6%]" />
             <span className="window-shade" aria-hidden />
             {images.length > 1 && (
@@ -192,7 +178,12 @@ export function BuyCard({
               product.title
             )}
           </Title>
-          <p className="spec-line">{spec}</p>
+          <p className="spec-line flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span>
+              {spec} · No. {String(modelNumber ?? edition?.hole ?? 1).padStart(2, "0")}
+            </span>
+            {tag ?? (edition ? <span className="badge-edition">Hole {edition.hole}{edition.size ? ` · ${edition.size} made` : ""}</span> : null)}
+          </p>
         </div>
 
         <fieldset className="flex flex-col gap-2">
@@ -248,7 +239,7 @@ export function BuyCard({
           )}
         </fieldset>
 
-        <RopeRule color={active} />
+        <hr className="crease" />
 
         <div ref={cta} className="flex flex-col gap-3">
           <div className="flex items-center gap-4">
