@@ -65,6 +65,8 @@ export default defineRailway((ctx) => {
     env: {
       DATABASE_URL: umamiDb.env.DATABASE_URL,
       APP_SECRET: preserve(),
+      // Umami listens on $PORT; pin it so the domain's target port matches.
+      PORT: "3000",
     },
   })
 
@@ -79,7 +81,12 @@ export default defineRailway((ctx) => {
 
   const shared = {
     ...analytics,
-    NODE_ENV: "production",
+    // No NODE_ENV here: with NODE_ENV=production at build time, `npm ci` skips
+    // devDependencies that `medusa build` needs (TypeScript, Vite).
+    // `medusa start` defaults NODE_ENV to production at runtime by itself.
+    NPM_CONFIG_PRODUCTION: "false",
+    STRIPE_API_KEY: preserve(),
+    STRIPE_WEBHOOK_SECRET: preserve(),
     DATABASE_URL: db.env.DATABASE_URL,
     REDIS_URL: cache.env.REDIS_URL,
     JWT_SECRET: preserve(),
@@ -94,8 +101,9 @@ export default defineRailway((ctx) => {
   const medusa = service("medusa", {
     source,
     build,
-    // Migrations run once per deploy, before the new server takes traffic.
-    preDeploy: "cd .medusa/server && npm run predeploy",
+    // Migrations run once per deploy, before the new server takes traffic, then
+    // the idempotent bootstrap (demo seed, Stripe on regions, first admin user).
+    preDeploy: "cd .medusa/server && npm run predeploy && npx medusa exec ./src/scripts/bootstrap.js",
     start: "cd .medusa/server && npm run start",
     healthcheck: "/health",
     healthcheckTimeout: 120,
@@ -103,6 +111,9 @@ export default defineRailway((ctx) => {
       ...shared,
       MEDUSA_WORKER_MODE: "server",
       MEDUSA_BACKEND_URL: "https://${{RAILWAY_PUBLIC_DOMAIN}}",
+      SEED_DEMO_DATA: preserve(),
+      ADMIN_EMAIL: preserve(),
+      ADMIN_PASSWORD: preserve(),
       // The admin is served from this same origin. Native apps send no Origin
       // header, so STORE_CORS only matters for a web build of the app.
       ADMIN_CORS: "https://${{RAILWAY_PUBLIC_DOMAIN}}",
@@ -140,10 +151,11 @@ export default defineRailway((ctx) => {
       buildCommand: "npm run build",
       watchPatterns: ["/web/**"],
     },
-    start: "npm run start -- --port $PORT",
+    start: "npm run start",
     healthcheck: "/",
     env: {
-      NODE_ENV: "production",
+      // devDependencies (Tailwind, TypeScript) are needed by `next build`.
+      NPM_CONFIG_PRODUCTION: "false",
       MEDUSA_BACKEND_URL: "https://${{medusa.RAILWAY_PUBLIC_DOMAIN}}",
       MEDUSA_PUBLISHABLE_KEY: preserve(),
       NEXT_PUBLIC_SITE_URL: "https://${{RAILWAY_PUBLIC_DOMAIN}}",

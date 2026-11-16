@@ -12,6 +12,32 @@ railway config plan         # preview
 railway config apply        # apply
 ```
 
+## Live deployment
+
+The Railway project **shelby-store** runs from branch `claude/compassionate-johnson-q9ktyq`. It
+was created with the Railway MCP tools, with the same settings as `railway.ts`.
+
+| Service | URL |
+|---|---|
+| storefront | https://storefront-production-af7bf49b.up.railway.app |
+| medusa (API + admin at `/app`) | https://medusa-production-77bb307e.up.railway.app |
+| umami | https://umami-production-76da48be.up.railway.app |
+| worker, Postgres, Postgres-nPRT (Umami's), Redis, `media` bucket | private |
+
+Secrets (JWT/cookie, admin password, Stripe keys, Umami app secret) live only in Railway
+variables, never in git. `SEED_DEMO_DATA=true` seeds the demo catalog. Set it to `false` before
+loading real products.
+
+Known gaps:
+- **No Stripe webhook yet.** The Stripe test account has hit its limit of 16 webhook endpoints.
+  Card checkout doesn't need one, because payment is confirmed in the browser and captured
+  when the order is placed. Free a slot, add
+  `https://<medusa domain>/hooks/payment/stripe_stripe` (events `payment_intent.*`), and set
+  `STRIPE_WEBHOOK_SECRET` on medusa and worker.
+- **The worker can boot before migrations.** The server runs migrations in its pre-deploy step.
+  On a deploy that adds tables, the worker can start first and run with failed modules. Restart
+  the worker after such a deploy until it waits for migrations itself.
+
 First deploy checklist:
 
 1. Set `JWT_SECRET` and `COOKIE_SECRET` on **medusa** and **worker** (the same value on both).
