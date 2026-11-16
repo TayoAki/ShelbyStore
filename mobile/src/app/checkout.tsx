@@ -11,10 +11,11 @@ import { EmptyState } from "@/components/state-views"
 import { Text } from "@/components/text"
 import { TextField } from "@/components/text-field"
 import { colors, fonts, radius } from "@/constants/theme"
+import { useCatalog } from "@/hooks/use-products"
 import { useTrackOnce } from "@/lib/analytics"
 import { formatMoney } from "@/lib/format"
 import { errorMessage, sdk } from "@/lib/medusa"
-import { imageUrl } from "@/lib/product"
+import { lineImage } from "@/lib/product"
 import { useAuth } from "@/providers/auth-provider"
 import { useCart, type Cart } from "@/providers/cart-provider"
 
@@ -357,6 +358,7 @@ function Section({
 }
 
 function Summary({ cart }: { cart: Cart }) {
+  const catalog = useCatalog()
   const currency = cart.currency_code
   const rows: [string, number | undefined][] = [
     ["Subtotal", cart.item_subtotal],
@@ -366,7 +368,7 @@ function Summary({ cart }: { cart: Cart }) {
   return (
     <View style={styles.summary}>
       {(cart.items ?? []).map((item) => {
-        const image = imageUrl(item.thumbnail)
+        const image = lineImage(catalog.data, item)
         return (
           <View key={item.id} style={styles.summaryLine}>
             <View>

@@ -22,8 +22,8 @@ import { POLICY } from "@/lib/policy"
 import {
   cardImages,
   colorOptionOf,
-  imageUrl,
   isOneSize,
+  lineImage,
   offerFor,
   productPrice,
   shapeOf,
@@ -131,7 +131,14 @@ export default function CartScreen() {
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <View>
         {items.map((item) => (
-          <CartLine key={item.id} item={item} currency={currency} disabled={isMutating} onChange={(q) => change(item.id, q)} />
+          <CartLine
+            key={item.id}
+            item={item}
+            image={lineImage(catalog.data, item)}
+            currency={currency}
+            disabled={isMutating}
+            onChange={(q) => change(item.id, q)}
+          />
         ))}
       </View>
       <View style={styles.look}>
@@ -145,18 +152,19 @@ export default function CartScreen() {
 
 function CartLine({
   item,
+  image,
   currency,
   disabled,
   onChange,
 }: {
   item: Line
+  image: string | null
   currency: string
   disabled: boolean
   onChange: (quantity: number) => void
 }) {
   const handle = item.product_handle
   const drop = !!(item.metadata as Record<string, unknown> | null)?.release_id
-  const image = imageUrl(item.thumbnail)
   return (
     <View style={styles.line}>
       <Pressable

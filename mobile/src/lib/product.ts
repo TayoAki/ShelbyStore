@@ -356,3 +356,24 @@ export function offerSaving(offer: Product, single: Product | null): { anchor: n
   const saving = anchor - price
   return saving > 0 ? { anchor, saving, price } : null
 }
+
+/**
+ * The photo for a cart or order line: the line's variant's own image (its
+ * colour; for the two-pack, the first pick), else the line thumbnail. Medusa
+ * fills line thumbnails from the product, which is always the first colour.
+ */
+export function lineImage(
+  products: Product[] | undefined,
+  line: { product_id?: string | null; variant_id?: string | null; thumbnail?: string | null }
+): string | null {
+  const product = products?.find((p) => p.id === line.product_id)
+  const variant = product?.variants?.find((v) => v.id === line.variant_id) as VariantWithImages | undefined
+  if (product && variant) {
+    const own = [...(variant.images ?? [])].sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0))[0]
+    if (own) return imageUrl(own.url)
+    const colorId = colorOptionOf(product)?.id
+    const color = colorId ? variantOptionMap(variant)[colorId] : null
+    if (color) return imagesFor(product, color)[0] ?? imageUrl(line.thumbnail)
+  }
+  return imageUrl(line.thumbnail)
+}

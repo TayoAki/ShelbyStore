@@ -9,9 +9,10 @@ import { Screen } from "@/components/screen"
 import { ErrorState, LoadingState } from "@/components/state-views"
 import { Text } from "@/components/text"
 import { colors, fonts, radius } from "@/constants/theme"
+import { useCatalog } from "@/hooks/use-products"
 import { formatMoney } from "@/lib/format"
 import { sdk } from "@/lib/medusa"
-import { imageUrl } from "@/lib/product"
+import { lineImage } from "@/lib/product"
 
 /** Order confirmation (APP_SPEC §5.7). */
 export default function OrderScreen() {
@@ -22,6 +23,7 @@ export default function OrderScreen() {
     enabled: !!id,
   })
 
+  const catalog = useCatalog()
   const done = <Button title="Keep shopping" variant="light" onPress={() => router.replace("/")} />
 
   if (isLoading) {
@@ -64,7 +66,7 @@ export default function OrderScreen() {
 
         <View style={styles.block}>
           {(order.items ?? []).map((item) => {
-            const image = imageUrl(item.thumbnail)
+            const image = lineImage(catalog.data, item)
             return (
               <View key={item.id} style={styles.line}>
                 {image ? <Image source={image} style={styles.thumb} contentFit="contain" /> : <View style={styles.thumb} />}
