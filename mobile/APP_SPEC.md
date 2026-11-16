@@ -1,198 +1,715 @@
-# Shelby app: complete specification (v7, The Ball Box; v6 behaviours)
+# Shelby app: complete specification (v8, Shelby in Eastside Golf's style; v6 behaviours)
 
-> **v7 is the binding visual layer** (Part V7 below). It replaces every visual value in Part G,
-> v5 and Appendix A. Behaviour, data, analytics and verification stay as Part G → v5 → Appendix A.
+> **v8 is the binding visual layer** (Part V8, below). It replaces every visual value in Part G, v5
+> and Appendix A, and the v7 Ball Box layer. Behaviour, data, analytics and verification stay as
+> Part G → v5 → Appendix A, all kept verbatim after Part V8.
 
-The single source of truth for rebuilding the Expo app (`mobile/`) so it matches the website
-(`web/SITE_SPEC.md` v6). **v6 = Part G (the golf layer and the single Rope Cap, below) on top of v5
-(Shelby's v4 app structure, screens, data and every behaviour, reskinned in allbirds.com's
-mobile-web theme and motion, §1–§7) and Appendix A (v4 functions).** Precedence: Part G → v5 →
-Appendix A. The v5 description of the Allbirds capture follows. Every value comes from the Allbirds capture described at
-the top of `web/SITE_SPEC.md` v5. That capture used Firecrawl, the theme's CSS and GSAP modules, and
-Playwright at **390×664** (the iPhone 13 device profile) with state and timing probes of:
-- the mobile menu;
-- the centred category slide;
-- the PDP slider;
-- the sticky buy bar;
-- the cart drawer.
+**What this file covers.** It is the source of truth for the Expo app (`mobile/`). It mirrors
+`web/SITE_SPEC.md` v8 Part E: Eastside Golf's tokens, type and patterns, from the capture described
+at the top of that file. That capture includes Playwright at the iPhone 13 profile (390×664), so
+the mobile values below are Eastside's **measured mobile values**, 1px = 1pt.
 
-Where this file is silent, the web spec's mobile values apply.
+**Native translation.** The native tab bar, the stack navigation, the edge-swipe back gesture,
+haptics and safe areas stay native. Where Eastside relies on hover (the button sweep, the card
+image swap, the quick-add slide), the app uses the touch form given in V8.4.
 
 **Stack (unchanged):**
 - Expo SDK 58, React Native 0.88, expo-router (typed routes, `src/app`);
-- TanStack Query, `@medusajs/js-sdk`, `expo-image`, `@expo/vector-icons` (Ionicons),
-  `react-native-safe-area-context`;
-- **`react-native-reanimated` 4.7** (installed; all motion below uses it);
-- `@expo-google-fonts/plus-jakarta-sans` and `@expo-google-fonts/inter` (installed).
+- TanStack Query, `@medusajs/js-sdk`;
+- `expo-image`, `expo-haptics`, `react-native-svg`;
+- `@expo/vector-icons` (Ionicons; the app's icon set stays);
+- `react-native-safe-area-context`;
+- **`react-native-reanimated` 4.7** (all motion).
 
-**One new dependency (JS-only):** `@expo-google-fonts/ibm-plex-mono`, installed with
-`npx expo install`. No SVG library: rings, dots and pills are Views positioned with trigonometry
-(§5.3).
+**Fonts** (JS-only packages, installed with `npx expo install`):
 
-**Precedence:** §1–§6 of this file replace every visual value (colour, font, size, radius, height,
-motion) in Appendix A. Appendix A (v4 §3–§8, verbatim) stays binding for screens, data, behaviour,
-analytics and verification.
+| Package | Version | Faces |
+|---|---|---|
+| `@expo-google-fonts/monomakh` | 0.4.0 | `Monomakh_400Regular` |
+| `@expo-google-fonts/montserrat` | 0.4.2 | `Montserrat_500Medium`, `Montserrat_600SemiBold`, `Montserrat_700Bold` |
+| `@expo-google-fonts/roboto` | 0.4.3 | `Roboto_400Regular`, `Roboto_400Regular_Italic`, `Roboto_500Medium`, `Roboto_700Bold` |
+
+**Remove** the three `@expo-google-fonts/sofia-sans*` packages and their imports.
 
 ---
 
-# Part V7: The Ball Box (visual layer, binding over G, v5 and A for visuals)
+# Part V8: Eastside's style (visual layer, binding over G, v5 and A for visuals)
 
-The app mirrors the web redesign (`web/src/app/globals.css`, `web/src/app/layout.tsx`, the box
-components, `.impeccable/surfaces/web-src-app-page-tsx.md`). The world: **the cap's retail box,
-printed flat**. Each screen is one flattened box on a white board. Its faces join at dashed
-creases, and one braided rope line runs down the box's left gutter through every face. Translated
-for native use, not copied: the tab bar, the stack navigation, the edge-swipe back gesture, the
-haptics and the safe areas stay native.
+## V8.1 Rules
 
-**§1 Rules.**
-- Square corners everywhere. Only die-cut photo windows are rounded: 28pt on a front face, 14–18pt
-  on a small window.
-- No shadows on windows, buttons, sheets or the tab bar.
-- No pills, tickers, nested cards or veils over photos.
-- No label above a heading. Status and tags go in the meta line under the heading, never on a photo.
-- Nothing under 11pt.
-- Contrast is WCAG AA on every ink pair.
-- Prices, hole numbers and counts use tight tabular figures. Digit cells are only for countdowns
-  and measurements.
-- No invented proof or urgency.
+- **Corners:**
+  - 3pt on buttons, fields and selects;
+  - 4pt on tabs and the sticky add button;
+  - 20pt on badge pills;
+  - round on swatches and arrows;
+  - **0** on images, tiles, cards, sheets and bands.
+- **Grounds:** white screens, #F6F6F6 image tiles and bands, black for the announcement strip, the
+  order thanks band and the account footer band.
+- **Colour:** one accent, golf green #207212, used for buying (Add to bag), prices on product,
+  offer and bag screens, eyebrows, progress fills and the selected tab-bar item.
+- **Shadows:** none, except the badge pill and the round carousel arrows (V8.2).
+- **Casing:**
+  - Section titles, nav-like labels, badges and tab-bar labels are UPPERCASE (`textTransform`).
+  - Product names are Title Case with the colour first ("Pine Rope Cap").
+  - Buttons are Title Case ("Add To Bag").
+- **Nothing under 11pt.** Eastside's 9.9–10.8px labels render at 11pt.
+- **WCAG AA** on every pair (the web's E.2.2 table applies). Light swatches get a #8C8C8C ring.
+- **Proof and urgency:**
+  - No stars, review counts, discount offers, "Best seller" or "Sale".
+  - No partner, collab or UGC sections.
+  - No Eastside logo, figure, imagery or copy (web E.1.2 lists each and its Shelby replacement).
+- **Touch targets** are at least 44×44pt.
 
-**§2 Tokens** (`src/constants/theme.ts`).
-- **Inks:**
+## V8.2 Tokens (`src/constants/theme.ts`)
 
-  | Token | Value |
-  |---|---|
-  | `ink` | #14213D |
-  | `ink2` | #3F4A64 |
-  | `ink3` | #5D667C (meta, 6.1:1 on white) |
-  | `board`, `paper` | #FFFFFF |
-  | `wash` | #E7E9EE |
-  | `stripe` | #C8302A (numbered editions only) |
-  | `pine` | #1E3B2F |
-  | `pineInk` | #F1ECE0 |
-  | `fescue` | #CFC3A6 |
+Keep the export names (`colors`, `golf`, `fonts`, `spacing`, `layout`, `radius`, `type`, `shadow`,
+`ease`, `dur`, `BEAT`) so the screens keep compiling, and change their values as below. Keep
+`colourways`, `colourwayOf`, `CORE_COLOURWAYS`, `LIGHT_CROWNS` and `colourwaySlug` unchanged:
+they are product colours. Their `panel`, `ink` and `edge` fields stay in the type but no screen
+styles with them any more.
 
-- **Each colourway has a panel, an ink and an edge.** The panel is inked opposite to its cap, so a
-  white cap never sits white-on-white:
+```ts
+import { Easing, ReduceMotion } from "react-native-reanimated"
+import { Platform } from "react-native"
 
-  | Colourway | Panel | Ink |
-  |---|---|---|
-  | Tour White | navy | white |
-  | Clubhouse Navy | white | navy |
-  | Pine | pine | cream |
-  | Fescue | fescue | navy |
-  | Azalea | #8E2B4E | white |
-  | Cypress | #2E4B4A | sand |
-  | Haar | #4A4F4C | white |
+export const colors = {
+  // Eastside palette (web E.2.1)
+  text: "#212121",
+  textStrong: "#000000",
+  textLight: "#646464",
+  bg: "#FFFFFF",
+  tile: "#F6F6F6",
+  sand: "#EEE9E3",
+  bgBrighter: "#F2F2F2",
+  surfaceSticky: "#FCFCFC",
+  border: "#F0F0F0",
+  hairline: "#F7F7F7",
+  track: "#EEEEEE",
+  fieldBorder: "#8C8C8C",
+  green: "#207212",
+  greenPressed: "#1A5C0F",
+  greenDeep: "#0B3305",
+  greenFade: "rgba(32, 114, 18, 0.05)",
+  ink: "#000000",
+  tabActive: "#141414",
+  charcoalPressed: "#3B3B3B",
+  blackPressed: "#1A1A1A",
+  onInk: "#F7F7F7",
+  onInkPressed: "rgba(247, 247, 247, 0.7)",
+  linkPressed: "rgba(33, 33, 33, 0.7)",
+  underlay: "rgba(0, 0, 0, 0.4)",
+  heroOverlay: "rgba(0, 0, 0, 0.2)",
+  error: "#721C24",
+  errorBg: "#F8D7DA",
+  errorBorder: "#F5C6CB",
+  swatchBorder: "#E9E9E9",
 
-- **Fonts:** Sofia Sans only, via `@expo-google-fonts`.
-  - Extra Condensed 700/800 for the model name, panel titles and digits.
-  - Semi Condensed 600/700 for labels and buttons.
-  - Sofia Sans 400–700 for body text.
-  - The Plus Jakarta, Inter and Plex Mono fonts were removed.
-- **Type:**
+  // v7 keys kept as aliases so existing screens compile; remap, then delete unused ones
+  black: "#212121",
+  white: "#FFFFFF",
+  page: "#FFFFFF",
+  board: "#FFFFFF",
+  paper: "#FFFFFF",
+  wash: "#F6F6F6",
+  naturalWhite: "#F6F6F6",
+  charcoal: "#212121",
+  muted: "#646464",
+  mutedFill: "#F0F0F0",
+  stroke: "#F0F0F0",
+  rule: "#F0F0F0",
+  crease: "#F0F0F0",
+  swatchRing: "#212121",
+  overlay: "rgba(0, 0, 0, 0.4)",
+  overlayMenu: "rgba(0, 0, 0, 0.4)",
+  tileVeil: "rgba(0, 0, 0, 0)",
+  ringFill: "rgba(32, 114, 18, 0.1)",
+  pillBorder: "#212121",
+  red: "#721C24", // sold-out / error text only
+  // Ball Box inks retired: ink-as-navy, stripe, stripeTint, pine, pineInk, navy, fescue
+} as const
 
-  | Role | Size |
-  |---|---|
-  | `model` | 56/50, caps |
-  | `panelTitle` | 40/38 |
-  | `specLine` | 15, caps, tracked, tabular |
-  | `digits` | 44 |
-  | `digitsSm` | 28 |
-  | `holeNumber` | 40 |
-  | body | 16/24 |
-  | meta | 14/20 |
-  | caption | 13 |
-  | `tabBar` | 11 |
+export const golf = { green: "#207212", greenPressed: "#1A5C0F", tint: "rgba(32, 114, 18, 0.05)", midnight: "#000000", sage: "#F6F6F6" } as const
 
-- **Layout:** 12pt board margin, 20pt face padding (30pt left with the rope), 2pt keylines,
-  1.5pt rules inside a face.
+export const fonts = {
+  display: "Monomakh_400Regular",
+  heading: "Montserrat_700Bold",
+  headingMedium: "Montserrat_500Medium",
+  headingSemi: "Montserrat_600SemiBold",
+  body: "Roboto_400Regular",
+  bodyItalic: "Roboto_400Regular_Italic",
+  bodyMedium: "Roboto_500Medium",
+  bodyBold: "Roboto_700Bold",
+  // v7 aliases
+  model: "Monomakh_400Regular",
+  modelBold: "Monomakh_400Regular",
+  label: "Roboto_500Medium",
+  labelSemi: "Roboto_500Medium",
+  bodySemi: "Roboto_500Medium",
+  displayMedium: "Montserrat_500Medium",
+  displaySemi: "Montserrat_700Bold",
+  serif: "Monomakh_400Regular",
+  serifItalic: "Roboto_400Regular_Italic",
+  mono: "Roboto_500Medium",
+  monoMedium: "Roboto_700Bold",
+} as const
 
-**§3 Components** (`src/components/`).
-- **`box.tsx`:**
-  - `Box` (the flattened box, `Fold` creases, the animated rope gutter), `Face` (the ink context;
-    re-inks on the beat) and `Panel` (a one-face box).
-  - `InkText`, `Window`, `Digits`, `Tag`, `Plate` (units on one keylined plate with shared rules).
-  - `InkStripes`: the colour control, a radio group of printed crown+rope bands at least 52pt
-    tall, with a light haptic on select.
-  - `confirmHaptic` (success on add), `useBeatIn`, `inkFor`.
-- **`front-panel.tsx`:** `FrontFace`.
-  - A paging die-cut window about 0.44× the screen height (260–460pt) with a 1/n counter.
-  - The model name, then the meta line: "No. 01 · Core · Mid crown 11–11.5 cm · One size".
-  - The ink stripes, the price in digits beside the ink Add to bag block (56pt), and the stock line.
-- **`box-faces.tsx`:**
-  - `SideFace`: the crown copy and `CrownCompare`, then the spec on a plate.
-  - `HolesFace`: six numbered units, the next hole's countdown and tee sheet.
-  - `SleeveFace`: The Pair in pine, The Foursome in navy. Each has 2 or 4 die-cut windows in a row,
-    with the price, the per-cap price and the CTA at the foot.
-  - `StoryFace` and `CloseFace`.
-- **`crown-compare.tsx`:** two cap profiles drawn with react-native-svg, the Rope Cap and a 12 cm
-  high crown, on one ruler and one baseline at true proportion. The Rope Cap is filled in its
-  colourway with a rope stroke; the other is a dashed outline.
-- **Buttons:** square blocks with a 2pt keyline and a caps label, at least 44pt tall. `ink` prints
-  in the face's own ink pair.
-- **Fields and search:** a 48pt square field with a 2pt ink keyline.
-- **Sheets:** square bottom and top flaps with a 2pt keyline edge.
-- **Tab bar:** white, with a 2pt top keyline and a 3pt ink rule under the active label. The badge
-  is a square ink cell.
-- **Removed:** `pill-window`, `ring`, `gallery`, `fit-scale`, `scroll-thumb`, `credibility-strip`,
-  `scorecard`, `veil`, `hole-band`, `hole-card`, `rope-rule`, `badge`.
+export const spacing = { xxs: 2, xs: 4, sm: 8, md: 10, lg: 16, xl: 20, xxl: 24, xxxl: 32, section: 40 } as const
 
-**§4 Motion.**
-- **One beat:** 420ms on `ease.box` (cubic-bezier .16,1,.3,1).
-- **Choosing a colour** re-inks the face fill, the text, the rope and the digits, and swaps the
-  window photo, all on that same beat (`withTiming`, plus the `expo-image` cross-dissolve).
-- **`TurnFace`:** while the side face scrolls in, it tilts from 9° rotateX to flat as if the box
-  were turning.
-- **Short beats:** the button press darkens over 180ms. The sheets open on the beat and close in
-  300ms. The tab icon presses in and out once on the beat.
-- **Reduce Motion:** every timing uses `ReduceMotion.System` and checks `useReducedMotion()`. Under
-  it, cuts replace re-inking, there is no tilt, no photo dissolve and no tab press, and the
-  skeleton holds still.
+export const layout = {
+  edge: 16, // Eastside mobile page gutter
+  railEdge: 12, // rails and grids start at x = 12
+  gap: 4, // rail and tile gap
+  gridGap: 10, // two-column grid gap
+  text: 16,
+  header: 72, // Eastside mobile header
+  announcement: 36,
+  tabBar: 56,
+  stickyBar: 116, // Eastside mobile sticky add-to-cart bar (incl. "Change color" row)
+  hairline: 1,
+  // v7 keys kept: keyline 1, panelPad 16, pillHeight 72, contentTop 72, ticker 36
+  keyline: 1,
+  panelPad: 16,
+  pillTop: 0,
+  pillHeight: 72,
+  pillSide: 0,
+  contentTop: 72,
+  ticker: 36,
+} as const
 
-**§5 Screens** (behaviour unchanged from G/A).
-1. **Home:** one box.
-   - The front face, then the side face (via `TurnFace`) and the holes face.
-   - The Pair and Foursome sleeves, the story face, and the navy bottom flap.
-   - The rope runs in the chosen colourway's rope colour.
-2. **PDP:** the same front face, side face, Pair and Foursome rows, and fit accordions, with a
-   sticky strip after the CTA leaves view.
-3. **Offer:** the sleeve as the front face (2 or 4 windows), the pickers, the price and CTA at the
-   foot, and the offer-headline experiment.
-4. **Shop:** a heading face with the group tabs.
-   - The colourways as a two-column sheet of inked cells with shared keylines.
-   - The editions on a second sheet, then the sleeves.
-5. **The Card:** a heading face, then the next hole printed in its edition's ink (window,
-   countdown, tee sheet or Shop). The six holes follow as one ruled scorecard (number, small
-   window, name, meta line, phase action).
-6. **Bag, Checkout and Order:**
-   - **Bag:** one box (the heading and the free-shipping bar, then ruled lines, bundles, Make it
-     two, and the summary with Checkout).
-   - **Checkout:** numbered faces (01 Contact, 02 Delivery, 03 Payment) under the summary face.
-   - **Order:** a navy thanks face, then the lines and totals.
-   - **The Added sheet:** a bottom flap with a small window.
-7. **Custom:** a navy front face, the terms on a plate, the three numbered steps, and the quote form.
-8. **Account and not-found:** single boxes, with ruled link rows at least 52pt tall.
+export const radius = { xs: 3, sm: 3, md: 3, lg: 4, xl: 4, xxl: 4, xxxl: 4, tile: 0, panel: 0, pill: 20, window: 0, button: 3, tab: 4, bar: 10, full: 9999 } as const
 
-**§6 Kept behaviour** (verify list).
-- Catalog, edition and kit logic; cart; checkout; The Card and tee-sheet opt-in; custom quotes.
+const upper = "uppercase" as const
+const tabular = ["tabular-nums"] as ("tabular-nums")[]
+
+export const type = {
+  // Eastside roles (web E.2.3, mobile column)
+  displayXl: { fontFamily: fonts.display, fontSize: 28, lineHeight: 29.4 },
+  displayHero: { fontFamily: fonts.display, fontSize: 32.4, lineHeight: 38.88 },
+  displayLg: { fontFamily: fonts.display, fontSize: 22, lineHeight: 23.1, textTransform: upper },
+  displayMd: { fontFamily: fonts.display, fontSize: 22, lineHeight: 26.4, textTransform: upper },
+  displaySplash: { fontFamily: fonts.display, fontSize: 35, lineHeight: 36.75, letterSpacing: 0.35, textTransform: upper },
+  wordmark: { fontFamily: fonts.display, fontSize: 26, lineHeight: 28, letterSpacing: 1, textTransform: upper },
+  titlePage: { fontFamily: fonts.heading, fontSize: 26, lineHeight: 31.2, textTransform: upper },
+  titleProduct: { fontFamily: fonts.heading, fontSize: 18, lineHeight: 21.6 },
+  titleFeature: { fontFamily: fonts.headingMedium, fontSize: 48, lineHeight: 57.6 },
+  titleSection: { fontFamily: fonts.headingMedium, fontSize: 38.4, lineHeight: 46.08 },
+  titleBlog: { fontFamily: fonts.headingMedium, fontSize: 22.5, lineHeight: 27, textTransform: upper },
+  titleCard: { fontFamily: fonts.headingMedium, fontSize: 16.8, lineHeight: 20.16 },
+  titleDrawer: { fontFamily: fonts.heading, fontSize: 16, lineHeight: 19.2 },
+  faqQ: { fontFamily: fonts.headingMedium, fontSize: 16, lineHeight: 19.2 },
+  headingRecs: { fontFamily: fonts.bodyBold, fontSize: 18, lineHeight: 21.6, textTransform: upper },
+  eyebrow: { fontFamily: fonts.bodyBold, fontSize: 16, lineHeight: 25, letterSpacing: 1.6, textTransform: upper, color: "#207212" },
+  eyebrowSm: { fontFamily: fonts.bodyBold, fontSize: 14, lineHeight: 25, letterSpacing: 1.4, textTransform: upper, color: "#207212" },
+  bodyEastside: { fontFamily: fonts.body, fontSize: 12.6, lineHeight: 17.3 },
+  bodyPdp: { fontFamily: fonts.body, fontSize: 14.4, lineHeight: 19.73 },
+  bodyLongEastside: { fontFamily: fonts.bodyMedium, fontSize: 14.4, lineHeight: 25 },
+  bodyEditorial: { fontFamily: fonts.body, fontSize: 15, lineHeight: 21 },
+  bodySplash: { fontFamily: fonts.body, fontSize: 12, lineHeight: 18 },
+  cardTitleEastside: { fontFamily: fonts.body, fontSize: 12.6, lineHeight: 15.12, color: "#000000" },
+  priceProduct: { fontFamily: fonts.body, fontSize: 18, lineHeight: 24.75, color: "#207212", fontVariant: tabular },
+  priceCard: { fontFamily: fonts.body, fontSize: 12.6, lineHeight: 17.64, color: "#646464", fontVariant: tabular },
+  navLabel: { fontFamily: fonts.bodyMedium, fontSize: 11, lineHeight: 13.2, letterSpacing: 0.28, textTransform: upper },
+  menuRow: { fontFamily: fonts.body, fontSize: 14.4, lineHeight: 18, letterSpacing: 0.99, textTransform: upper },
+  announce: { fontFamily: fonts.body, fontSize: 12.6, lineHeight: 17.33, textTransform: upper },
+  btn: { fontFamily: fonts.body, fontSize: 16, lineHeight: 22 },
+  btnAtc: { fontFamily: fonts.bodyBold, fontSize: 16, lineHeight: 16 },
+  btnSticky: { fontFamily: fonts.body, fontSize: 18, lineHeight: 24.75 },
+  btnSm: { fontFamily: fonts.body, fontSize: 12, lineHeight: 16.5 },
+  btnKit: { fontFamily: fonts.headingSemi, fontSize: 16, lineHeight: 16 },
+  tabLabel: { fontFamily: fonts.body, fontSize: 14, lineHeight: 18, letterSpacing: 0.84 },
+  tabLabelActive: { fontFamily: fonts.bodyBold, fontSize: 14, lineHeight: 18, letterSpacing: 0.84 },
+  labelCaps: { fontFamily: fonts.bodyMedium, fontSize: 11, lineHeight: 14, letterSpacing: 1.54, textTransform: upper },
+  micro: { fontFamily: fonts.body, fontSize: 11, lineHeight: 13, letterSpacing: 0.55, textTransform: upper },
+  breadcrumb: { fontFamily: fonts.body, fontSize: 12.6, lineHeight: 17, color: "#646464" },
+  accordionTitle: { fontFamily: fonts.bodyMedium, fontSize: 18, lineHeight: 19.73, textTransform: "capitalize" as const },
+  footerHead: { fontFamily: fonts.bodyBold, fontSize: 12.6, lineHeight: 15.12, textTransform: upper },
+  note: { fontFamily: fonts.bodyItalic, fontSize: 11, lineHeight: 14.7 },
+  stripLabel: { fontFamily: fonts.body, fontSize: 12.25, lineHeight: 15.93, textTransform: upper },
+  countdown: { fontFamily: fonts.heading, fontSize: 26, lineHeight: 31.2, fontVariant: tabular },
+  countdownSm: { fontFamily: fonts.bodyMedium, fontSize: 14.4, lineHeight: 18, fontVariant: tabular },
+  holeNumeral: { fontFamily: fonts.display, fontSize: 72, lineHeight: 72 },
+
+  // v7 role names, remapped to the Eastside roles above (screens keep compiling)
+  model: { fontFamily: fonts.heading, fontSize: 18, lineHeight: 21.6 }, // = titleProduct
+  panelTitle: { fontFamily: fonts.display, fontSize: 22, lineHeight: 26.4, textTransform: upper }, // = displayMd
+  pdpTitle: { fontFamily: fonts.heading, fontSize: 18, lineHeight: 21.6 },
+  hero: { fontFamily: fonts.display, fontSize: 32.4, lineHeight: 38.88 },
+  section: { fontFamily: fonts.display, fontSize: 22, lineHeight: 26.4, textTransform: upper },
+  tile: { fontFamily: fonts.body, fontSize: 12.25, lineHeight: 15.93, textTransform: upper },
+  cardHeading: { fontFamily: fonts.headingMedium, fontSize: 16.8, lineHeight: 20.16 },
+  specLine: { fontFamily: fonts.body, fontSize: 12.6, lineHeight: 17.64, color: "#646464", fontVariant: tabular },
+  digits: { fontFamily: fonts.heading, fontSize: 26, lineHeight: 31.2, fontVariant: tabular },
+  digitsSm: { fontFamily: fonts.bodyMedium, fontSize: 14.4, lineHeight: 18, fontVariant: tabular },
+  holeNumber: { fontFamily: fonts.display, fontSize: 38, lineHeight: 40 },
+  heroEyebrow: { fontFamily: fonts.bodyBold, fontSize: 14, lineHeight: 25, letterSpacing: 1.4, textTransform: upper },
+  quote: { fontFamily: fonts.display, fontSize: 22, lineHeight: 28 },
+  kicker: { fontFamily: fonts.body, fontSize: 15, lineHeight: 21 },
+  tab: { fontFamily: fonts.body, fontSize: 14, lineHeight: 18, letterSpacing: 0.84 },
+  eyebrowV7: { fontFamily: fonts.bodyBold, fontSize: 14, lineHeight: 25, letterSpacing: 1.4, textTransform: upper },
+  subline: { fontFamily: fonts.body, fontSize: 12.6, lineHeight: 17.64, color: "#646464" },
+  label: { fontFamily: fonts.bodyMedium, fontSize: 11, lineHeight: 14, letterSpacing: 1.54, textTransform: upper },
+  scoreLabel: { fontFamily: fonts.bodyMedium, fontSize: 11, lineHeight: 14, letterSpacing: 1.54, textTransform: upper },
+  scoreNumber: { fontFamily: fonts.body, fontSize: 14.4, lineHeight: 19.73, fontVariant: tabular },
+  edition: { fontFamily: fonts.body, fontSize: 11, lineHeight: 13, letterSpacing: 0.55, textTransform: upper, fontVariant: tabular },
+  ticker: { fontFamily: fonts.body, fontSize: 12.6, lineHeight: 17.33, textTransform: upper },
+  menuItem: { fontFamily: fonts.body, fontSize: 14.4, lineHeight: 18, letterSpacing: 0.99, textTransform: upper },
+  cardTitle: { fontFamily: fonts.body, fontSize: 12.6, lineHeight: 15.12 },
+  cardMeta: { fontFamily: fonts.body, fontSize: 12.6, lineHeight: 17.64 },
+  price: { fontFamily: fonts.body, fontSize: 18, lineHeight: 24.75, fontVariant: tabular },
+  priceSm: { fontFamily: fonts.body, fontSize: 12.6, lineHeight: 17.64, fontVariant: tabular },
+  pricePill: { fontFamily: fonts.body, fontSize: 11, lineHeight: 13, letterSpacing: 0.55, textTransform: upper },
+  badge: { fontFamily: fonts.body, fontSize: 11, lineHeight: 13, letterSpacing: 0.55, textTransform: upper },
+  button: { fontFamily: fonts.body, fontSize: 16, lineHeight: 22 },
+  buttonLarge: { fontFamily: fonts.bodyBold, fontSize: 16, lineHeight: 16 },
+  size: { fontFamily: fonts.body, fontSize: 14.4, lineHeight: 18 },
+  body: { fontFamily: fonts.body, fontSize: 14.4, lineHeight: 19.73 },
+  bodyLong: { fontFamily: fonts.bodyMedium, fontSize: 14.4, lineHeight: 25 },
+  article: { fontFamily: fonts.bodyMedium, fontSize: 14.4, lineHeight: 25 },
+  meta: { fontFamily: fonts.body, fontSize: 12.6, lineHeight: 17.64 },
+  caption: { fontFamily: fonts.body, fontSize: 12, lineHeight: 16.5 },
+  announcement: { fontFamily: fonts.body, fontSize: 12.6, lineHeight: 17.33, textTransform: upper },
+  empty: { fontFamily: fonts.headingMedium, fontSize: 16.8, lineHeight: 20.16 },
+  tabBar: { fontFamily: fonts.bodyMedium, fontSize: 11, lineHeight: 13, letterSpacing: 0.28, textTransform: upper },
+  countBadge: { fontFamily: fonts.bodyBold, fontSize: 11, lineHeight: 13 },
+} as const
+
+export const shadow = {
+  none: {},
+  badge: Platform.select({
+    ios: { shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 3, shadowOffset: { width: 0, height: 2 } },
+    default: { elevation: 1 },
+  }),
+  arrow: Platform.select({
+    ios: { shadowColor: "#000", shadowOpacity: 0.18, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
+    default: { elevation: 3 },
+  }),
+  sheet: Platform.select({
+    ios: { shadowColor: "#000", shadowOpacity: 0.06, shadowRadius: 4, shadowOffset: { width: 0, height: -2 } },
+    default: { elevation: 4 },
+  }),
+  // v7 keys: no shadows on cards or buttons
+  sm: {},
+  float: {},
+  xl: {},
+} as const
+
+const themeEase = Easing.bezier(0.215, 0.61, 0.355, 1)
+export const ease = {
+  theme: themeEase, // nav, menus, chevrons
+  sweep: Easing.bezier(0.33, 0, 0, 1), // button press sweep
+  css: Easing.bezier(0.25, 0.1, 0.25, 1), // CSS `ease`: drawers, quick add
+  out: Easing.bezier(0, 0, 0.58, 1), // CSS `ease-out`: button colours, accordion fade, progress
+  in: Easing.bezier(0.42, 0, 1, 1), // CSS `ease-in`: image fade, accordion slide
+  inOut: Easing.bezier(0.42, 0, 0.58, 1), // CSS `ease-in-out`: bag sheet slide
+  linear: Easing.linear,
+  // v7 aliases
+  sineOut: themeEase,
+  sineIn: Easing.bezier(0.42, 0, 1, 1),
+  sineInOut: Easing.bezier(0.42, 0, 0.58, 1),
+  tailwind: themeEase,
+} as const
+
+/** The v7 "beat" is retired; BEAT stays exported for old imports and equals the colour change. */
+export const BEAT = 250
+export const dur = {
+  colour: 250, // M1 colour/background/border, M3/M4 link and nav colour
+  sweep: 500, // M1 sweep
+  tab: 200, // M16
+  quickAdd: 250, // M9 (static on touch; used only by the Added sheet content)
+  image: 500, // M8/M11
+  menu: 600, // M12
+  bagSheet: 250, // M13
+  underlay: 300, // M12/M13 (delay 100)
+  underlayDelay: 100,
+  rotate: 300, // M14/M15/M19
+  accordion: 300, // M15
+  sticky: 300, // M18
+  progress: 300, // M20
+  announce: 5000, // M7 interval
+  announceFade: 500, // M7 fade (est.)
+  reducedFade: 200, // sheets under Reduce Motion
+  // v7 keys remapped
+  section: 300,
+  press: 250,
+  sheetIn: 250,
+  sheetOut: 250,
+} as const
+
+export const reduce = ReduceMotion.System
+```
+
+**Load the fonts in `src/app/_layout.tsx`.** `useFonts` takes the 8 faces from the font table in
+the header (Monomakh 400; Montserrat 500, 600, 700; Roboto 400, 400 italic, 500, 700). The splash
+stays up until they load (unchanged logic).
+
+**Status bar:** `style="light"` while the black announcement strip sits under it on Home, and
+`dark` everywhere else. The Stack `contentStyle` is `colors.bg`.
+
+## V8.3 Components (`src/components/`, restyle in place; keep names and props)
+
+- **`button.tsx`:** the web E.5.1 variants as a `variant` prop.
+
+  | Variant | Fill | Border | Text | Height | Corners |
+  |---|---|---|---|---|---|
+  | `primary` | #207212 | 1pt #207212 | `btnAtc`, #fff, capitalized | 52 | 3 |
+  | `secondary` | #212121 | — | `btn`, #fff | 48 | 3 |
+  | `black` | #000 | — | #fff | 50 (checkout) | 3 |
+  | `white` | #fff | — | #000 | 44, or 33 with `small` (`btnSm`) | 3 |
+  | `outline` | transparent | 1pt #212121 | #212121 | 44 | 3 |
+  | `outlineWhite` | transparent | 1pt #fff | #fff | 40 | 3 |
+  | `kit` | #fff | 1pt #212121 | `btnKit` (Montserrat 600 16), #000 | 38 | 3 |
+  | `sticky` | #207212 | — | `btnSticky` (18) | 47 | 4 |
+
+  - Disabled is opacity .5, with no press feedback.
+  - Loading shows an `ActivityIndicator` (size small, the label colour) beside the label.
+  - Press feedback is V8.4 M1.
+- **`text.tsx`:** add the Eastside role names (`displayXl` … `note`) as `variant`s. Keep the old
+  names; they now resolve to the remapped styles.
+- **`product-card.tsx`:** the web E.5.2 card, with no hover states.
+  - **Tile:** 5:6, #F6F6F6, 0 radius.
+    - Image: `expo-image`, `contentFit="cover"` on a tile asset or `"contain"` on a square asset
+      (web E.7.1).
+    - Badge pill at top-left 5/5.
+  - **Info:** padding 8/8/2.
+    - Title `cardTitleEastside` (12.6 #000).
+    - Price `priceCard` (#646464) 5pt below.
+    - 20pt swatch dots at a 10pt gap.
+  - **Quick add:** a static 44pt white row under the tile with the `micro` label "+ Quick add" and
+    a 1pt #F0F0F0 top rule. Behaviour, haptic and the `quick_add` label are unchanged.
+  - **Widths:**
+
+    | Where | Card width |
+    |---|---|
+    | Rails | 164pt at a 4pt gap |
+    | Two-column grid | (screen − 12×2 − 10) / 2 |
+
+- **`swatch.tsx`:**
+  - **Card dot:** 20pt round, 1pt #E9E9E9 border (#8C8C8C on light crowns). The crown fill has a
+    rope band across the lower third (a View at 62–76% height).
+  - **Picker swatch:** 32pt in a 44pt hit area. Selected is a 2pt white gap plus a 1pt #212121
+    ring.
+  - The light haptic on select stays.
+- **`edition-badge.tsx`:**
+  - The white pill: 11pt `badge` text, padding 2/8, radius 20, `shadow.badge`. Reads "No. 02".
+  - A `dark` prop gives #212121/#fff for "Sold out".
+- **`segmented-control.tsx`:** the web tab (E.5.5) as a horizontal row.
+  - Each segment has a 1pt #212121 border, radius 4, padding 4/16, 44pt min height and `tabLabel`.
+  - Active is #141414 with #fff `tabLabelActive`.
+  - The row scrolls sideways at an 8pt gap.
+- **`accordion.tsx`:**
+  - Rows 48pt+ with padding 14/30/14/0, title `accordionTitle`, a 1pt #F0F0F0 rule under each.
+  - An Ionicons `add` 16pt that turns 45° when open.
+  - Body `bodyPdp` with 16pt bottom padding.
+- **`free-shipping-progress.tsx`:**
+  - A centred `bodyPdp` message: "You're $37.00 away from free shipping." or "You've got free
+    standard shipping."
+  - An 8pt bar, radius 10, track #EEE, fill #207212 (V8.4 M20). The threshold is the real $85.
+- **`text-field.tsx` and `search-pill.tsx`:**
+  - Fields are 44pt with padding 10/12, 1pt #8C8C8C, radius 3 and 16pt text.
+  - The focus border goes #212121 plus a 2pt #207212 outer ring.
+  - Errors show in an error box (#F8D7DA, 1pt #F5C6CB, #721C24 12.6pt text, radius 3).
+  - The search pill becomes a 44pt field with a leading `search` icon. It is not a pill: radius 3.
+- **`quantity-stepper.tsx`:**
+  - `remove` and `add` icons (12pt) in 44pt hit areas, the count in 14.4 tabular, no outer border.
+  - "Remove" (`micro`) below.
+- **`announcement-bar.tsx`:**
+  - 36pt, #000, `announce` text #F7F7F7, centred, with real ticker items only.
+  - Fades per M7.
+  - A 24pt `pause`/`play` button at the right edge.
+  - Under Reduce Motion, autoplay stops and 24pt `chevron-back`/`chevron-forward` buttons show at
+    both ends.
+  - `ticker_item` is unchanged.
+- **`app-header.tsx`:** Eastside's mobile header, 72pt, white.
+  - Left: search, 44pt. The tab bar replaces Eastside's hamburger.
+  - Centre: the `wordmark` "SHELBY" (Monomakh 26, 0.04em).
+  - Right: recently viewed (`eye-outline`), 44pt.
+  - No border. It pins at the top of each scroll view (sticky header index), as Eastside's sticky
+    header does.
+- **`sheet.tsx`:**
+  - A bottom sheet, white, 0 radius, with `shadow.sheet` and a 1pt #F0F0F0 top edge.
+  - The head is 64pt: a `labelCaps` title and a 34pt close `close` 24pt icon.
+  - The underlay is #000 at .4.
+- **`countdown.tsx`:** `countdown` (Montserrat 700 26, tabular), or `countdownSm` in lines. Only to
+  a real release time.
+- **`notify-me.tsx`** (the tee sheet): an email field and a `secondary` button stacked, plus the
+  `meta` line "One email when Hole 02 opens. Nothing else." `notify_me` is unchanged.
+- **`stock-line.tsx`:** `meta` (#646464) "143 left", from live stock only. Sold out shows the dark
+  badge.
+- **`crown-compare.tsx`:** keeps its react-native-svg drawing, restyled.
+  - On #F6F6F6.
+  - The Rope Cap filled in its crown colour with a 3pt rope stroke.
+  - The 12 cm crown as a 1.5pt dashed #646464 outline.
+  - The ruler in #646464 with 11pt labels.
+- **`value-tile.tsx` and `bundle-rows.tsx`:** E.5.2 kit cards (The Pair "$88.00 · $44 a cap", The
+  Foursome "$152.00 · $38 a cap").
+- **`state-views.tsx`:** loading skeletons are #F6F6F6 blocks with no shimmer. Empty and error
+  states use `titleCard` and `bodyPdp` with a `secondary` button.
+- **`box.tsx`, `box-faces.tsx` and `front-panel.tsx`:** replaced by the screen sections in V8.5.
+  - Delete the files once no screen imports them.
+  - `InkStripes` becomes the V8.3 swatch picker.
+  - `confirmHaptic` moves to `src/lib/haptics.ts`, unchanged.
+
+**Tab bar** (`src/app/(tabs)/_layout.tsx`):
+- White, 56pt plus the safe area, a 1pt #F0F0F0 top hairline.
+- Ionicons outline/filled pairs, as today, at 22pt.
+- Inactive #212121; active #207212 with the filled glyph.
+- Labels in `tabBar` (11pt uppercase).
+- The bag badge is a 16pt #207212 circle with an 11pt #fff count.
+- The "bouncy" press stays as V8.4 M16.
+
+## V8.4 Motion map (web E.2.5 → Reanimated 4)
+
+Every timing below is `withTiming(value, { duration, easing, reduceMotion: ReduceMotion.System })`.
+Screens also read `useReducedMotion()` for anything that would move without a timing (autoplay,
+scroll-driven pinning).
+
+| Web | Native trigger | Reanimated | Reduce Motion |
+|---|---|---|---|
+| M1 button sweep (hover) | **Press in** on `Button` | A skewed (`skewX: '30deg'`) overlay View, 120pt wider than the button, `translateX` from −(w+120) to 0, **500ms `ease.sweep`**. Fill: the pressed colour (#1A5C0F, #3B3B3B, #1A1A1A, #F2F2F2), or `currentColor` at .1 for outlines. On **press out**, its opacity goes 1→0 in **250ms `ease.out`**, then it resets. | No overlay. The background switches to the pressed colour at once and back on release. |
+| M2 arrow nudge | Press in | Arrow `translateX` 0→5, **250ms `ease.out`** | Off |
+| M3/M4 link and nav colour | Press in on text links and header icons | Colour → `linkPressed` (on black, `onInkPressed`), **250ms `ease.theme`** | Instant |
+| M5 mega menu | Not used | The tab bar is the nav | — |
+| M6 sticky header | Scroll | `stickyHeaderIndices` pins the header (no animation) | Same |
+| M7 announcement | Every **5000ms** | Cross-fade the next item, opacity 0→1 over **500ms `ease.css`** (*est.*) while the old one goes 1→0 | Autoplay off; arrows shown |
+| M8 card image swap (hover) | Not used on touch | — | — |
+| M9 quick-add slide (hover) | Not used on touch: the bar is static | — | — |
+| M10 card title colour | Press in on a card | Title colour → `linkPressed`, **250ms** | Instant |
+| M11 image load fade | Image load | `expo-image` `transition={{ duration: 500, timing: "ease-in", effect: "cross-dissolve" }}` | `transition={0}` |
+| M12 menu drawer | Shop filter drawer and search panel (left/top sheets) | `translateX` −w→0, **600ms `ease.css`**; underlay opacity 0→.4, **300ms**, delay **100ms**. Close reverses in 600ms. | Opacity 0→1 in **200ms**, no translate |
+| M13 cart flyout | The **Added sheet** and the bag's edit sheets | `translateY` h→0, **250ms `ease.inOut`**; the underlay as M12. New bag lines enter with opacity 0→1 and `translateY` 15→0, **250ms `ease.css`**. A removed line runs `withTiming` on opacity 1→0 and height →0, **250ms**, via `Layout`/`exiting` (`FadeOut.duration(250)`). | Sheet opacity **200ms**; lines without translate |
+| M14 close icon | Press in on ✕ | `rotate` 0→90°, **300ms `ease.out`** | Off |
+| M15 accordion | Toggle | Body opacity 0→1 in **300ms `ease.out`** and `translateY` −8→0 in **300ms `ease.in`**; icon `rotate` 0→45°, **300ms `ease.out`** | Instant |
+| M16 tabs and segments | Select | Fill and text colour, **200ms `ease.out`**. The tab-bar icon press: scale 1→0.92→1, 100ms + 100ms `ease.out`. | Instant; no scale |
+| M17 carousel arrows | Not used on touch; rails swipe | — | — |
+| M18 sticky buy bar | The main Add button leaves the viewport (measured with `onLayout` and the scroll offset) | Bar opacity 0→1, **300ms `ease.out`**; `pointerEvents` follows | Instant |
+| M19 chevron | Filter group or "Change color" toggle | `rotate` 0→180°, **300ms `ease.theme`** | Instant |
+| M20 progress fill | Bag subtotal change | Width (as `scaleX` with a left origin), **300ms `ease.out`** | Instant |
+| M21 smooth scroll | "Get a quote", "Pick your two" | `scrollTo({ animated: true })` | `animated: false` |
+
+**Haptics** (unchanged):
+- a light impact on swatch, segment and tab select;
+- success on Add to bag (`confirmHaptic`);
+- none on scroll.
+
+**`src/lib/motion.tsx`:**
+- Keep `useMountProgress`.
+- Delete `TurnFace`, `RevealScrollView`/`Reveal` (Eastside has no scroll reveals; see the web
+  capture notes), `circlePoint` and `stadiumPoint` once unused.
+- Add `usePressSweep(width)`, which returns the animated style for M1.
+- Add `useStickyBar(threshold)` for M18.
+
+**useReducedMotion rule:** every component that animates imports `useReducedMotion` from
+`react-native-reanimated` and branches to the "Reduce Motion" column above. Timings also carry
+`ReduceMotion.System`, so a missed branch still settles instantly.
+
+## V8.5 Screens (behaviour unchanged from G/v5/A; Eastside's mobile patterns)
+
+1. **Home `(tabs)/index`** (web E.6.1, mobile column). One scroll view:
+   - **Announcement and header:** the announcement strip, then the sticky header.
+   - **Colour strip:** #EEE9E3, padding 19/0/9.
+     - 79pt squares (#F6F6F6, product shot `contain`) at a 4pt gap from x = 14, each with a
+       `stripLabel` 7pt below.
+     - Tiles: Tour White, Navy, Pine and Fescue (`shop_by_color`), Holes (`home_scorecard`) and
+       Pair (`home_pair`).
+   - **Hero:** full width, 650pt (cap at the window height minus the tab bar).
+     - `rope-lifestyle-hero-mobile.jpg`, cover.
+     - The copy block sits bottom-right, 16pt in from the edges, 220pt wide, right-aligned, on a
+       radial backdrop.
+       - React Native has no radial gradient: use react-native-svg `RadialGradient` from #000 at
+         .2 opacity to transparent at 70%, as an absolutely positioned SVG behind the copy.
+       - `displayHero` #fff "The Rope Cap".
+       - `bodyEastside` #fff line.
+       - An `outlineWhite` "Shop the Rope Cap" button (`core_product`, the app's existing label
+         for opening the core product; the web's `hero_shop_core` is not added to the app).
+       - An underlined 12.6 line "The Pair is $88" (`hero_shop_pair`).
+   - **The Rope Cap rail:**
+     - `displayLg` title at x = 12.
+     - A segmented row: Core colors / Numbered holes / Kits.
+     - 24pt below, a horizontal `FlatList` of 164pt cards at a 4pt gap (snap to card).
+     - Core cards carry `core_product` and quick add; holes carry `card_hole` (live:
+       `hero_shop_drop`); kits carry `home_pair` and `home_foursome`.
+   - **Shop by color:**
+     - #F6F6F6 band, padding 40/0.
+     - `displayMd` title at x = 12.
+     - A rail of 5:7 tiles 179×251 plus a 27pt label row: the four colours (`shop_by_color`) and
+       The Card (`home_scorecard`).
+   - **The Card rail:** `displayMd` "The Card" plus a "See all six holes" link (`home_scorecard`),
+     then the edition cards (`card_hole`, live `hero_shop_drop`; upcoming ones show the tee sheet
+     row, `notify_me`).
+   - **Crown story:**
+     - A 390×390 image (`story-crush.jpg`, `home_story`).
+     - Then a #F6F6F6 block, padding 24:
+       - `displayXl` "Sits right the first time.";
+       - `bodyEditorial` text;
+       - a `black small` "See the crown test" button (`series_story`);
+       - a "Six reasons" link (`home_reasons`).
+     - When the story is a web page, the existing link behaviour applies.
+   - **Quiz splash:**
+     - 403pt `rope-clubhouse.jpg` with a bottom gradient (#0000000d→#0000004d at .5).
+     - Centred: `displaySplash` "Find your color", `bodySplash` text and a `white small` "Take
+       the Quiz" button (`home_quiz`; opens the web quiz as today).
+   - **Footer band:** a black band, padding 48/0/34, with the wordmark at 32 centred (#F7F7F7).
+     Under it, the tee sheet block on black (`notify_me`) and "© Shelby 2026" at opacity .5.
+2. **Shop `(tabs)/shop`** (web E.6.2):
+   - **Header:** breadcrumb, `titlePage` "Shop" centred.
+   - **Filter bar:** 56pt, 1pt #F0F0F0 rules.
+     - "Show filters" opens a left sheet (M12) with Group (All, Core, Numbered, Kits; the existing
+       group control, `color_pill`, `page_type: collection`) and Color.
+     - "Sort by" opens a bottom sheet.
+   - **Grid:** two columns at a 10pt gap, 12pt edges.
+     - Order: core colour cards, editions, holes without products (`card_hole`), the Pair and the
+       Foursome (`home_pair`/`home_foursome` with `page_type: collection`).
+   - **FAQ:** the four collection-FAQ accordions with real answers.
+3. **Product `products/[handle]`** (web E.6.3):
+   - **Title block:** breadcrumb, `titleProduct`, then "Free shipping on $85+" (12.6), then
+     `priceProduct` (#207212).
+   - **Gallery:** a 390×468 paging gallery on #F6F6F6, with 6pt dots (#212121 / #BDBDBD) under it
+     and the badge at top-left.
+   - **Buy block:**
+     - edition meta (`eyebrowSm`, stock line, `pdp_edition_link`);
+     - the colour picker ("Color: Pine" plus 32pt swatches, `color_pill`);
+     - the `primary` "Add To Bag" (`add_to_cart`), or "Sold out" disabled plus the tee sheet;
+     - the "The Pair is $88" link (`pdp_offer`; `pdp_foursome`);
+     - the policy lines (`meta`);
+     - the description and bold bullets (`bodyPdp`, bullets in Roboto 700);
+     - accordions: Fit (crown compare, fit-guide link `fit_guide`), Details, Shipping, Returns;
+     - "Take the quiz" (`pdp_quiz`).
+   - **Below:**
+     - "You may also like" (`headingRecs`), a rail of 4:5 cards at 164pt (`pdp_also_like`);
+     - the story teaser (`series_story`);
+     - recently viewed.
+   - **Sticky bar:** once the Add button leaves view (M18), a bottom bar shows.
+     - #FCFCFC, padding 8/14 plus the safe area, above the tab bar.
+     - A "Change Color ˄" row (40pt; M19 chevron, expands the swatch row inline).
+     - Then the `sticky` "Add To Bag" (47pt, radius 4; `sticky_add_to_cart`).
+4. **Offer `offer/[handle]`** (web E.6.10):
+   - A 2×2 (or 1×2) grid of 5:6 #F6F6F6 tiles of the picked colours.
+   - Then the buy block: breadcrumb, `titleProduct` (the **offer-headline** variant and exposure,
+     unchanged), the shipping line, `priceProduct` "$88.00" plus "$44 a cap".
+   - Picker rows "Cap 1" and "Cap 2" (`offer_add`).
+   - The Foursome in a #F6F6F6 band (`offer_foursome_add`).
+   - The story link (`offer_story`).
+   - The sticky bar's add emits `offer_add`, the same action and label as the main button. The
+     web-only `offer_close_cta` and `offer_sticky_add` are not added to the app.
+   - The close splash (a `white small` "Pick Your Two" that scrolls to the top) carries no label.
+5. **The Card `(tabs)/card` and `card/[handle]`** (web E.6.7):
+   - **List:**
+     - `titlePage` "The Card" plus the intro.
+     - The next hole as an editorial block: a 390×390 tile (edition photo, or a #F6F6F6 tile with
+       the `holeNumeral`) then a #F6F6F6 text block with `eyebrowSm` "Next · Hole 03",
+       `displayXl` name, date, `countdown` (real dates only) and the tee sheet (`notify_me`).
+     - The six holes as a one-column list of hole cards: a 4:3 tile, `titleCard`, the meta line
+       and the phase action (`card_hole`).
+   - **Detail:**
+     - The same editorial hero (the image is not a link in the app, as today).
+     - The phase action: countdown plus tee sheet; `primary` "Shop Hole 03"; or "Sold out".
+     - Accordions: The color, The release, Shipping.
+     - The other holes as a rail.
+   - `drops/*` routes keep redirecting as today.
+6. **Bag `(tabs)/cart`** (web E.6.4):
+   - `titlePage` "Your bag".
+   - The free-shipping progress.
+   - **Lines:** a 92×110 #F6F6F6 tile, title 14.4/500, meta 12.6 #646464, price 14.4 tabular,
+     stepper and Remove. 1pt #F0F0F0 rules between lines.
+   - **Complete the look:** `titleDrawer`, then a rail of 140pt mini cards with `kit` "Add"
+     buttons (`cart_complete_look`).
+   - **Summary:** a #F6F6F6 block, padding 24:
+     - "Subtotal" `labelCaps` and the amount at 21.6/500;
+     - the policy `meta` line;
+     - a `black` "Checkout" 50pt (`cart_checkout`);
+     - the `note` "Taxes calculated at checkout.".
+   - **Bundle rows** ("Make it two", today's `bundle-rows.tsx` in the bag) as kit cards
+     (`cart_offer`).
+   - **Empty:** "Your bag is empty." plus a `secondary` "Shop the Rope Cap" (no label, as today) and
+     the colour cards.
+7. **Added sheet** (`added-sheet.tsx`, web M13):
+   - A bottom sheet with the head "Added to bag" (`labelCaps`) and ✕.
+   - The line: an 80×96 tile, title and price.
+   - The free-shipping progress.
+   - `black` "Checkout" and `outline` "View Bag".
+   - Complete the look: one row of 2 mini cards (`cart_complete_look`).
+8. **Checkout `checkout` and order `order/[id]`** (web E.6.5):
+   - **Checkout:**
+     - A collapsible #F6F6F6 summary bar: "Show order summary · $96.00" with a chevron (M19).
+     - Sections Contact, Delivery and Payment, each with a `titleCard` heading.
+     - Fields per V8.3.
+     - Shipping radio cards: 1pt #F0F0F0, radius 3; selected 1pt #212121 plus `greenFade`.
+     - `secondary` "Continue" and `primary` "Place Order".
+     - The `checkout_started` event is unchanged.
+   - **Order:**
+     - a black band (padding 32/16) with a `checkmark-circle` 40pt #F7F7F7, `titlePage` "Thank
+       you" in #fff and the order line in 14.4 #F7F7F7;
+     - then the lines and totals on white;
+     - the numbered-inside note for editions;
+     - an `outline` "Keep Shopping".
+9. **Custom `custom`** (web E.6.8):
+   - Editorial block: `rope-clubhouse.jpg` 390×390, then #F6F6F6 text with `eyebrow` "Custom
+     orders", `displayXl` "Your crest, our cap." and the terms line.
+   - Three facts (`eyebrowSm` label plus `titleSection` value, stacked).
+   - Three steps (Monomakh 38 #207212 numbers).
+   - The quote form, `secondary` "Send Request" (`custom_submit`; `custom_quote_submitted`
+     unchanged).
+10. **Account `(tabs)/account` and not-found:**
+    - **Account:** `titlePage` "Account".
+      - Rows 52pt in `menuRow` style (14.4 uppercase 0.07em, 1pt #F0F0F0 rules, `chevron-forward`
+        at the right): orders, reminders, Fit guide, The story, Why the Rope Cap, The quiz,
+        Shipping & returns, Custom orders. The web links open as today.
+      - Then the black footer band with the wordmark.
+    - **Not-found:** `displayXl` "Out of bounds.", "That page isn't here." and a `primary` "Shop
+      the Rope Cap".
+11. **Search sheet** (from the header):
+    - A top sheet (M12, from the top).
+    - A 44pt field (V8.3), then results as a two-column card grid.
+    - Behaviour and events are unchanged.
+
+## V8.6 Kept behaviour (verify list)
+
+- Catalog, edition and kit logic; cart; checkout; The Card and tee-sheet opt-in; push reminders;
+  custom quotes; recently viewed; deep links; attribution.
 - **Analytics:**
-  - `page_type` and `source`.
-  - `cta_click` labels: `shop_by_color`, `add_to_cart`, `hero_shop_pair`, `home_pair`,
-    `home_foursome` (with `page_type: collection` on Shop), `card_hole`, `hero_shop_drop`,
-    `cart_complete_look`, `cart_checkout`, `quick_add`, `offer_*`, `custom_submit`.
-  - The events `checkout_started`, `product_viewed`, `drop_viewed` and
-    `custom_quote_submitted`, and the offer-headline exposure.
+  - `page_type` and `source` on every event.
+  - `cta_click` labels (`trackTap`), exactly the 36 the app emits today (grepped 2026-11-16):
+
+    | Area | Labels |
+    |---|---|
+    | Home | `shop_by_color`, `core_product`, `hero_shop_pair`, `home_pair`, `home_foursome` (with `page_type: collection` on Shop), `home_scorecard`, `home_story`, `series_story`, `home_reasons`, `home_quiz` |
+    | The Card | `card_hole`, `hero_shop_drop` |
+    | PDP | `pdp_offer`, `pdp_foursome`, `pdp_also_like`, `pdp_edition_link`, `fit_guide`, `pdp_quiz`, `color_pill`, `add_to_cart`, `sticky_add_to_cart`, `quick_add` |
+    | Bag | `cart_offer`, `cart_complete_look`, `cart_checkout` |
+    | Offer | `offer_add`, `offer_foursome_add`, `offer_story` |
+    | Everywhere else | `notify_me`, `ticker_item`, `recently_viewed`, `search_submit`, `search_result`, `nav_custom`, `footer_custom`, `custom_submit` |
+
+  - The restyle adds no label and drops none. Check by grepping `src/` for `trackTap(` before and
+    after.
+  - The events `add_to_cart`, `checkout_started`, `product_viewed`, `drop_viewed`,
+    `notify_me_submitted` and `custom_quote_submitted`, and the offer-headline exposure.
 - Attribution and deep links are unchanged.
 
-**§7 Verify.**
+## V8.7 Verify
+
 - `npm run typecheck` and `npm run lint` pass.
-- An `expo export -p web` build, served behind the store-API proxy and captured with Playwright at
-  390×844, covers home, Shop, PDP with a colour switch, Pair, Bag, The Card and Account, plus one
-  reduced-motion run. The shots go to `.impeccable/review/app/`.
-- The web export is evidence for layout and ink only. Haptics, gestures, the native tab bar and
-  iOS/Android Reduce Motion need a simulator or a device.
+- **No font left over:** `grep -r "SofiaSans" src` is empty.
+- **No text under 11pt:** a check over `type` finds no `fontSize` below 11.
+- **Tracking:** the `cta_click` label set and the event set match the pre-restyle grep exactly.
+- **Web-export capture:**
+  - An `expo export -p web` build, served behind the store-API proxy, captured with Playwright at
+    390×844.
+  - It covers Home, Shop (filters open), PDP with a colour switch and the sticky bar, Offer, Bag,
+    the Added sheet, The Card and Account.
+  - Plus one run with `reducedMotion: "reduce"`.
+  - The shots go to `.impeccable/review/app/`.
+- **Limits of the web export:** it is evidence for layout, type and colour only. The press sweep,
+  haptics, gestures, the native tab bar and iOS/Android Reduce Motion need a simulator or a device.
 
 ---
+
+# Functional contract (v6, kept verbatim)
+
+Everything below is the v6 app specification, unchanged.
+
+- **Still binding:** screens, data, behaviour, analytics and verification.
+- **Superseded by Part V8:** its visual values (colour, font, size, radius, height and motion, the
+  Allbirds base and the v6 golf-layer look).
 
 # Part G: v6, the golf layer and the single Rope Cap (overrides v5 where they conflict)
 

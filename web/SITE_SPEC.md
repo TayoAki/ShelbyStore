@@ -1,47 +1,1727 @@
-# Shelby storefront: complete site specification (v6, one golf rope cap on the Allbirds theme)
+# Shelby storefront: complete site specification (v8, Shelby in Eastside Golf's style)
 
-The single source of truth for building `web/`. **v6 = Part G (the golf layer and the single Rope
-Cap, below) on top of v5 (Shelby's structure reskinned in the visual theme and motion of
-allbirds.com, §1–§11) and Appendix A (v4 functions).** Precedence: Part G → v5 §1–§11 →
-Appendix A. The builder never looks at allbirds.com, Melin or any golf brand's site; every value
-needed is in this file. The Expo app follows the same layers from `mobile/APP_SPEC.md` v6.
+The single source of truth for building `web/`. **v8 = Part E (the visual layer, taken from
+eastsidegolf.com, below) on top of the v6 functional contract (Part G, Part V5 and Appendix A,
+kept verbatim after Part E).**
 
-**v6 inputs (2026-11-16):** `reports/Golf brand rope cap positioning.md` and its notes in
-`research_notes/Golf brand rope cap positioning/` (golf brand landscape, visual identity measured
-from 13 live sites, the rope cap market, single-product merchandising, channels). The Allbirds
-capture below is v5's and is unchanged.
+- **Part E is binding for every visual value:** colour, type, spacing, radius, shadow, layout,
+  imagery treatment, component look and motion. It replaces every visual value in Part G, Part V5
+  and Appendix A, and the Ball Box world in `DESIGN.md`.
+- **The functional contract is binding for everything else.** It covers:
+  - the catalog, prices, bundles and shipping threshold;
+  - holes and dates, routes, redirects and page inventory;
+  - every `data-track` name and every `page_type`;
+  - the `story-headline` and `offer-headline` experiments;
+  - attribution and continuity, and the evidence and voice rules.
+- Where Part E names a section's content, its CTAs and its `data-track` names, it is repeating
+  that contract, not changing it. If the two ever disagree on function, the contract wins. On
+  look, Part E wins.
 
-**How it was captured (2026-11-16)**, with the user's site-clone workflow:
-- **Firecrawl** (all four skill operations):
-  - a full-format scrape of the home page (markdown, html, rawHtml, full-page screenshot, links);
-  - a crawl of 10 pages, polled to completion (10/10);
-  - full-page html + screenshot scrapes of a collection (`/collections/mens`), a shoe PDP
-    (`/products/mens-runner-nz-slip-on`), two editorial pages (`/pages/our-story`,
-    `/pages/sustainability`), search (`/search?q=runner`) and the cart.
-- **curl:** the raw home, collection, PDP and story HTML. Every stylesheet: `theme.css` (a Tailwind 4
-  build, 275,898 bytes, with a `@layer theme` token block and a `@layer components` block),
-  `ab-quick-add.css`, `cart-drawer-section.css`, `accelerated-checkout-backwards-compat.css`, and the
-  two inline `<style>` blocks.
-- **The motion source itself:** the theme's ES modules, i.e. the GSAP + ScrollTrigger timelines in
-  `animations.js` (every duration and ease constant), `base-section.js` (in-view trigger options),
-  `full-bleed-hero.js`, `category-row.js`, `standard-product-carousel.js`, `3x-promo-tiles.js`,
-  `header.js`, `use-sticky-scroll-behavior.js`, `cart-drawer-section.js`, `use-post-atc-modal.js`,
-  `use-master-product-card.js`, `product-material-hero-feature.js`, `brand-message.js`,
-  `product-social-proof.js`, `ugc-scroll.js`, `product-details.js`, `recommendations-carousel.js`.
-- **Playwright** (pre-installed Chromium) at **390×664** (iPhone 13 device profile; its CSS viewport
-  is 390×664) and **1440×900**:
-  - `getComputedStyle` + class lists of every visible element on home, collection, PDP and story
-    (370–880 elements per page);
-  - state probes: hover (category tiles, product cards, promo tiles, size buttons, add-to-cart),
-    mega menu open, mobile menu open, add-to-cart → cart drawer;
-  - time sampling mid-transition (hero reveal at 100ms steps, tile hover at 300ms and 1.2s, drawer at
-    150/500/1700ms, menu at 150/1050ms) to confirm each timeline's duration and curve.
-- Raw captures stay in the session scratchpad (`scratchpad/allbirds-clone/`), never in git.
+The builder never opens eastsidegolf.com. Every value needed is in this file. The Expo app follows
+`mobile/APP_SPEC.md` v8.
 
-Value notation: `desktop / mobile` when they differ. px at 1440 and 390 wide. Breakpoints are
-Tailwind's: **md = 768px**, **lg = 1024px**, xl = 1280px, 2xl = 1536px.
+**How it was captured (2026-11-16)**, with the user's site-clone workflow. The raw captures stay in
+the session scratchpad (`scratchpad/eastside-clone/`), never in git.
+
+- **Firecrawl:**
+  - Home, full-format scrape: markdown, html, rawHtml, full-page screenshot (1920×6482) and
+    links.
+  - A crawl of 10 pages, polled to completion (10/10): home, `products.json`, new arrivals,
+    mens-collection, all-mens-golf, golf-accessories, golf-shoes, mens-hats, gifting and a
+    collab landing page.
+  - Full html + screenshot scrapes of 6 more pages:
+    - the hats collection;
+    - a rope-hat PDP (`/products/ep2201001-000-black-vintage-5-panel-rope-hat`);
+    - the cart;
+    - the blog index;
+    - the about page;
+    - the legacy page.
+- **curl:**
+  - The raw home HTML (1.5 MB).
+  - Every stylesheet, 10 files:
+    - the Shopify Broadcast theme's `theme.css` (480,005 bytes);
+    - `custom-overwrite.css` (44,899 bytes);
+    - the two Google font sheets (Monomakh, Roboto Condensed);
+    - the swatch, badge, Judge.me, Loop and gift-with-purchase sheets;
+    - the accelerated-checkout sheet.
+  - The inline `<style>` blocks (135,312 bytes, where the theme's `:root` tokens live).
+- **Playwright** (pre-installed Chromium) at **1440×900** and the **iPhone 13 profile (390×664 CSS
+  viewport)**:
+  - `getComputedStyle` of every visible element, the leaf font inventory, transitions and
+    animations on home, the hats collection, the rope-hat PDP and the about page (8 page
+    captures);
+  - state probes:
+    - mega menu open;
+    - header after scrolling down and back up;
+    - product card hover (image swap, quick add);
+    - hero button hover;
+    - add to cart → cart flyout;
+    - mobile menu open;
+  - a targeted pass for the hero overlay, category tiles, editorial split, splash hero, PDP media
+    and recommendations at both widths.
+  - 14 viewport screenshots and 4 review composites.
+
+**What could not be measured** (estimates are marked *est.* where used):
+
+- **Scroll reveals.** The theme ships AOS reveal attributes (`fade`, `hero`, `img-in` at 800ms),
+  but the live store runs with them switched off (`body[data-animations="false"]`, no
+  `aos-initialized` class). Nothing reveals on scroll. v8 matches the live site.
+- **The hero is a video.** Its motion is footage, not CSS. v8 uses a still photo.
+- **Some states were not reached:**
+  - the PDP accordion's open-state icon;
+  - the PDP colour picker for a multi-colour product (the captured rope hat has one colour);
+  - the category tile label size (read from the screenshot);
+  - the PDP `:focus-visible` ring (the theme only styles focus under `body.is-focused`);
+  - checkout (Shopify-hosted).
+- **The html font size** is inferred, not read: mobile body text is 12.6px = 0.9 × 14px, and
+  desktop is 14.4px = 0.9 × 16px.
+
+**Value notation:** `desktop / mobile` when they differ. px at 1440 and 390 wide.
+**Breakpoints** (the theme's own, confirmed in `theme.css`):
+
+| Name | Width |
+|---|---|
+| `sm` | 480px |
+| `md` | 750px (the theme's main mobile/desktop switch, 447 media queries) |
+| `lg` | 990px |
+| `xl` | 1400px |
 
 ---
+
+# Part E: v8, Shelby in Eastside Golf's style (binding for every visual value)
+
+## E.1 Overview
+
+| | |
+|---|---|
+| **Brand** | **Shelby**. The wordmark is text set in the display face, where Eastside's roundel logo sits. |
+| **What it sells** | Unchanged (Part G, G.1): one product, **The Rope Cap**.<br>• Four core colours at **$48**: Tour White, Clubhouse Navy, Pine, Fescue.<br>• Numbered holes at **$52**, with real dates: Hole 2 Azalea 5 Apr 2027, Hole 3 Cypress 1 Jun 2027, Hole 4 Haar 12 Jul 2027. Holes 5 Away Match (13 Sep 2027) and 6 Winter Rules (8 Nov 2027) are announced.<br>• **The Pair** $88 and **The Foursome** $152.<br>• Free standard shipping from **$85**, otherwise $6; express $15.<br>• Custom quotes at `/custom` ($40 each at 24+). |
+| **Visual source** | eastsidegolf.com. A Shopify "Broadcast" theme with a custom overwrite:<br>• a white page and a black announcement bar and footer;<br>• one golf-green accent (#207212) for buying and prices;<br>• grey #F6F6F6 image tiles and bands;<br>• Monomakh (an old-style display serif) for section titles, Montserrat bold for product and page titles, Roboto for everything else;<br>• small uppercase nav;<br>• 3–4px corners;<br>• full-bleed photography with the copy in a corner. |
+| **Motion source** | Eastside's live CSS: the skewed hover sweep on buttons, the nav underline, the hover image swap and quick-add slide on cards, the menu and drawer slides, the sticky header and the fading announcement slider. No scroll reveals (see above). |
+| **Stack** | Unchanged: Next.js 16, Tailwind 4, Medusa v2, Stripe Payment Element, Phosphor icons.<br>• Fonts change to **Monomakh, Montserrat and Roboto** via `next/font/google`.<br>• No new npm dependency. |
+| **Mobile** | `mobile/APP_SPEC.md` v8 maps these tokens and patterns to React Native. |
+
+### E.1.1 What comes from Eastside, what stays Shelby
+
+| From Eastside (apply) | Stays Shelby (never replaced) |
+|---|---|
+| Palette, type faces and scale, spacing, radius, shadows | Name, wordmark (text), copy, voice rules (G.1.3) |
+| Layout: page gutters, grids, rails, splits, bands | Products, prices, policies, holes and dates |
+| Component look: buttons, tabs, cards, badges, swatches, accordions, drawers, forms | Existing photos in `web/public/hats/` |
+| Imagery treatment: grey tiles, full-bleed heroes, portrait crops | Phosphor icons (regular weight) |
+| Motion: hover sweep, underline, image swap, quick-add slide, drawers, sticky header | Every route, `data-track`, `page_type`, experiment, attribution and evidence rule |
+| Section patterns, each applied to the matching Shelby section (E.6 says which) | The single-product catalog and its structure |
+
+### E.1.2 Eastside elements Shelby does not use (and what goes there instead)
+
+| On Eastside | In Shelby v8 |
+|---|---|
+| Roundel logo, Swingman figure (header, prefooter band, footer) | Text wordmark **SHELBY** in Monomakh (E.6.0.2). The prefooter band carries the wordmark. |
+| Collab and partner names: "ESG x AVIREX", "EASTSIDE x BRIDGESTONE", ESG x Nike, Jordan, partner logo above the editorial heading | Omitted. The hero and editorial slots carry Shelby's own Rope Cap and crown story. No partner logo slot. |
+| Judge.me stars and review counts on cards and PDP | Omitted, with no placeholder (PRODUCT.md: no fake proof). |
+| "15% OFF" email popup and "GET 15% OFF" newsletter | Omitted. No popup of any kind. The footer column holds the **tee sheet** signup for the next hole, with no discount. |
+| "Free shipping over $150" | "Free shipping on $85+" (`POLICY`). |
+| Shop Pay button and "More payment options" on the PDP | Omitted. Wallets appear inside the Stripe Payment Element at checkout. |
+| Loop "Checkout+" return coverage | Omitted. One plain "Checkout" button. |
+| Rebuy "You're Almost There, Add More For Free Shipping" upsell column | The same column holds **Complete the look** (`cart_complete_look`): real Shelby items only. |
+| "#EASTSIDEGOLF IN ACTION" Instagram/UGC grid | Omitted. There are no real customer posts yet (G.11). |
+| "FOLLOW US" social icons | Omitted until real accounts exist (G.11). |
+| "SALE" nav item, red sale prices with strikethrough, "BEST SELLER" badges | Omitted. No sales. "Best seller" has no data behind it. |
+| "NEW" badge | Used only with real meaning: **"No. 02"**-style hole badges on editions, and **"Sold out"** from live stock. |
+| Video hero | A still photo (`rope-lifestyle-hero.jpg`). |
+| Accessibility overlay widget | Omitted. The site meets WCAG AA natively (E.1.4). |
+| 9–10.8px text (nav, badges, quick add, cart labels) | Raised to 11px minimum (E.1.4). |
+| Footer links: Gift Cards, Store Locator, Careers, Wholesale, Community Day | Shelby's own four columns (E.6.0.9). |
+
+### E.1.3 Casing and tone (Eastside's, with Shelby's words)
+
+**Casing:**
+
+| Element | Casing |
+|---|---|
+| Nav, announcement, section titles, footer headings, badges, filter/sort bars | **UPPERCASE**, by CSS `text-transform: uppercase` on source strings written in sentence case. |
+| Product names | **Title Case**, colour first like Eastside's: "Pine Rope Cap", "No. 02 Azalea Rope Cap". The PDP H1 keeps the Medusa title ("The Rope Cap") with "Color: Pine" under the price. |
+| Buttons | **Title Case** via `text-transform: capitalize` on the add button only. Others are written Title Case: "Add To Bag", "Shop the Rope Cap", "Take the Quiz". |
+| Hero and editorial headings | Written as display lines, in mixed case like Eastside's hero ("The Rope Cap"). Not transformed. |
+| Body | Sentence case. |
+
+**Tone:** short and confident; community-minded, not clubby. Copy can sound like Eastside ("From
+the flight line to the fairway." → Shelby: "A mid crown that sits right the first time."). Every
+voice rule in G.1.3 still applies:
+- no puns;
+- no invented heritage;
+- no tournament or club marks;
+- US English UI strings ("Color", "Bag").
+
+### E.1.4 Accessibility floor (binding over every Eastside value)
+
+- **Nothing renders under 11px.** Eastside's 9.9px nav, 10px badges, 9.9px quick-add and remove
+  labels, and 10.8px cart labels all render at **11px** with the same weight, case and tracking
+  (ratio kept in `em`).
+- **WCAG AA:**
+  - Every text pair in E.2.2 is at least 4.5:1, or 3:1 for text 24px and up.
+  - UI boundaries (fields, checkboxes, light swatches) are at least 3:1.
+  - Text over photos sits on Eastside's radial backdrop. The build checks the sampled contrast
+    (E.9).
+- **Focus:** every interactive element shows a 2px `--color-focus` outline, offset 2px, on
+  `:focus-visible`.
+- **Targets:** at least 24×24px everywhere (WCAG 2.5.8). Icons, nav items, steppers, swatches and
+  anything used on touch get 44×44px hit areas; Eastside's 24px icons sit inside them.
+- **`prefers-reduced-motion: reduce`:** every animation has the reduced form given in E.2.5.
+
+## E.2 Design tokens
+
+### E.2.1 Colour
+
+The Eastside source is the theme's `:root` variable, or the measured computed value where the
+theme overrides it.
+
+| Token (CSS var) | Hex | Eastside source | Use in Shelby |
+|---|---|---|---|
+| `--color-text` | **#212121** | `--COLOR-TEXT`, `--BTN-PRIMARY-BG-COLOR`, `--border` | Body text, headings, icons, outline buttons, tab borders |
+| `--color-text-strong` | **#000000** | `--COLOR-TEXT-DARK`; card titles measured rgb(0,0,0) | Product card titles, black buttons |
+| `--color-text-light` | **#646464** | `--COLOR-TEXT-LIGHT`; card prices and breadcrumbs measured | Card prices, breadcrumbs, meta lines, policy lines |
+| `--color-bg` | **#FFFFFF** | `--COLOR-BG`; header measured #fff | Page, header, menus, drawers, cards |
+| `--color-tile` | **#F6F6F6** | `--COLOR-BORDER-LIGHT`, `--ec-bg`; image tiles, category band and editorial band measured rgb(246,246,246) | Product image tiles, category band, editorial split panel |
+| `--color-sand` | **#EEE9E3** | Mobile subcategory strip measured rgb(238,233,227) | Mobile colour strip under the header (E.6.1) |
+| `--color-bg-brighter` | **#F2F2F2** | `--COLOR-BG-BRIGHTER`, `--TEXT-BTN-BG-WHITE-BRIGHTER`, `--COLOR-VIDEO-BG` | Hover of white solid buttons, image placeholder |
+| `--color-surface-sticky` | **#FCFCFC** | Mobile sticky add-to-cart bar measured rgb(252,252,252) | Mobile sticky buy bar |
+| `--color-border` | **#F0F0F0** | `--COLOR-BORDER` rgb(240,240,240) | Hairline dividers (accordion rows, filter bar, tables) |
+| `--color-hairline` | **#F7F7F7** | `--COLOR-BORDER-HAIRLINE` | Lightest rule on tiles |
+| `--color-track` | **#EEEEEE** | Cart progress bar track measured rgb(238,238,238) | Free-shipping and quiz progress track |
+| `--color-field-border` | **#8C8C8C** | Shelby AA adjustment of `--COLOR-BORDER-DARK` #BDBDBD (1.9:1 fails 1.4.11) | Field, checkbox and light-swatch boundaries (3.4:1) |
+| `--color-green` | **#207212** | `--COLOR-PRIMARY`, `--BTN-SECONDARY-BG-COLOR`; ATC and PDP price measured rgb(32,114,18) | Add to bag, prices on PDP/drawer, eyebrows, progress fill, selected states |
+| `--color-green-hover` | **#1A5C0F** | `--BTN-SECONDARY-BG-COLOR-BRIGHTER` | Hover sweep fill on green buttons |
+| `--color-green-deep` | **#0B3305** | `--COLOR-PRIMARY-HOVER` | Green text-link hover |
+| `--color-green-fade` | **rgba(32,114,18,.05)** | `--COLOR-PRIMARY-FADE` (hover .1) | Selected quiz answer wash, selected filter row |
+| `--color-ink` | **#000000** | Announcement, footer, prefooter band, checkout button measured rgb(0,0,0) | Announcement bar, prefooter band, footer, black solid buttons |
+| `--color-tab-active` | **#141414** | Active collection tab measured rgb(20,20,20) | Active tab fill |
+| `--color-charcoal-hover` | **#3B3B3B** | `--BTN-PRIMARY-BG-COLOR-BRIGHTER` | Hover sweep on charcoal (#212121) buttons |
+| `--color-black-hover` | **#1A1A1A** | `--TEXT-BTN-BG-BLACK-BRIGHTER` | Hover sweep on black buttons |
+| `--color-on-ink` | **#F7F7F7** | `--COLOR-FOOTER-LINK`; announcement text measured rgb(247,247,247) | Text and links on black |
+| `--color-on-ink-hover` | **rgba(247,247,247,.7)** | `--COLOR-FOOTER-LINK-HOVER` | Footer link hover |
+| `--color-link-hover` | **rgba(33,33,33,.7)** | `--COLOR-LINK-HOVER`, `--COLOR-MENU-LINK-HOVER` | Hover colour of every dark link and nav item |
+| `--color-overlay` | **#000000** at **.2** | Hero `--overlay-bg: #000; --overlay-opacity: 0.2` | Radial backdrop behind hero copy |
+| `--color-underlay` | **rgba(0,0,0,.4)** | Drawer underlay measured | Behind drawers and menus |
+| `--color-error` | **#721C24** on **#F8D7DA**, border **#F5C6CB** | `--COLOR-ERROR`, `-BG`, `-BORDER` | Form and payment errors |
+| `--color-focus` | **#207212** | Theme focus outline uses `--COLOR-PRIMARY` | Focus ring (2px). On black, `#F7F7F7`. |
+
+**Shelby colourway chips** keep `crown` and `rope` from `src/lib/swatches.ts` (they are product
+colours, not theme colours). The Ball Box `panel`, `ink` and `edge` fields are no longer used for
+styling.
+
+### E.2.2 Contrast pairs (computed, WCAG 2.2)
+
+| Pair | Ratio | Passes |
+|---|---|---|
+| #212121 on #FFFFFF | 16.1:1 | AA, AAA |
+| #212121 on #F6F6F6 | 14.9:1 | AA |
+| #646464 on #FFFFFF | 5.9:1 | AA |
+| #646464 on #F6F6F6 | 5.5:1 | AA |
+| #207212 on #FFFFFF (price, eyebrow) | 6.0:1 | AA |
+| #207212 on #F6F6F6 | 5.6:1 | AA |
+| #FFFFFF on #207212 (add to bag) | 6.0:1 | AA |
+| #FFFFFF on #1A5C0F (hovered) | 8.1:1 | AA |
+| #F7F7F7 on #000000 | 19.6:1 | AA |
+| rgba(247,247,247,.7) on #000 (footer hover, ≈ #ADADAD) | 9.4:1 | AA |
+| #212121 on #EEE9E3 (mobile strip labels) | 13.3:1 | AA |
+| #FFFFFF on #141414 (active tab) | 18.4:1 | AA |
+| #000000 on #FFFFFF pill (badge, on a #F6F6F6 tile) | 21:1 | AA |
+| #8C8C8C boundary on #FFFFFF | 3.4:1 | 1.4.11 |
+| #FFFFFF text on photo + radial backdrop | measured per image at build | ≥4.5:1 body, ≥3:1 title |
+
+### E.2.3 Typography
+
+**Families** (all on Google Fonts, loaded with `next/font/google`):
+
+| Var | Family | Weights loaded | Role (Eastside) |
+|---|---|---|---|
+| `--font-display` | **Monomakh**, serif | 400 (the only weight) | Section titles, hero, editorial and splash headings, wordmark. Eastside declares 500, which renders as 400 because the font has one weight. Set `font-synthesis: none` so no fake bold appears. |
+| `--font-heading` | **Montserrat**, sans-serif | 500, 600, 700 | PDP and collection titles, page titles, FAQ, blog and story headings, drawer upsell title |
+| `--font-body` | **Roboto**, sans-serif | 400, 500, 700, italic 400 | Body, nav, buttons, prices, labels, forms, footer |
+
+Roboto Condensed is loaded by Eastside but never rendered. Do not load it.
+
+**Root size:** `html { font-size: 14px }` below 750px and `16px` from 750px (*inferred*, see the
+capture notes). Body copy is `0.9rem` = **14.4px / 12.6px**.
+
+**Scale** (measured computed values; Shelby's 11px floor applied in the last column):
+
+| Token | Family / weight | Size / line-height (desktop / mobile) | Tracking, case | Eastside element → Shelby use |
+|---|---|---|---|---|
+| `display-xl` | Monomakh 400 | **69px / 72.45px** (1.05) / **28px / 29.4px** | 0, as written | Editorial split heading → home crown story, `/card/[handle]` hero |
+| `display-hero` | Monomakh 400 | **38.4px / 46.08px** (1.2) / **32.4px / 38.88px** | 0, as written | Hero title → home hero, story and offer heroes |
+| `display-lg` | Monomakh 400 | **38px / 39.9px** (1.05) / **22px / 23.1px** | 0, uppercase | Tabs-rail title ("NEW ARRIVALS") → "THE ROPE CAP" |
+| `display-md` | Monomakh 400 | **32px / 38.4px** (1.2) / **22px / 26.4px** | 0, uppercase | "SHOP BY CATEGORY", collection rail titles → "SHOP BY COLOR", "THE CARD" |
+| `display-splash` | Monomakh 400 | **26px / 27.3px** / **35px / 36.75px** (bigger on mobile, as measured) | 0.01em, uppercase | Splash hero ("ESG JOURNAL") → quiz splash |
+| `display-mark` | Monomakh 400 | **30px / 1** / **26px / 1** | 0.04em, uppercase | Wordmark (Shelby value; fits Eastside's 60px logo box) |
+| `title-page` | Montserrat 700 | **26px / 31.2px** (both) | 0, uppercase | Collection H1 ("HATS") → `/shop`, `/card`, `/fit-guide`, `/quiz`, `/custom` H1 |
+| `title-product` | Montserrat 700 | **24px / 28.8px** / **18px / 21.6px** | 0, as written | PDP H1 → PDP, offer, quiz result |
+| `title-feature` | Montserrat 500 | **63.6px / 76.32px** / **48px / 57.6px** | 0 | About hero ("Breaking Barriers") → story and advertorial heroes |
+| `title-section` | Montserrat 500 | **38.4px / 46.08px** (both) | 0 | About section heads → listicle reasons, story chapters |
+| `title-blog` | Montserrat 500 | **27.6px / 33.12px** / **22.5px / 27px** uppercase on mobile | 0 | Blog index title → PDP story teaser, `/card` grid title |
+| `title-card` | Montserrat 500 | **19.2px / 23.04px** / **16.8px / 20.16px** | 0 | Article titles → hole cards on `/card`, story cards |
+| `title-faq` | Montserrat 700 | **26px / 31.2px** | 0 | Collection FAQ heading |
+| `faq-q` | Montserrat 500 | **16px / 19.2px** | 0 | FAQ questions |
+| `title-drawer` | Montserrat 700 | **16px / 19.2px** | 0, capitalize | Upsell title → "Complete the look" |
+| `heading-recs` | Roboto 700 (Eastside sets 600, which renders 700) | **18px / 21.6px** | 0, uppercase | "YOU MAY ALSO LIKE" |
+| `eyebrow` | Roboto 700 | **19px / 25px** (0.1em) / **16px / 25px** | 0.1em, uppercase, `--color-green` | About "OUR MISSION" → listicle, story, fit guide, custom section labels |
+| `eyebrow-sm` | Roboto 700 | **17.1px / 20px** / **14px / 25px** | 0.1em, uppercase, green | About "FOUNDER" → hole meta on `/card/[handle]` |
+| `body` | Roboto 400 | **14.4px / 19.73px** (1.37) / **12.6px / 17.3px**; the PDP description stays 14.4px on mobile | 0 | Body text, PDP description |
+| `body-long` | Roboto 500 | **14.4px / 25px** | 0 | About long-form → story, advertorial, listicle body |
+| `body-editorial` | Roboto 400 | **15px / 21px** | 0 | Editorial split text |
+| `body-splash` | Roboto 400 | **12px / 18px** | 0 | Splash and hero sub-copy (hero: 14.4px / 12.6px) |
+| `card-title` | Roboto 400 | **14.4px / 20.16px** / **12.6px / 15.12px** | 0, `#000` | Product card title |
+| `price` | Roboto 400 | **18px / 24.75px** | 0, `--color-green` | PDP, offer and drawer price |
+| `price-card` | Roboto 400 | **12.6px / 17.64px** | 0, `--color-text-light` | Card price |
+| `nav` | Roboto 500 | 9.9px → **11px / 13.2px** | 0.025em, uppercase | Top nav, mega-menu headings |
+| `nav-sub` | Roboto 400 | 9.9px → **11px / 13.2px** | 0.025em, uppercase | Mega-menu links, header text links |
+| `menu-row` | Roboto 400 | **14.4px** | 0.07em (0.99px), uppercase | Mobile menu rows |
+| `announce` | Roboto 400 | **14.4px / 19.8px** / **12.6px / 17.33px** | 0, uppercase as written | Announcement bar |
+| `btn` | Roboto 400 | **16px / 22px** | 0 | Default button |
+| `btn-atc` | Roboto 700 | **16px / 16px** | 0, capitalize | Add to bag (52px) |
+| `btn-sm` | Roboto 400 | **12px / 16.5px** | 0 | Small buttons (splash, editorial) |
+| `btn-kit` | Montserrat 600 | **16px / 16px** | 0 | Outline "Add" in Complete the look |
+| `tab` | Roboto 400 / active 700 | **14px** | 0.06em (0.84px) | Rail tabs, quiz answers |
+| `label` | Roboto 500 | 10.8px → **11px** | 0.14em, uppercase | "SUBTOTAL", filter-drawer heading |
+| `micro` | Roboto 400 | 9.9–10px → **11px** | 0.05em, uppercase | Badge, quick add, "REMOVE", swatch "+N" |
+| `breadcrumb` | Roboto 400 | **12.6px** (PDP), **14.4px** (collection) | 0, `--color-text-light` / `--color-text` | Breadcrumbs |
+| `accordion` | Roboto 500 | **18px / 19.73px** | 0, capitalize | PDP accordion titles |
+| `filter-head` | Roboto 500 | **14.4px** | 0 | Filter group titles |
+| `filter-opt` | Roboto 400 | **12px** | 0 | Filter checkbox labels |
+| `footer-head` | Roboto 700 | **14.4px / 17.28px** / **12.6px / 15.12px** | 0, uppercase, #FFF | Footer column heads |
+| `footer-link` | Roboto 400 | **14.4px** / **12.6px**, rows every **35px** / **31px** | 0, `--color-on-ink` | Footer links |
+| `note` | Roboto italic 400 | 10.8px → **11px / 14.7px** | 0 | Cart note ("Taxes calculated at checkout") |
+
+**Numerals:** Roboto's default figures. Prices, countdowns and edition numbers add
+`font-variant-numeric: tabular-nums`.
+
+### E.2.4 Spacing, layout, radius, shadows
+
+**Layout:**
+
+| Token | Value (desktop / mobile) | Measured on Eastside |
+|---|---|---|
+| `--gutter-page` | **50px / 16px** | Logo, footer and PDP x = 50 / 16; `wrapper` padding 0 50px / 0 16px |
+| `--gutter-rail` | **50px / 12px** | Rail cards start at x = 12 on mobile |
+| `--gutter-layout` | **32px** (medium 22px, small 16px) | `--LAYOUT-GUTTER` |
+| `--grid-gap` | **4px** | Rail cards 349 wide at a 353 stride; category tiles at a 393 stride (389 + 4) |
+| `--grid-gap-collection` | **10px / 10px** | Hats grid stride 270 for 260-wide cards; mobile 190 at 200 stride |
+| `--announce-h` | **36px** | Announcement bar |
+| `--header-h` | **70px / 72px** | `theme__header`. Logo box 60×60, nav links 60px tall, `padding:15px`. |
+| `--drawer-w` | **380px** (menu), **650px** (cart flyout) | `--DRAWER-WIDTH`; Rebuy flyout |
+| `--content-max` | **1440px** for full-bleed bands; inner content uses the gutters, no further max | Eastside is fluid to the viewport |
+| `--measure` | **680px** for long-form text (Shelby value; Eastside's article column was not captured) | — |
+
+**Section rhythm:**
+
+| Section | Padding / size (desktop / mobile) |
+|---|---|
+| Category band | **40px 0** |
+| Tabs rail | **24px** top after the hero; the cards fill the rail height |
+| Collection rail | **48px** above the title; title to cards **24px** |
+| Editorial split | **720×720** / **390×390** square image half; text half the same height |
+| Splash hero | **635px / 403px** |
+| Prefooter band | **48px 0 34px**, 160px tall |
+| Footer | **20px 0 30px** (top row starts 27px into the black) / **12px 0 18px** |
+| Supporting row | **30px 0** |
+
+**Radius:**
+
+| Token | Value | Use (Eastside) |
+|---|---|---|
+| `--radius` | **3px** | `--RADIUS`, `--btn-radius`: every button, field, select, search input, drawer close button |
+| `--radius-tab` | **4px** | Rail tabs; mobile sticky ATC button (measured 4px) |
+| `--radius-pill` | **20px** | "NEW" badge pill |
+| `--radius-bar` | **10px** | Progress bar |
+| `--radius-round` | **50%** | Swatch dots, carousel arrows, breadcrumb dot |
+| Images, tiles, cards, drawers, bands | **0** | Eastside's imagery is square-cornered |
+
+**Shadows:**
+
+| Token | Value | Use |
+|---|---|---|
+| `--shadow-badge` | `0 2px 2px rgba(0,0,0,.02), 0 2px 6px rgba(0,0,0,.04)` | Badge pill |
+| `--shadow-arrow` | `0 2px 8px rgba(0,0,0,.18)` | 44px round carousel arrow |
+| `--shadow-drawer` | `0 2px 8px rgba(0,0,0,.06), 0 3px 12px rgba(0,0,0,.02)` | Mobile menu drawer, cart flyout |
+| Cards, buttons, header, sticky bars | **none** | — |
+
+**Image ratios** (measured):
+
+| Ratio | Where |
+|---|---|
+| **5:6** | Product card tile: 349×419 rail, 260×312 collection, 164×196 / 190×228 mobile |
+| **5:7** (800/1120) | Category tile: 389×545 / 179×251 |
+| **2:3** (1365/2048) | PDP main image: 565×848 desktop, 390×468 mobile (the mobile slider crops to 5:6) |
+| **4:5** | "You may also like" cards |
+| **1:1** | PDP thumbs: 75×75 |
+| **75vh / 650px** | Hero: 1440×675 at 900 tall; 390×650 mobile |
+| **1:1 + text half** | Editorial split: 720×720 |
+| **≈2.27:1 / ≈0.97:1** | Splash: 1440×635; 390×403 |
+| **1:1** | Mobile strip square: 79×79 |
+
+### E.2.5 Animations
+
+**Easing tokens** (from `theme.css`):
+
+| Token | Curve | Used for |
+|---|---|---|
+| `--ease-theme` | `cubic-bezier(.215,.61,.355,1)` (ease-out-cubic) | Nav colour and underline, menu, mega menu, mobile menu rows, filter chevron |
+| `--ease-sweep` | `cubic-bezier(.33,0,0,1)` | Button hover sweep |
+| `ease` | `cubic-bezier(.25,.1,.25,1)` | Drawers (`.6s`), quick-add slide (`.25s`) |
+| `ease-out` | `cubic-bezier(0,0,.58,1)` | Button colour, background, border (`.25s`); accordion fade |
+| `ease-in` | `cubic-bezier(.42,0,1,1)` | Image fade-in and hover swap (`.5s`); accordion slide |
+| `ease-in-out` | `cubic-bezier(.42,0,.58,1)` | Cart flyout slide (`.25s`) |
+| `linear` | — | Sticky header `top` (`.2s`), breadcrumb colour (`.3s`) |
+
+**Every motion that renders on the live site** (Shelby builds exactly these):
+
+| # | Motion | Trigger | Property, duration, easing | Reduced motion |
+|---|---|---|---|---|
+| M1 | **Button sweep** | Hover on `.btn` (outline and solid) | An `::after` panel `width: calc(100% + 120px)`, `left:-60px`, `skew(30deg)`, from `translate3d(-100%,0,0)` to `translateZ(0)`, **.5s `--ease-sweep`**.<br>• Outline: `currentColor` at opacity .1.<br>• Solid: the hover colour at opacity 1.<br>• Plus `color`, `background` and `border` **.25s ease-out**. | No sweep. The hover colour applies instantly. |
+| M2 | **Button arrow nudge** | Hover on a button with an arrow icon | Right arrow `translate3d(5px,0,0)` (left arrow −5px), **.25s ease-out** | Off |
+| M3 | **Nav underline** | Hover on a top-level nav item | 1px bar at `bottom:-2px`, colour `--color-link-hover`, `scaleX(0→1)`, **.25s `--ease-theme`**. Text colour → `--color-link-hover` **.25s `--ease-theme`**. | Underline appears without scaling |
+| M4 | **Link colour** | Hover on any text link | `color` → `--color-link-hover` (on black: `--color-on-ink-hover`), **.25s** | Instant |
+| M5 | **Mega menu** | Hover on a nav item with a panel (120ms intent delay, Shelby's existing `hoverOpen`) | Panel `opacity 0→1` + `visibility`, **.2s `--ease-theme`**.<br>• Child links `transform`/`opacity` **.15s `--ease-theme`**, staggered `transition-delay` 0.02s, 0.04s, 0.06s… per row.<br>• Feature images `opacity 0→1` **.75s** and `scale(1.06→1)` (origin bottom centre) **.75s**, both `--ease-theme`. | Opacity only, .01ms; no scale, no stagger |
+| M6 | **Sticky header** | Scrolling past the announcement bar | The header becomes `position:fixed; top:0` (z 5600) and stays visible scrolling both ways. `top` transitions **.2s linear**. | Same (no animation involved) |
+| M7 | **Announcement slider** | Load; every **5000ms** | Messages cross-fade (Flickity fade), **.5s ease** (*est.*; the interval is measured). The bar fades in `opacity .5s ease` once the page has loaded. | Autoplay off; prev/next 24px buttons show (E.6.0.1) |
+| M8 | **Card image swap** | Hover on a product card image (no-touch only) | The second image `opacity 0→1`, **.5s ease-in** | Instant swap |
+| M9 | **Quick-add slide** | Hover on a card image | Quick-add holder `slideInUp` **.25s ease**: `translateY(100%)→0`, `opacity 0→1`, fill-mode forwards | Appears without moving |
+| M10 | **Card title colour** | Hover on a card | `color .3s` → `--color-link-hover` | Instant |
+| M11 | **Image load fade** | Each lazy image finishing loading | `opacity 0→1` **.5s ease-in** | Instant |
+| M12 | **Mobile menu drawer** | Hamburger | Drawer `slideInLeft` **.6s ease** from the left edge; out with `slideOutLeft` **.6s ease**.<br>• Underlay `opacity 0→.4`, **.3s**, delay **.1s**.<br>• Rows: colour/background **.4s `--ease-theme`**; a sub-level slides in from the right in the same .6s ease. | Opacity cross-fade **.2s**, no slide |
+| M13 | **Cart flyout** | Add to bag, bag icon | Panel `right: -650px → 0`, **.25s ease-in-out**; underlay as M12. Line items fade in `cartItemsFadeIn` **.25s**: `opacity 0`, `translateY(15px)` → none. A removed line plays `cartItemRemoved` **.25s**: opacity 1→0, `max-height` 300px→0. | Panel appears and disappears with **.2s** opacity; items without translate |
+| M14 | **Drawer close icon** | Hover on ✕ | `rotate(90deg)` **.3s** | Off |
+| M15 | **Accordion** | Toggle | Content `transform .3s ease-in`, `opacity .3s ease-out` (slides 8px down while fading in; Shelby value for the 8px). The plus icon rotates 45° to ×, **.3s ease-out** (*est.*). | Instant open/close |
+| M16 | **Tabs** | Select | `border-color .2s`, `color .2s`, `background .2s` | Instant |
+| M17 | **Carousel arrows** | Hover on a rail | Arrow buttons `opacity 0→1` **.2s** (always visible on touch and on focus) | Always visible |
+| M18 | **Sticky buy bar** | The main add button scrolls out of view | `opacity` and `visibility` **.3s** | Instant |
+| M19 | **Filter toggle chevron** | "Hide filters" | `rotate(180deg)` **.3s `--ease-theme`** | Instant |
+| M20 | **Progress bar fill** | Bag subtotal changes | `width` **.3s ease-out** (Shelby value; Eastside's Rebuy bar steps) | Instant |
+| M21 | **Smooth scroll** | In-page anchors | `html { scroll-behavior: smooth }` | `auto` |
+
+**Not built, because the live site does not run them:** AOS scroll reveals (`hero`, `fade`,
+`img-in`, 800ms) and `heroFadeIn` (`opacity .001 → 1`, `translateY(15px) → none`). If a later
+version wants a hero entrance, use `heroFadeIn` **.8s `--ease-theme`** on the hero copy once, with
+no motion under reduced motion. It stays off in v8.
+
+**Reduced-motion rule** (`@media (prefers-reduced-motion: reduce)`):
+- No transform-based motion at all: sweeps, slides, scales, rotations, translate fades.
+- Colour, opacity and visibility changes are instant, except drawer and menu open/close, which
+  cross-fade in **.2s** so they do not flash.
+- Autoplay stops. Smooth scrolling stops.
+- The JS helper `useReducedMotion()` (`src/lib/motion.ts`, unchanged) gates anything driven from
+  script: the announcement autoplay and the flyout slide.
+
+## E.3 Global styles (`src/app/globals.css`, replace the file)
+
+```css
+@import "tailwindcss";
+
+/* ---------- Tailwind 4 theme (E.4) ---------- */
+@theme {
+  --breakpoint-sm: 480px;
+  --breakpoint-md: 750px;
+  --breakpoint-lg: 990px;
+  --breakpoint-xl: 1400px;
+  --breakpoint-2xl: initial;
+
+  --color-text: #212121;
+  --color-text-strong: #000000;
+  --color-text-light: #646464;
+  --color-bg: #ffffff;
+  --color-tile: #f6f6f6;
+  --color-sand: #eee9e3;
+  --color-bg-brighter: #f2f2f2;
+  --color-surface-sticky: #fcfcfc;
+  --color-border: #f0f0f0;
+  --color-hairline: #f7f7f7;
+  --color-track: #eeeeee;
+  --color-field-border: #8c8c8c;
+  --color-green: #207212;
+  --color-green-hover: #1a5c0f;
+  --color-green-deep: #0b3305;
+  --color-green-fade: rgb(32 114 18 / 0.05);
+  --color-green-fade-hover: rgb(32 114 18 / 0.1);
+  --color-ink: #000000;
+  --color-tab-active: #141414;
+  --color-charcoal-hover: #3b3b3b;
+  --color-black-hover: #1a1a1a;
+  --color-on-ink: #f7f7f7;
+  --color-on-ink-hover: rgb(247 247 247 / 0.7);
+  --color-link-hover: rgb(33 33 33 / 0.7);
+  --color-underlay: rgb(0 0 0 / 0.4);
+  --color-error: #721c24;
+  --color-error-bg: #f8d7da;
+  --color-error-border: #f5c6cb;
+  --color-focus: #207212;
+
+  --radius-sm: 3px;
+  --radius-tab: 4px;
+  --radius-pill: 20px;
+  --radius-bar: 10px;
+
+  --shadow-badge: 0 2px 2px rgb(0 0 0 / 0.02), 0 2px 6px rgb(0 0 0 / 0.04);
+  --shadow-arrow: 0 2px 8px rgb(0 0 0 / 0.18);
+  --shadow-drawer: 0 2px 8px rgb(0 0 0 / 0.06), 0 3px 12px rgb(0 0 0 / 0.02);
+
+  --ease-theme: cubic-bezier(0.215, 0.61, 0.355, 1);
+  --ease-sweep: cubic-bezier(0.33, 0, 0, 1);
+
+  --animate-slide-in-up: slide-in-up 0.25s ease forwards;
+  --animate-fade-in: fade-in 0.5s ease-in forwards;
+}
+
+@theme inline {
+  --font-display: var(--font-monomakh), "Times New Roman", serif;
+  --font-heading: var(--font-montserrat), "Helvetica Neue", Arial, sans-serif;
+  --font-body: var(--font-roboto), "Helvetica Neue", Arial, sans-serif;
+  --font-sans: var(--font-roboto), "Helvetica Neue", Arial, sans-serif;
+}
+
+/* ---------- Tokens used outside utilities ---------- */
+:root {
+  --gutter-page: 16px;
+  --gutter-rail: 12px;
+  --grid-gap: 4px;
+  --announce-h: 36px;
+  --header-h: 72px;
+  --drawer-w: 380px;
+  --flyout-w: 650px;
+  --overlay-bg: #000;
+  --overlay-opacity: 0.2;
+  --measure: 680px;
+}
+@media (min-width: 750px) {
+  :root {
+    --gutter-page: 50px;
+    --gutter-rail: 50px;
+    --header-h: 70px;
+  }
+}
+
+/* ---------- Base ---------- */
+@layer base {
+  html {
+    font-size: 14px;
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  @media (min-width: 750px) {
+    html { font-size: 16px; }
+  }
+  html.scroll-locked { overflow: hidden; }
+  body {
+    min-width: 320px;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-body);
+    font-size: 0.9rem; /* 12.6px / 14.4px */
+    font-weight: 400;
+    line-height: 1.37;
+    -webkit-font-smoothing: antialiased;
+    font-synthesis: none;
+  }
+  h1, h2, h3, h4 { font-weight: inherit; margin: 0; }
+  a { color: inherit; text-decoration: none; transition: color 0.25s; }
+  a:hover { color: var(--color-link-hover); }
+  img { display: block; max-width: 100%; }
+  ::selection { background: var(--color-green); color: #fff; }
+  :focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+  .on-ink :focus-visible { outline-color: var(--color-on-ink); }
+  [hidden] { display: none !important; }
+  .tabular { font-variant-numeric: tabular-nums; }
+}
+
+/* ---------- Type roles (E.2.3) ---------- */
+@layer components {
+  .display-xl { font-family: var(--font-display); font-size: 28px; line-height: 1.05; }
+  .display-hero { font-family: var(--font-display); font-size: 32.4px; line-height: 1.2; }
+  .display-lg { font-family: var(--font-display); font-size: 22px; line-height: 1.05; text-transform: uppercase; }
+  .display-md { font-family: var(--font-display); font-size: 22px; line-height: 1.2; text-transform: uppercase; }
+  .display-splash { font-family: var(--font-display); font-size: 35px; line-height: 1.05; letter-spacing: 0.01em; text-transform: uppercase; }
+  .display-mark { font-family: var(--font-display); font-size: 26px; line-height: 1; letter-spacing: 0.04em; text-transform: uppercase; }
+  .title-page { font-family: var(--font-heading); font-weight: 700; font-size: 26px; line-height: 1.2; text-transform: uppercase; }
+  .title-product { font-family: var(--font-heading); font-weight: 700; font-size: 18px; line-height: 1.2; }
+  .title-feature { font-family: var(--font-heading); font-weight: 500; font-size: 48px; line-height: 1.2; }
+  .title-section { font-family: var(--font-heading); font-weight: 500; font-size: 38.4px; line-height: 1.2; }
+  .title-blog { font-family: var(--font-heading); font-weight: 500; font-size: 22.5px; line-height: 1.2; text-transform: uppercase; }
+  .title-card { font-family: var(--font-heading); font-weight: 500; font-size: 16.8px; line-height: 1.2; }
+  .faq-q { font-family: var(--font-heading); font-weight: 500; font-size: 16px; line-height: 1.2; }
+  .heading-recs { font-family: var(--font-body); font-weight: 700; font-size: 18px; line-height: 1.2; text-transform: uppercase; }
+  .eyebrow { font-weight: 700; font-size: 16px; line-height: 25px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-green); }
+  .eyebrow-sm { font-weight: 700; font-size: 14px; line-height: 25px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-green); }
+  .body-long { font-weight: 500; font-size: 14.4px; line-height: 25px; }
+  .body-editorial { font-size: 15px; line-height: 21px; }
+  .card-title { font-size: 12.6px; line-height: 1.2; color: var(--color-text-strong); transition: color 0.3s; }
+  .price { font-size: 18px; line-height: 24.75px; color: var(--color-green); font-variant-numeric: tabular-nums; }
+  .price-card { font-size: 12.6px; line-height: 17.64px; color: var(--color-text-light); font-variant-numeric: tabular-nums; }
+  .nav-label { font-weight: 500; font-size: 11px; line-height: 1.2; letter-spacing: 0.025em; text-transform: uppercase; }
+  .nav-sub { font-weight: 400; font-size: 11px; line-height: 1.2; letter-spacing: 0.025em; text-transform: uppercase; }
+  .label { font-weight: 500; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; }
+  .micro { font-weight: 400; font-size: 11px; line-height: 1; letter-spacing: 0.05em; text-transform: uppercase; }
+  .meta { font-size: 12.6px; line-height: 17.64px; color: var(--color-text-light); }
+  .note { font-style: italic; font-size: 11px; line-height: 14.7px; }
+
+  @media (min-width: 750px) {
+    .display-xl { font-size: 69px; }
+    .display-hero { font-size: 38.4px; }
+    .display-lg { font-size: 38px; }
+    .display-md { font-size: 32px; }
+    .display-splash { font-size: 26px; }
+    .display-mark { font-size: 30px; }
+    .title-product { font-size: 24px; }
+    .title-feature { font-size: 63.6px; }
+    .title-blog { font-size: 27.6px; text-transform: none; }
+    .title-card { font-size: 19.2px; }
+    .eyebrow { font-size: 19px; }
+    .eyebrow-sm { font-size: 17.1px; line-height: 20px; }
+    .card-title { font-size: 14.4px; line-height: 20.16px; }
+  }
+}
+
+/* ---------- Layout ---------- */
+@layer components {
+  .wrap { padding-inline: var(--gutter-page); }
+  .band-tile { background: var(--color-tile); }
+  .tile { position: relative; background: var(--color-tile); overflow: hidden; }
+  .tile > img { transition: opacity 0.5s ease-in; }
+  .tile > img[data-loading="true"] { opacity: 0.000001; }
+  .rail { display: grid; grid-auto-flow: column; gap: var(--grid-gap); overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; }
+  .rail::-webkit-scrollbar { display: none; }
+  .rail > * { scroll-snap-align: start; }
+  .backdrop-radial { position: relative; isolation: isolate; }
+  .backdrop-radial::before {
+    content: ""; position: absolute; inset: -40% -30%; z-index: -1; pointer-events: none;
+    background: radial-gradient(ellipse at center, var(--overlay-bg) 0%, rgb(255 255 255 / 0) 70%);
+    opacity: var(--overlay-opacity);
+  }
+  .overlay-bottom::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(to bottom, #0000000d, #0000004d); opacity: 0.5;
+  }
+}
+
+/* ---------- Buttons (E.5.1) ---------- */
+@layer components {
+  .btn {
+    --btn-top: 8px; --btn-left: 16px;
+    --btn-text: var(--color-text); --btn-bg: transparent; --btn-border: var(--color-text);
+    --btn-text-hover: var(--btn-text); --btn-bg-hover: transparent; --btn-border-hover: var(--btn-border);
+    --btn-sweep: currentColor; --btn-sweep-opacity: 0.1;
+    position: relative; z-index: 1; overflow: hidden; isolation: isolate;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 44px; padding: var(--btn-top) var(--btn-left);
+    border: 1px solid var(--btn-border); border-radius: var(--radius-sm);
+    background: var(--btn-bg); color: var(--btn-text);
+    font-family: var(--font-body); font-size: 16px; font-weight: 400; line-height: 22px; letter-spacing: 0;
+    cursor: pointer; user-select: none; -webkit-appearance: none; appearance: none; text-align: center;
+    transition: color 0.25s ease-out, background 0.25s ease-out, border 0.25s ease-out;
+  }
+  @media (min-width: 750px) { .btn { --btn-top: 10px; --btn-left: 18px; } }
+  .btn::after {
+    content: ""; position: absolute; top: 0; left: -60px; z-index: -1;
+    width: calc(100% + 120px); height: 100%;
+    background-color: var(--btn-sweep); opacity: var(--btn-sweep-opacity);
+    transform: translate3d(-100%, 0, 0) skew(30deg);
+    transition: transform 0.5s var(--ease-sweep);
+  }
+  .btn:hover { color: var(--btn-text-hover); border-color: var(--btn-border-hover); }
+  .btn:hover::after { transform: translateZ(0); }
+  .btn:active { transform: none; }
+  .btn .icon-arrow { transition: transform 0.25s ease-out; }
+  .btn:hover .icon-arrow { transform: translate3d(5px, 0, 0); }
+  .btn[disabled], .btn[aria-disabled="true"] { cursor: default; opacity: 0.5; }
+  .btn[disabled]::after, .btn[aria-disabled="true"]::after { content: none; }
+  .btn[aria-busy="true"] { cursor: progress; }
+
+  /* Solid fills: the sweep is the hover colour at full opacity */
+  .btn-green { --btn-text: #fff; --btn-bg: var(--color-green); --btn-border: var(--color-green); --btn-border-hover: var(--color-green-hover); --btn-sweep: var(--color-green-hover); --btn-sweep-opacity: 1; }
+  .btn-charcoal { --btn-text: #fff; --btn-bg: var(--color-text); --btn-border: var(--color-text); --btn-border-hover: var(--color-charcoal-hover); --btn-sweep: var(--color-charcoal-hover); --btn-sweep-opacity: 1; }
+  .btn-black { --btn-text: #fff; --btn-bg: #000; --btn-border: #000; --btn-border-hover: var(--color-black-hover); --btn-sweep: var(--color-black-hover); --btn-sweep-opacity: 1; }
+  .btn-white { --btn-text: #000; --btn-bg: #fff; --btn-border: #fff; --btn-border-hover: var(--color-bg-brighter); --btn-sweep: var(--color-bg-brighter); --btn-sweep-opacity: 1; }
+  /* Outlines: the sweep is currentColor at .1 */
+  .btn-outline { --btn-text: var(--color-text); --btn-border: var(--color-text); }
+  .btn-outline-black { --btn-text: #000; --btn-border: #000; }
+  .btn-outline-white { --btn-text: #fff; --btn-border: #fff; }
+  .btn-outline-green { --btn-text: var(--color-green); --btn-border: var(--color-green); }
+  .btn-kit { --btn-text: #000; --btn-bg: #fff; --btn-border: var(--color-text); font-family: var(--font-heading); font-weight: 600; font-size: 16px; line-height: 16px; --btn-top: 10px; --btn-left: 15px; min-height: 38px; }
+
+  /* Sizes */
+  .btn-sm { --btn-top: 7px; --btn-left: 12px; font-size: 12px; line-height: 16.5px; min-height: 33px; }
+  .btn-lg { --btn-top: 12px; --btn-left: 18px; }
+  .btn-atc { --btn-top: 16px; --btn-left: 0; min-height: 52px; width: 100%; font-weight: 700; font-size: 16px; line-height: 16px; text-transform: capitalize; }
+  .btn-sticky { --btn-top: 10px; --btn-left: 16px; min-height: 47px; border-radius: var(--radius-tab); font-size: 18px; line-height: 24.75px; text-transform: capitalize; }
+  .btn-block { width: 100%; }
+  .btn-checkout { min-height: 50px; width: 100%; font-weight: 600; font-size: 16px; line-height: 16px; --btn-top: 12.6px; --btn-left: 16px; }
+
+  /* Text link */
+  .link { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  .link:hover { color: var(--color-link-hover); }
+  .link-green { color: var(--color-green); text-decoration: underline; text-underline-offset: 3px; }
+  .link-green:hover { color: var(--color-green-deep); }
+}
+
+/* ---------- Small components (E.5) ---------- */
+@layer components {
+  .navlink { position: relative; display: inline-flex; align-items: center; min-height: 44px; padding: 15px; transition: color 0.25s var(--ease-theme); }
+  .navlink .navtext { position: relative; }
+  .navlink .navtext::after { content: ""; position: absolute; left: 0; right: 0; bottom: -2px; height: 1px; background: var(--color-link-hover); transform: scaleX(0); transition: transform 0.25s var(--ease-theme); }
+  .navlink:hover { color: var(--color-link-hover); }
+  .navlink:hover .navtext::after, .navlink[aria-expanded="true"] .navtext::after { transform: scaleX(1); }
+
+  .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: var(--radius-pill); background: #fff; color: #000; box-shadow: var(--shadow-badge); font-size: 11px; line-height: 1.2; letter-spacing: 0.05em; text-transform: uppercase; }
+  .badge-dark { background: var(--color-text); color: #fff; box-shadow: none; }
+
+  .tab { display: inline-flex; align-items: center; min-height: 26px; padding: 4px 16px; border: 1px solid var(--color-text); border-radius: var(--radius-tab); background: transparent; color: var(--color-text); font-size: 14px; letter-spacing: 0.06em; cursor: pointer; transition: border-color 0.2s, color 0.2s, background 0.2s; }
+  .tab:hover { border-color: #000; }
+  .tab[aria-selected="true"], .tab[aria-pressed="true"] { background: var(--color-tab-active); border-color: #000; color: #fff; font-weight: 700; }
+  @media (pointer: coarse) { .tab { min-height: 44px; } }
+
+  .swatch { position: relative; display: inline-block; width: 20px; height: 20px; border-radius: 50%; border: 1px solid #e9e9e9; background: var(--crown); }
+  .swatch[data-light="true"] { border-color: var(--color-field-border); }
+  .swatch-lg { width: 32px; height: 32px; }
+  .swatch[aria-checked="true"], .swatch[aria-current="true"] { box-shadow: 0 0 0 2px #fff, 0 0 0 3px var(--color-text); }
+
+  .arrow-btn { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; background: #fff; color: var(--color-tab-active); box-shadow: var(--shadow-arrow); transition: opacity 0.2s; }
+  .rail-wrap .arrow-btn { opacity: 0; }
+  .rail-wrap:hover .arrow-btn, .rail-wrap:focus-within .arrow-btn { opacity: 1; }
+  @media (hover: none) { .rail-wrap .arrow-btn { opacity: 1; } }
+
+  .field { width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--color-field-border); border-radius: var(--radius-sm); background: #fff; color: var(--color-text); font-size: 16px; line-height: 1.4; transition: border-color 0.25s; }
+  .field:hover { border-color: var(--color-text); }
+  .field:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 0; border-color: var(--color-text); }
+  .field[aria-invalid="true"] { border-color: var(--color-error); }
+  .field-error { margin-top: 6px; padding: 8px 12px; border: 1px solid var(--color-error-border); border-radius: var(--radius-sm); background: var(--color-error-bg); color: var(--color-error); font-size: 12.6px; }
+  .check { width: 16px; height: 16px; accent-color: var(--color-green); border: 1px solid var(--color-field-border); border-radius: 2px; }
+
+  .progress { position: relative; height: 8px; border-radius: var(--radius-bar); background: var(--color-track); overflow: hidden; }
+  .progress > span { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: var(--color-green); transition: width 0.3s ease-out; }
+
+  .accordion { border-bottom: 1px solid var(--color-border); }
+  .accordion > summary { display: flex; align-items: center; justify-content: space-between; min-height: 48px; padding: 14px 30px 14px 0; position: relative; list-style: none; cursor: pointer; font-weight: 500; font-size: 18px; line-height: 19.73px; text-transform: capitalize; }
+  @media (min-width: 750px) { .accordion > summary { padding-block: 16px; } }
+  .accordion > summary::-webkit-details-marker { display: none; }
+  .accordion > summary .icon-plus { position: absolute; right: 4px; transition: transform 0.3s ease-out; }
+  .accordion[open] > summary .icon-plus { transform: rotate(45deg); }
+  .accordion .accordion-body { padding-bottom: 16px; animation: accordion-in 0.3s ease-in; }
+
+  .underlay { position: fixed; inset: 0; z-index: 6000; background: var(--color-underlay); opacity: 0; visibility: hidden; transition: opacity 0.3s 0.1s, visibility 0s linear 0.4s; }
+  .underlay[data-open="true"] { opacity: 1; visibility: visible; transition-delay: 0.1s, 0s; }
+}
+
+/* ---------- Product card motion (M8–M10) ---------- */
+@layer components {
+  .card .card-img-2 { position: absolute; inset: 0; opacity: 0; transition: opacity 0.5s ease-in; }
+  .card .quick-add { position: absolute; inset: auto 0 0 0; z-index: 20; opacity: 0; visibility: hidden; }
+  @media (hover: hover) {
+    .card .tile:hover .card-img-2 { opacity: 1; }
+    .card .tile:hover .quick-add, .card .tile:focus-within .quick-add { visibility: visible; animation: slide-in-up 0.25s ease forwards; }
+    .card:hover .card-title { color: var(--color-link-hover); }
+  }
+  @media (hover: none) { .card .quick-add { position: static; opacity: 1; visibility: visible; } }
+}
+
+/* ---------- Keyframes ---------- */
+@keyframes slide-in-up { from { opacity: 0; transform: translateY(100%); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slide-in-left { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+@keyframes slide-out-left { from { transform: translateX(0); } to { transform: translateX(-100%); } }
+@keyframes slide-in-right { from { transform: translateX(100%); } to { transform: translateX(0); } }
+@keyframes slide-out-right { from { transform: translateX(0); } to { transform: translateX(100%); } }
+@keyframes cart-items-fade-in { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: none; } }
+@keyframes cart-item-removed { from { opacity: 1; max-height: 300px; } to { opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; } }
+@keyframes accordion-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+
+/* ---------- Reduced motion (E.2.5) ---------- */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+  }
+  .btn::after { content: none; }
+  .btn-green:hover { background: var(--color-green-hover); }
+  .btn-charcoal:hover { background: var(--color-charcoal-hover); }
+  .btn-black:hover { background: var(--color-black-hover); }
+  .btn-white:hover { background: var(--color-bg-brighter); }
+  .btn-outline:hover, .btn-outline-black:hover, .btn-outline-green:hover { background: rgb(33 33 33 / 0.06); }
+  .btn-outline-white:hover { background: rgb(255 255 255 / 0.12); }
+  .drawer-panel, .menu-panel, .underlay { transition: opacity 0.2s, visibility 0.2s !important; animation: none !important; transform: none !important; }
+}
+```
+
+**Notes:**
+- Remove every Ball Box class from `globals.css` and the components: `box`, `panel`, `window`,
+  `window-shade`, `model`, `panel-title`, `btn-on-ink`, `ink-dark`, `bg-ink`, `text-ink` and
+  `font-model`. Grep for them until zero remain.
+- `.btn-outline-black` keeps its name (used in several pages) with Eastside's values.
+- `.btn` outline variants sweep at `currentColor` opacity .1. That is Eastside's `btn--outline`.
+
+## E.4 Tailwind config and fonts
+
+Tailwind 4 has no JS config. The `@theme` blocks in E.3 are the config. This gives:
+- the utilities `bg-tile`, `text-text-light`, `bg-green`, `text-green`, `border-border`,
+  `bg-ink`, `text-on-ink`, `rounded-sm` (3px), `rounded-tab`, `rounded-pill`, `shadow-arrow`,
+  `ease-theme` and `ease-sweep`;
+- the `font-display`, `font-heading` and `font-body` families;
+- the breakpoints `sm:` 480, `md:` 750, `lg:` 990 and `xl:` 1400.
+
+`src/app/layout.tsx` loads the fonts (replace the Sofia imports):
+
+```ts
+import { Monomakh, Montserrat, Roboto } from "next/font/google"
+
+const display = Monomakh({ weight: "400", subsets: ["latin"], variable: "--font-monomakh", display: "swap" })
+const heading = Montserrat({ weight: ["500", "600", "700"], subsets: ["latin"], variable: "--font-montserrat", display: "swap" })
+const body = Roboto({ weight: ["400", "500", "700"], style: ["normal", "italic"], subsets: ["latin"], variable: "--font-roboto", display: "swap" })
+
+// <html lang="en" className={`${display.variable} ${heading.variable} ${body.variable}`}>
+// <body className="flex min-h-dvh flex-col bg-bg font-body text-text antialiased">
+export const viewport: Viewport = { themeColor: "#000000" }
+```
+
+**Font fallback:** if the installed Next version's font list lacks Monomakh, load it with
+`<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Monomakh&display=swap">` in
+`layout.tsx` and set `--font-monomakh: "Monomakh"` on `:root`. Change nothing else.
+
+The skip link keeps its behaviour. Style: `bg-ink text-on-ink rounded-sm px-3 py-2`.
+
+## E.5 Components
+
+### E.5.1 Button (`src/components/ui/button.tsx`, and the `.btn` classes used directly)
+
+Props stay as today, with the variants mapped as follows.
+
+| Variant | Class | Rest | Hover | Where |
+|---|---|---|---|---|
+| `primary` (add to bag) | `btn btn-green btn-atc` | #207212 fill, #fff 16px/700 capitalize, 52px tall, 3px radius, 1px #207212 border | Sweep of #1A5C0F slides in from the left (M1). The border goes #1A5C0F. | PDP, offer, quiz result, the "Add" in the cart |
+| `secondary` | `btn btn-charcoal` | #212121 fill, #fff 16px/400 | Sweep #3B3B3B | Checkout "Place order", custom quote submit |
+| `black` | `btn btn-black` (+`btn-sm` on bands) | #000 fill, #fff | Sweep #1A1A1A | Bag "Checkout" (`btn-checkout`, 50px, 16px/600), editorial "Shop" small button |
+| `white` | `btn btn-white` (+`btn-sm`) | #fff fill, #000 | Sweep #F2F2F2 | Splash band button, footer tee-sheet submit |
+| `outline` | `btn btn-outline` | Transparent, 1px #212121, #212121 text | Sweep of `currentColor` at 10% | Secondary page actions ("See all six holes") |
+| `outline-white` | `btn btn-outline-white` | Transparent, 1px #fff, #fff text, **16px/22px, padding 10px 18px / 8px 16px, 44 / 40px tall** | White sweep at 10% | Hero CTA (Eastside "Shop the Collab") |
+| `kit` | `btn btn-kit` | #fff, 1px #212121, Montserrat 600 16px, 38px | Sweep `currentColor` 10% | "Add" in Complete the look |
+| `sticky` | `btn btn-green btn-sticky` | 47px, 4px radius, 18px | Same as primary | Mobile sticky buy bar |
+
+**Every state:**
+- **Focus-visible:** a 2px #207212 outline, offset 2px. On black bands it is #F7F7F7. The sweep
+  does not run on focus.
+- **Active:** no scale or translate (Eastside has none). The hover colour holds.
+- **Disabled** (`disabled` / `aria-disabled`): opacity .5, cursor default, no sweep. This is the
+  sold-out add button, the quiz Next before an answer, and checkout while invalid.
+- **Loading** (`aria-busy="true"`): the label stays and a 16px Phosphor `CircleNotch` spins
+  beside it. The spin is the only rotating loop; under reduced motion it is replaced by the text
+  "Adding…".
+- **Success** (add to bag): the flyout opens (M13). The button label does not change.
+- **Icon:** Phosphor `ArrowRight` 16px, class `icon-arrow`, after the label on text CTAs only
+  ("Shop the Rope Cap"). It nudges 5px on hover (M2).
+
+### E.5.2 Product card (`src/components/product-card.tsx`)
+
+The Eastside `product-item`. Used in the home rails, `/shop`, PDP "You may also like", the
+`/card` grid and recently viewed.
+
+- **Tile:** `.tile` 5:6, background #F6F6F6, square corners, `overflow:hidden`.
+  - Image 1 is `object-fit: cover` on a 5:6 asset, or `contain` on a square asset (E.7.1).
+  - Image 2 is the next angle, shown on hover (M8). Touch devices never show image 2.
+- **Badge:** top-left at 5px/5px, z 3.
+  - `badge` "No. 02" for a numbered edition.
+  - `badge badge-dark` "Sold out" when live stock is 0.
+  - Nothing else. No "New", "Best seller" or "Sale".
+- **Quick add:** a 40px full-width white bar along the bottom of the tile.
+  - `micro` label "+ Quick add" in #212121 on rgba(255,255,255,.9). On hover it slides up (M9).
+  - Behaviour and `data-track` are unchanged: `quick_add`, plus `notify_me` for an upcoming
+    edition, where the bar reads "Join the tee sheet".
+  - On touch devices the bar is static under the tile, 44px.
+- **Info:**
+  - Padding **8px 8px 2px**.
+  - Title `card-title` (#000, 14.4 / 12.6).
+  - Price `price-card` (#646464) 5px under it.
+  - Swatch row 10px under the price: 20px round `.swatch` dots, 10px gap. The core cards show the
+    four core colours. After four, a "+N" `micro`.
+- **Grid:**
+
+  | Where | Cards |
+  |---|---|
+  | Desktop rail | 349px wide at a 4px gap |
+  | Desktop collection grid | 260px at a 10px gap, 4 per row |
+  | Mobile rail | 164px |
+  | Mobile collection grid | 190px, 2 per row, 10px gap |
+
+- **Hover:** M8–M10. No lift, no shadow, no border.
+
+### E.5.3 Badge
+
+- **`badge`:** a white pill, 11px uppercase, padding 2px 8px, radius 20px, the badge shadow.
+- **`badge-dark`:** #212121 with #fff text, no shadow (Eastside `--COLOR-BADGE-BG`).
+- Badges sit only on image tiles. Status in text lines uses the meta line instead.
+
+### E.5.4 Swatches and the colour picker
+
+- **Card swatch:** 20px round, 1px #E9E9E9 border (#8C8C8C on light crowns: Tour White, Fescue,
+  Azalea and Haar). The fill is the crown colour, with the rope colour as a 3px band across the
+  lower third (`linear-gradient(to bottom, crown 0 62%, rope 62% 76%, crown 76%)`).
+- **PDP picker:** the label "Color: **Pine**" (14.4px, name in 500), then 32px swatches at a 12px
+  gap in a 44px hit area.
+  - Selected: a 2px white gap and a 1px #212121 ring.
+  - Hover: the ring in `--color-link-hover`.
+  - Edition swatches follow a 1px #F0F0F0 divider, prefixed "Numbered".
+  - Picking a colour swaps the gallery instantly; the image fades in per M11.
+  - `data-track="color_pill"` and the `?color=` sync are unchanged.
+
+### E.5.5 Tabs (Eastside `collections-tabs`)
+
+- `tab` buttons in a `role="tablist"`: 14px, 0.06em tracking, padding 4px 16px, 1px #212121
+  border, 4px radius, 26px tall (44px on coarse pointers).
+- **Active:** #141414 fill, #fff, 700.
+- **Desktop:** stacked vertically with a 12px gap under the rail title.
+- **Mobile:** a horizontal row with an 8px gap that scrolls sideways.
+- The panels swap without navigation.
+- **Keyboard:** arrow keys move between tabs (roving tabindex), and Home and End jump to the
+  ends.
+
+### E.5.6 Accordion (`src/components/accordion.tsx`)
+
+- A `details`/`summary` pair:
+  - summary 18px/500 capitalize, padding 16px 30px 16px 0 / 14px 30px 14px 0;
+  - a 1px #F0F0F0 rule under each row;
+  - a Phosphor `Plus` 16px icon on the right that turns 45° when open (M15);
+  - body 14.4px / 19.73 with 16px bottom padding.
+- **Footer accordions** (mobile only) use the same structure on black, with #FFF 12.6px/700
+  uppercase summaries and `Plus` in #F7F7F7.
+
+### E.5.7 Rail and carousel arrows
+
+- `.rail` is a horizontal CSS scroll-snap grid with a 4px gap, a hidden scrollbar and the page
+  gutter as the inline padding.
+- **Arrows:** 44px white circles with the arrow shadow, a Phosphor `CaretLeft`/`CaretRight` 18px
+  in #141414.
+  - Placed at the rail's vertical centre, 16px inside each edge.
+  - Shown on hover or focus (M17), always on touch.
+  - The previous arrow is hidden at the start and the next at the end.
+  - Each scrolls by one viewport of cards, with `behavior: smooth` (or `auto` under reduced motion).
+
+### E.5.8 Breadcrumb
+
+- **PDP style:** 12.6px #646464. A 4px round dot separator (#212121 at opacity .4) with 10px on
+  each side. Link colour transitions `.3s linear`.
+- **Collection style:** 14.4px #212121 with " / " separators, centred above the page title.
+
+### E.5.9 Forms
+
+- **Fields** (`.field`): 44px min height, padding 10px 12px, 1px #8C8C8C, 3px radius, 16px text
+  (no iOS zoom).
+- **Labels:** 12.6px/500 above, with 6px between.
+- **Errors:** `.field-error` (Eastside's error colours) under the field, linked by
+  `aria-describedby`.
+- **Selects:** the same box with a Phosphor `CaretDown` 14px at 12px from the right.
+- **Checkboxes:** 16px, with `accent-color` #207212, and the label (12px filter style or 14.4px
+  in forms) 6px to the right. The row is at least 32px, or 44px on coarse pointers.
+- **Quantity stepper:**
+  - 32px-tall − and + buttons (Phosphor `Minus`/`Plus` 12px) in 44px hit areas, with the count
+    between them in 14.4px tabular;
+  - no outer border (Eastside's drawer stepper);
+  - the "Remove" `micro` link sits below.
+
+### E.5.10 Free-shipping progress (`src/components/cart/free-shipping.tsx`)
+
+- **Message:** 14.4px, centred. "You're **$37.00** away from **free shipping**." Once at $85:
+  "You've got **free standard shipping**."
+- **Bar:** `.progress`, 8px, 10px radius, #EEE track, #207212 fill (M20), under the message.
+  `role="progressbar"` with `aria-valuenow`.
+- The threshold is the real $85 only (G.1.4 item 7).
+
+### E.5.11 Drawers (`src/components/cart/side-drawer.tsx`)
+
+- **Cart flyout** (class `drawer-panel`): fixed to the right, **650px** wide (100% under 650px),
+  full height, white, `--shadow-drawer`, z 6001, over `.underlay` (z 6000). Slides per M13.
+- **Mobile menu** (class `menu-panel`): the same shell fixed to the left, 100% wide, max 380px
+  from 480px up, sliding per M12.
+- **Head:** 64px, padding 15px. The close button is 34×34 with Phosphor `X` 24px, rotating on
+  hover (M14).
+- Focus is trapped inside, Escape closes, and focus returns to the opener. Behaviour is unchanged.
+
+### E.5.12 Shelby-only pieces restyled into Eastside's language
+
+- **Countdown** (`countdown.tsx`): Roboto 500 tabular, units as "12d 04h 31m" in 14.4px. The
+  `size="large"` form is Montserrat 700 26px. It only counts to a real `release_at` (G.1.5).
+- **Tee sheet form** (`tee-sheet-form.tsx`):
+  - An email `.field` and a submit button side by side ≥480px, stacked below that.
+  - The button is `btn-charcoal` on light grounds and `btn-white btn-sm` on black.
+  - Under it, the line "One email when Hole 02 opens. Nothing else." (`meta`).
+  - `notify_me` is unchanged.
+- **Hole card** (`hole-card.tsx`): the E.5.2 card.
+  - The tile is the edition photo, or for Holes 5–6 (no product) a #F6F6F6 tile with "05" in
+    Monomakh 96px #212121 centred.
+  - Title `title-card` "No. 05 Away Match". Meta `meta` "Announced · 13 Sep 2027", or "Opens 5
+    Apr 2027", or "Released".
+  - The price shows only when a product exists. `card_hole` is unchanged.
+- **Crown profiles** (the SVG in `components/box/crown-profiles.tsx`, kept and moved to
+  `components/crown-profiles.tsx`):
+  - lines in #212121 at 1.5px;
+  - the Rope Cap filled in its crown colour with a 3px rope stroke;
+  - the 12 cm crown as a 1.5px dashed #646464 outline;
+  - the ruler ticks in #646464 with 11px labels;
+  - drawn on #F6F6F6.
+- **Continuity banner:** a 44px white strip under the header with a 1px #F0F0F0 bottom rule.
+  14.4px text and a `link` back to the story. `continuity_story` is unchanged.
+- **Edition meta line:** `meta` "Edition of 200 · 143 left · Released 5 Apr 2027". "N left" is
+  live stock only.
+
+## E.6 Section-by-section
+
+Each page lists its sections top to bottom, with the Eastside pattern used and the Shelby content.
+**Bold** names in `code` are the existing `data-track` values, which must still be emitted from the
+same actions.
+
+### E.6.0 Global chrome
+
+#### E.6.0.1 Announcement bar (`announcement-bar.tsx`, Eastside `announcement-bar`)
+
+- **Box:** 36px tall, #000, centred `announce` text in #F7F7F7 (14.4 / 12.6px, uppercase as
+  written), single line, ellipsis.
+- **Content:** the existing ticker items, which are real data only (G.5.3):
+  - `POLICY.announcement` "Free shipping on $85+ · 30-day returns";
+  - the live hole ("Hole 02 Azalea is out now");
+  - the next announced date ("Hole 03 Cypress opens 1 Jun 2027").
+- Linked items carry **`ticker_item`**.
+- **Motion:** M7. Cross-fade every 5000ms, pausing on hover and focus-within.
+- **Controls:** a 24px pause/play button (Phosphor `Pause`/`Play` 14px, #F7F7F7) at the right
+  edge, inset 12px (WCAG 2.2.2). Under reduced motion, autoplay is off and 24px `CaretLeft` and
+  `CaretRight` buttons sit at both ends.
+- One item shows no controls.
+
+#### E.6.0.2 Header (`site-header.tsx`, Eastside `theme__header`)
+
+**Desktop (≥750px):** 70px, white, no border.
+- **Left:** the wordmark **SHELBY** (`display-mark`, 30px, #212121, `aria-label="Shelby home"`)
+  in a 60px-tall box at x = 50, where Eastside's 60×60 roundel sits.
+- **Centre:** the nav, each item a `navlink nav-label` (11px/500 uppercase, 0.025em, padding 15px,
+  60px tall).
+
+  | Item | Opens or goes to | `data-track` |
+  |---|---|---|
+  | **Shop** | Panel | **`nav_shop`** |
+  | **The Card** | Panel | **`nav_drops`** |
+  | **Explore** | Panel | **`nav_explore`** |
+  | **Custom** | `/custom` | **`nav_custom`** |
+  | **Quiz** | `/quiz` | **`nav_quiz`** |
+
+  Hover: M3.
+- **Right:** three 44px icon buttons, Phosphor regular 22px in #212121, hover colour
+  `--color-link-hover`:
+  - recently viewed `Eye` (**`recently_viewed`**);
+  - search `MagnifyingGlass`;
+  - bag `Handbag`, with the count as an 11px/700 #fff number in a 16px #207212 circle at the
+    icon's top right (none at 0).
+- **Sticky:** M6. The announcement scrolls away, then the header pins at `top:0`, z 5600.
+
+**Mobile (<750px):** 72px, white.
+- **Left:** menu `List` and search `MagnifyingGlass`, in 44px buttons.
+- **Centre:** the wordmark at 26px.
+- **Right:** recently viewed `Eye` and bag `Handbag`.
+- Sticky like desktop.
+
+#### E.6.0.3 Mega menu (Eastside `header__dropdown`)
+
+- **Box:** a full-width white panel under the header (top 70px). Inner padding 32px 72px, 30px
+  vertical padding per column. Its height fits the content (Eastside 323–396px). The bottom edge
+  is a 1px #F0F0F0 rule.
+- **Motion:** M5.
+- **Columns:**
+  - a heading in `nav-label` (11px/500 uppercase, #212121), 25px rows;
+  - links in `nav-sub` (11px/400 uppercase) on 25px rows, hover M4.
+- **Feature cards** at the right: up to two 244×176 image links (cover, square corners), each with
+  an 11px/500 uppercase label 10px below. Feature images use M5's scale.
+- **Panels** (content and links unchanged from today's `panels`):
+  - **Shop:** "Shop" (The Rope Cap, The Pair, The Foursome, Numbered editions) and "Colors"
+    (Tour White, Clubhouse Navy, Pine, Fescue, each `/products/rope-cap?color=`). Cards: The Rope
+    Cap and The Pair.
+  - **The Card:** "Now", "Next" and "All six holes". Cards: the live hole and the next hole.
+  - **Explore:** the story, "Why the Rope Cap", the fit guide and the quiz. Card: the story.
+- Each link carries its panel's track (`nav_shop`, `nav_drops`, `nav_explore`), as today.
+- Escape, hover-out (120ms) and Tab-out close the panel. `aria-expanded` sits on the trigger.
+
+#### E.6.0.4 Mobile menu (Eastside `drawer--header` with `sliderow`s)
+
+- A left drawer (E.5.11), 64px head with the close ✕ at the left.
+- **Rows:** 50px tall, padding 0 15px, `menu-row` (14.4px uppercase 0.07em) with a 1px #F0F0F0
+  rule.
+  - Parents (Shop, The Card, Explore) end in Phosphor `ArrowRight` 18px and slide in a sub-level
+    with a 50px "← Back" row (M12).
+  - Plain rows: Custom, Quiz, Recently viewed.
+- Under the rows, a 79×79 colour strip repeats the home strip (E.6.1 §1) so colours are one tap
+  away.
+- Tracks are the same as desktop.
+
+#### E.6.0.5 Search (`search.tsx`, Eastside `search-popdown`)
+
+- A full-width white popdown under the header.
+- **Input:** 47px tall, borderless, 14.4px/500 with 0.025em tracking, with a leading Phosphor
+  `MagnifyingGlass` 20px and a trailing "Clear" `micro` button.
+- **Results:** as E.5.2 cards in a 4-column grid (2 on mobile) under a 1px #F0F0F0 rule.
+- `search_submit` and `search_result` are unchanged. Close with ✕ or Escape.
+
+#### E.6.0.6 Continuity banner
+
+Only on landing pages with `?asset=` attribution (behaviour unchanged). See E.5.12.
+
+#### E.6.0.7 Recently viewed drawer
+
+The E.5.11 drawer from the right at 380px, with the "Recently viewed" `label` heading, then small
+E.5.2 cards (no quick add) in 2 columns. **`recently_viewed`** is unchanged.
+
+#### E.6.0.8 Prefooter band (Eastside `logo-section`)
+
+- #000, padding 48px 0 34px, 160px tall.
+- The wordmark **SHELBY** sits centred in `display-mark` at 32px (#F7F7F7, 0.04em) in a 78px box,
+  where Eastside places its 40×78 figure.
+
+#### E.6.0.9 Footer (`footer.tsx`, Eastside `footer-sections`)
+
+**Desktop:** #000, padding 20px 0 30px, text #fff.
+- **Grid:** five columns at x = 50. Four link columns are 242px wide at a 32px gap. The fifth (the
+  tee sheet) takes the remaining width, centred text.
+- **Column heads:** `footer-head` (14.4px/700 uppercase, #fff), 17px under the band top.
+- **Links:** `footer-link` (14.4px #F7F7F7, 35px rows), hover M4.
+- **Link columns** (content unchanged):
+
+  | Column | Links |
+  |---|---|
+  | **Shop** | The Rope Cap · The Pair · The Foursome · Numbered editions |
+  | **The Card** | Now · Next · All six holes |
+  | **Help** | Shipping & returns · Fit guide · Custom orders (**`footer_custom`**) · Your bag |
+  | **Shelby** | The story · Why the Rope Cap · The quiz |
+
+- **Tee sheet column** (replaces Eastside's "GET 15% OFF" newsletter, with no offer):
+  - 12.6px #F7F7F7 line "One email when the next hole opens.";
+  - a Monomakh 24px uppercase line "Get on the tee sheet";
+  - the tee sheet form (white field, `btn-white btn-sm` "Submit") for the next hole
+    (**`notify_me`**);
+  - hidden when there is no next hole.
+- **Supporting row:** padding 30px 0. "© Shelby 2026" centred in 12.6px #fff at opacity .5,
+  followed by the policy links (Shipping & returns) in the same style.
+
+**Mobile:**
+- Padding 12px 0 18px, 16px gutter.
+- The wordmark (26px) at the top, 28px under the band top.
+- Each link column becomes a footer accordion (E.5.6): summary 12.6px/700, links 12.6px on 31px
+  rows.
+- The tee sheet column follows, open (not collapsed), then the supporting row.
+
+### E.6.1 Home `/` (`app/page.tsx`)
+
+Eastside's home order, each slot filled with Shelby's content. `page_type: "home"`.
+
+0. **Continuity banner** (E.6.0.6), **`continuity_story`**.
+
+1. **Colour strip, mobile only** (Eastside's mobile `subcategories` strip, applied to Shelby's
+   colours):
+   - #EEE9E3 band, padding 19.2px 0 9px.
+   - A horizontal scroll row of 79px-wide tiles with a 4px gap from x = 14: a 79×79 square
+     (product `-1` photo, `contain` on #F6F6F6) and an 11px-min label (Eastside 12.25px;
+     **12.25px / 15.93px** uppercase) 7px below.
+   - Tiles and tracks:
+
+     | Tile | Links to | `data-track` |
+     |---|---|---|
+     | Tour White, Navy, Pine, Fescue | `/products/rope-cap?color=…` | **`shop_by_color`** |
+     | Holes (current hole photo) | `/card` | **`home_scorecard`** |
+     | Pair (`rope-cap-pine-1`) | `/offer/the-pair` | **`home_pair`** |
+
+2. **Hero** (Eastside `hero` with `backdrop--radial`):
+   - Full-bleed photo `rope-lifestyle-hero.jpg` (desktop, `object-position: center 40%`) and
+     `rope-lifestyle-hero-mobile.jpg` (mobile), cover.
+   - **75vh** (675px at 900) desktop; **650px** mobile.
+   - **Copy block:** bottom-right, 260px / 220px wide, right-aligned, 50px / 16px from the right
+     and bottom edges, on the radial backdrop (overlay #000 at .2):
+     - title `display-hero` #fff "The Rope Cap";
+     - 8px gap, then the line "A mid crown that sits right the first time." (14.4 / 12.6px #fff);
+     - 24px gap, then `btn btn-outline-white` "Shop the Rope Cap" → `/products/rope-cap`,
+       **`hero_shop_core`**.
+   - **Below the button**, a second line in 12.6px #fff with an underline: "The Pair is $88" →
+     `/offer/the-pair`, **`hero_shop_pair`**. This keeps today's pair link. Eastside's hero has one
+     CTA, and the line is quieter than a second button.
+   - `<h1>` is the hero title (Eastside uses an `h2`; Shelby keeps one H1 per page).
+   - The image is `priority`.
+
+3. **The Rope Cap tabs rail** (Eastside `collections-tabs`, "NEW ARRIVALS"):
+   - **Desktop:** a left column 300px wide (from x = 50: the 260px title block plus 40px), with the
+     cards from x = 350 in a `.rail`. The left column is vertically centred on the cards.
+     - Title `display-lg` "The Rope Cap".
+     - 11px under it, the tabs (E.5.5) stacked at a 12px gap: **Core colors** (default),
+       **Numbered holes** and **Kits**.
+   - **Mobile:** title (22px) and a horizontal tab row at x = 12, the rail 24px below, cards 164px.
+   - **Panels:**
+     - **Core colors:** four E.5.2 cards, "Tour White Rope Cap" etc., $48.00, the four-swatch row
+       with the card's colour selected. Each links `/products/rope-cap?color=…` with
+       **`core_product`**. Quick add adds that colour (**`quick_add`**).
+     - **Numbered holes:** the six holes as hole cards (E.5.12) with **`card_hole`**. The live
+       hole's card links its product with **`hero_shop_drop`**, and its badge reads "No. 02 · Out
+       now". The next hole's meta line shows the countdown to its real `release_at`. The tee sheet
+       for it is in the footer and on `/card`.
+     - **Kits:** The Pair ($88, "$44 a cap", image `rope-cap-clubhouse-navy-1` + hover
+       `rope-cap-pine-1`) with **`home_pair`**, and The Foursome ($152, "$38 a cap") with
+       **`home_foursome`**, both to `/offer/the-pair` (`#foursome` for the Foursome).
+   - Arrows per E.5.7.
+   - The home buy card (`BuyCard` on home: colour picker, add to bag, `add_to_cart`,
+     `color_pill`, `fit_guide`) is removed from home. Its tracks still fire on the PDP. Home's
+     purchase path is the quick add plus the PDP, as on Eastside.
+
+4. **Shop by color** (Eastside `featured-collections`, "SHOP BY CATEGORY"):
+   - #F6F6F6 band, padding 40px 0.
+   - Title `display-md` "Shop by color" at x = 80 / 12, 25px above the tiles.
+   - A rail of 5:7 tiles, **389×545** / **179×251**, 4px gap; 3.5 tiles visible on desktop, 2.1
+     on mobile.
+   - Each tile is the colour's product shot (`contain` on #F6F6F6, E.7.1) with an 11px+ label
+     under the image (12.6px uppercase 0.025em #212121, 27px row, *est.*).
+   - **Tiles:**
+
+     | Tile | Links to | `data-track` |
+     |---|---|---|
+     | Tour White, Clubhouse Navy, Pine, Fescue | `/products/rope-cap?color=…` | **`shop_by_color`** |
+     | The Card (`rope-brim.jpg`, cover) | `/card` | **`home_scorecard`** |
+
+   - Hover: the label colour per M4. The image does not zoom (Eastside's does not).
+
+5. **The Card rail** (Eastside `collection-products-section`, "SWINGMAN"):
+   - Title `display-md` "The Card" at x = 52 / 12, 48px above.
+   - On its right baseline, `link` "See all six holes" → `/card` (**`home_scorecard`**).
+   - **Content:** the numbered editions that exist as products (Holes 2–4) as E.5.2 cards at 349px
+     (the editions and their holes, **`card_hole`**; the live one **`hero_shop_drop`**). Quick add
+     works on live editions only. Upcoming ones show "Join the tee sheet" (**`notify_me`**).
+   - If no edition products exist yet, the section shows the hole cards instead.
+
+6. **Crown story, editorial split** (Eastside `editorial-collection`, the Bridgestone split):
+   - A 1440×720 / 390×780 band.
+   - **Left half:** #F6F6F6, centred column 640 / 342px wide:
+     - no partner logo (E.1.2);
+     - heading `display-xl` "Sits right the first time.";
+     - 12px gap, then `body-editorial` text, max 337px: "Most rope caps run tall in the crown. Ours
+       stops at about 11–11.5 cm, so it sits on your head, not on top of it.";
+     - 20px gap, then `btn btn-black btn-sm` "See the crown test" → `/stories/<series[0]>`
+       (**`series_story`**);
+     - 12px under that, a `link` "Six reasons" → `/reasons/rope-cap` (**`home_reasons`**).
+   - **Right half:** a 720×720 square photo `story-crush.jpg` (cover) linking the story
+     (**`home_story`**, `aria-label` = story title).
+   - **Mobile:** the image first (390×390), then the text block, 24px padding.
+   - Hidden when there is no story.
+
+7. **Eastside's UGC grid:** omitted (E.1.2).
+
+8. **Quiz splash** (Eastside `splash-hero`, "ESG JOURNAL"):
+   - Full-bleed photo `rope-clubhouse.jpg`, cover, **635px / 403px**, with `overlay-bottom` plus a
+     centred radial backdrop.
+   - Centred copy:
+     - `display-splash` #fff "Find your color";
+     - 12px gap, then `body-splash` #fff "Four quick questions. One color, or a Pair." (max 418px);
+     - 20px gap, then `btn btn-white btn-sm` "Take the Quiz" → `/quiz` (**`home_quiz`**).
+
+9. **Prefooter band** (E.6.0.8) and **footer** (E.6.0.9).
+
+**Removed from home** (still elsewhere):
+- the side panel's crown profiles (→ PDP "Fit" accordion and fit guide);
+- the box sleeves (→ Kits tab);
+- the back-panel close (→ splash).
+
+### E.6.2 Collection `/shop` (Eastside collection: `/collections/mens-hats`)
+
+`page_type: "collection"`. `collection_viewed` is unchanged.
+
+1. **Header:**
+   - Breadcrumb (collection style) "Home / Shop", centred, 16px under the header.
+   - H1 `title-page` "Shop" centred, 13px below.
+2. **Filter bar:** full width, 62px / 56px tall, 1px #F0F0F0 rules top and bottom.
+   - **Left:** the toggle "Hide filters" / "Show filters" (14.4px uppercase, padding 23px 50px /
+     16px) with a Phosphor `Sliders` 14px icon (M19 chevron on desktop).
+   - **Right:** "Sort by" (14.4px uppercase) with a `CaretDown`.
+   - Sort options: Featured (default), Price low–high, Price high–low, Release date. They sort
+     the in-memory list. No new URL parameters beyond today's `group`.
+3. **Sidebar** (desktop, 206px wide at x = 50, open by default; on mobile a left drawer 347px,
+   M12):
+   - **Group:** All, Core, Numbered, Kits. These are today's group tabs (`?group=all|core|limited|
+     bundles`) as single-choice checkbox rows, **`color_pill`**. Group head `filter-head` with a
+     `Minus`/`Plus` collapse, options `filter-opt` 12px with 16px checkboxes.
+   - **Color:** the seven colourways as checkbox rows with a 12px swatch before each label. They
+     filter client-side within the group (no tracking change).
+4. **Grid:** 4 columns of 260px cards at a 10px gap from x = 320 (sidebar open) or centred
+   (closed); 2 columns on mobile with 10px gutters.
+   - Order: the core colours as four cards ("Pine Rope Cap" …), then the numbered editions, then
+     the holes without products as hole cards (**`card_hole`**), then the Pair and the Foursome
+     cards (**`home_pair`**/**`home_foursome`** with `page_type: collection`, as today).
+   - Live stock badges per E.5.2.
+5. **Collection FAQ** (Eastside's SEO block, applied with real answers only):
+   - H2 `title-faq` "Frequently asked questions" at x = 162 / 17 (centred column, max 1116px);
+   - four accordion rows with `faq-q` summaries: "How does the Rope Cap fit?" (one size, 21.5–23.75
+     in), "What is a numbered hole?", "How much is shipping?" (`POLICY.shipping`), "Can I return
+     it?" (`POLICY.returns`).
+   - The answers come from `POLICY` and G.1 facts.
+
+### E.6.3 Product page `/products/[handle]` (Eastside PDP, the rope hat)
+
+`page_type: "pdp"`. Behaviour, redirects (kits → offer, unreleased editions → `/card/[handle]`)
+and tracks are unchanged.
+
+**Desktop layout:** two columns under the header.
+- **Media column** at x = 50, 670px:
+  - a thumbs column (85px, padding-left 10px): 75×75 #F6F6F6 thumbs at an 8px gap; the active one
+    has a 1px #212121 outline;
+  - the main image at x = 155, **565×848 (2:3)** on #F6F6F6, `contain`, with the badge at top-left;
+  - the next angles stack below as more 565px-wide images (Eastside's stacked gallery), or a
+    slider when there are more than four.
+- **Buy column** at x = 770, 620px (content 550px at x = 805), `position: sticky; top: 70px`.
+
+**Mobile:**
+- Breadcrumb, title, shipping line and price first, at x = 16.
+- Then the gallery as a swipe slider (390×468, 5:6 crop of the 2:3 frame, dots under it as 6px
+  circles #212121 / #BDBDBD).
+- Then the buy block.
+
+**Buy block:**
+1. **Breadcrumb** (PDP style): "Home • The Rope Cap" (editions: "Home • The Card • Hole 02").
+2. **H1** `title-product` "The Rope Cap" (editions: the edition title). Gap 8px.
+3. **Shipping line:** 14.4 / 12.6px "Free shipping on $85+" (Eastside's line, Shelby's real
+   threshold).
+4. **Price:** `price` (18px #207212) "$48.00" / "$52.00". Gap 16px. No stars.
+5. **Edition meta** (editions only):
+   - `badge` "No. 02" on the image;
+   - here, `eyebrow-sm` "Hole 02 · Azalea";
+   - the meta line (E.5.12) with live stock;
+   - **`pdp_edition_link`** to `/card/[handle]`.
+6. **Colour picker** (E.5.4), **`color_pill`**.
+7. **Add to bag:** `btn btn-green btn-atc` "Add To Bag" (52px full width), **`add_to_cart`**.
+   - Sold out: disabled "Sold out", with the tee sheet form below for the next hole.
+   - Under the button, 12px gap, a `link` line "The Pair is $88 — any two colors" → offer
+     (`pdp_offer`; Foursome `pdp_foursome`). This replaces Eastside's Shop Pay slot.
+8. **Policy lines:** `meta`, one per line: "Ships in 1–2 business days" · "30-day returns" ·
+   "One size, fits 21.5–23.75 in (55–60 cm)".
+9. **Description** (Eastside's paragraph and bold bullets):
+   - one paragraph (14.4px/19.73);
+   - then a bulleted list in 14.4px **700** with 23px rows: "Mid crown, about 11–11.5 cm" ·
+     "Five panels, garment-washed cotton" · "Braided rope above the brim" · "Adjustable strap, one
+     size".
+10. **Accordions** (E.5.6), each with a 1px rule:
+    - **Fit:** the crown profiles (E.5.12) on #F6F6F6, "About 11–11.5 cm from button to brim",
+      and a `link` "Fit guide" (**`fit_guide`**);
+    - **Details:** the spec rows as a two-column table (14.4px, 1px #F0F0F0 rules);
+    - **Shipping:** `POLICY.shipping`;
+    - **Returns:** `POLICY.returns` with the help link.
+11. **"Not sure?"** `link` "Take the quiz" (**`pdp_quiz`**).
+
+**Below the fold:**
+- **"You may also like"** (Eastside Rebuy recs):
+  - `heading-recs` at x = 12 / 12, 40px above;
+  - a rail of 4:5 cards 278 / 164px wide (`RangeRow` content: the other colours, the editions,
+    the Pair), **`pdp_also_like`**;
+  - card titles 14px/500, prices 14px #212121.
+- **Story teaser** (Eastside "Have You Heard Our Story?" blog block, one card):
+  - H2 `title-blog` "Have you seen the crown test?";
+  - a 2-column split (image 4:3 left, text right) with `title-card`, stance text and
+    `btn btn-outline` "Read the Story" (**`series_story`**).
+- **Recently viewed** rail (**`recently_viewed`**), when there is history.
+
+**Sticky buy bar** (Eastside `sticky-add-to-cart`, **`sticky_add_to_cart`**). It appears once the
+main add button leaves the viewport (M18) and hides when the footer enters.
+- **Desktop:** fixed at the bottom, 78px, white, padding 16px, a 1px #F0F0F0 top rule. The title
+  (14.4px) sits on the left. On the right: a colour `select` (the `.field` style, 44px) and a
+  `btn btn-green` "Add To Bag" (44px).
+- **Mobile:** fixed at the bottom, #FCFCFC, padding 8px 14px plus the safe area.
+  - A "Change Color ˄" toggle row (14.4px, 40px) opens the swatch row inline above the button.
+  - Below it, `btn btn-green btn-sticky` "Add To Bag", full width, 47px.
+
+### E.6.4 Cart drawer and `/cart`
+
+**Cart flyout** (Eastside's Rebuy flyout, 650px, E.5.11; content from `BagContents mode="drawer"`,
+behaviour unchanged).
+
+**Desktop:** two columns.
+- **Left, 220px "Complete the look"** (Eastside's upsell column):
+  - padding 10px;
+  - `title-drawer` "Complete the look" (Montserrat 16px/700) centred;
+  - stacked mini cards: a 200×240 #F6F6F6 tile, 14.4px title, 14px #212121 price;
+  - `btn btn-kit` "Add" (38px), **`cart_complete_look`**.
+  - The items are today's suggestions: the other core colours, the Pair. Hidden when there are no
+    suggestions; the cart column then takes the full width.
+- **Right column** (395px content, padding 16px):
+  - **Head:** "Bag (1)" in `label` at 14.4px, with the close ✕ on the right; 64px.
+  - **Free-shipping progress** (E.5.10).
+  - **Lines:** 1px #F0F0F0 between lines, 16px padding.
+    - A 92×110 #F6F6F6 tile.
+    - Title 14.4px/500 (#212121), colour and size in 12.6px #646464, price 14.4px tabular.
+    - Quantity stepper and "Remove" (`micro`).
+    - Kits show their caps' colours as a meta line.
+    - Lines enter and leave per M13.
+  - **Foot:** pinned to the bottom, 1px #F0F0F0 top rule, padding 16px.
+    - "Subtotal" (`label`) with the amount at 21.6px/500 right-aligned.
+    - The shipping/policy line in `meta` (`DRAWER_POLICY`).
+    - `btn btn-black btn-checkout` "Checkout" (**`cart_checkout`**).
+    - 8px below, `btn btn-outline btn-block` "View bag" → `/cart`.
+    - The `note` "Taxes calculated at checkout." centred under it.
+
+**Mobile:** 100% width, one column. Complete the look moves under the lines as a horizontal rail
+of 140px mini cards.
+
+**Empty:**
+- centred "Your bag is empty." (14.4px);
+- `btn btn-charcoal` "Shop the Rope Cap" (**`cart_empty_shop`**);
+- the four colour mini cards under it.
+
+**`/cart`** (`page_type: "cart"`):
+- H1 `title-page` "Your bag" centred under a collection-style breadcrumb.
+- **Desktop:** two columns: the lines (as in the drawer, with 120×144 tiles) at 66%, and an order
+  summary box at 34% (#F6F6F6, padding 24px, sticky top 94px). The summary holds the subtotal,
+  shipping estimate, progress bar, `btn-checkout`, the `note` and the policy lines.
+- Complete the look follows as a rail of E.5.2 cards (**`cart_complete_look`**).
+- **Mobile:** stacked.
+
+### E.6.5 Checkout `/checkout`, `/checkout/complete` and order `/order/[id]`
+
+Eastside's checkout is Shopify-hosted (not captured). Shelby restyles its own Stripe checkout in
+the Eastside tokens. Behaviour is unchanged.
+
+- **Header:** the site header stays. Below it, a breadcrumb row "Bag • Details • Payment"
+  (12.6px; the current step #212121, the others #646464).
+- **Layout:**
+  - Desktop: form 58%, summary 42% on #F6F6F6 (padding 32px, sticky).
+  - Mobile: a collapsible summary bar on #F6F6F6 ("Show order summary · $96.00" with a
+    `CaretDown`), then the form.
+- **Sections:**
+  - "Contact", "Delivery" and "Payment", each with an `title-card` heading (Montserrat 19.2px/500)
+    and the E.5.9 fields in a 12px grid gap.
+  - Shipping options are radio cards: 1px #F0F0F0, 3px radius, padding 14px. When selected:
+    1px #212121 and a `--color-green-fade` wash.
+  - The prices come from the backend: Free / $6 / $15.
+- **Stripe Payment Element** appearance:
+  - `theme: "stripe"`;
+  - `variables`: `colorPrimary: "#207212"`, `colorText: "#212121"`, `colorTextSecondary:
+    "#646464"`, `colorDanger: "#721C24"`, `borderRadius: "3px"`, `fontFamily: "Roboto, sans-serif"`,
+    `fontSizeBase: "16px"`, `spacingUnit: "4px"`;
+  - `rules`: `.Input { border: 1px solid #8C8C8C; boxShadow: none }`, `.Input:focus { border: 1px
+    solid #212121; boxShadow: 0 0 0 2px #207212 }`, `.Label { fontSize: 12.6px; fontWeight: 500 }`.
+- **Buttons:**
+  - "Continue to payment" is `btn btn-charcoal btn-block` (**`checkout_details`**).
+  - "Place order" is `btn btn-green btn-atc` (**`place_order`**).
+  - Errors use `.field-error`.
+- **`/checkout/complete`:** the redirect handler (unchanged). A centred `CircleNotch` and
+  "Confirming your order…" (14.4px).
+- **Order `/order/[id]`** (`page_type: "order"`):
+  - a centred column of 680px;
+  - a Phosphor `CheckCircle` 40px #207212;
+  - `title-page` "Thank you";
+  - 14.4px "Order #1042 is confirmed. We've emailed a receipt.";
+  - the line items as in `/cart` (no stepper);
+  - the totals table;
+  - for numbered editions, the G.6.9 line in `meta` ("Your cap's number is printed inside");
+  - `btn btn-outline` "Keep Shopping" → `/` (**`checkout_complete`**).
+
+### E.6.6 Fit guide `/fit-guide` (`page_type: "fit_guide"`)
+
+1. Collection-style header: breadcrumb, H1 `title-page` "Fit guide".
+2. **Editorial split** (E.6.1 §6 pattern):
+   - Left, #F6F6F6: the crown profiles drawn to scale (E.5.12).
+   - Right, white, padding 48px:
+     - `eyebrow` "The mid crown";
+     - `title-section` "About 11–11.5 cm";
+     - `body-long` copy;
+     - `btn btn-green` "Shop the Rope Cap" (**`fit_guide_shop`**).
+3. **Size table:** a centred max-680px table. Head row `label` on #F6F6F6; rows 14.4px with 1px
+   #F0F0F0 rules, columns "Head circumference", "Inches", "Centimetres". "One size fits 21.5–23.75
+   in (55–60 cm)" bolded above it.
+4. **How to measure:** three numbered steps, each a row with a Monomakh 38px number (#207212) and
+   14.4px text.
+5. **FAQ:** collection-FAQ pattern (E.6.2 §5).
+6. A `link` "Still unsure? Take the quiz" (**`fit_guide_quiz`**).
+
+### E.6.7 The Card `/card` and `/card/[handle]` (`page_type: "drops"`)
+
+**`/card`:**
+1. Collection-style header: breadcrumb, H1 `title-page` "The Card", then a 14.4px intro line
+   centred (max 560px): "Six numbered colors on the 2027 calendar. 200 of each, never remade."
+2. **Next hole, editorial split:**
+   - Left #F6F6F6 text half, centred:
+     - `eyebrow-sm` "Next · Hole 03";
+     - `display-xl` "Cypress";
+     - `meta` "Opens 1 Jun 2027, 10:00 AM Pacific";
+     - the large countdown (E.5.12; only with a real `release_at`, else "Announced");
+     - the tee sheet form (**`notify_me`**).
+   - Right half: the edition photo (`contain` on #F6F6F6) or, without one, the Monomakh "03"
+     tile.
+3. **All six holes:** Eastside's blog grid.
+   - 3 columns of 425px at a 32px gap (x = 50); 1 column on mobile.
+   - Each a hole card (E.5.12) with a 4:3 tile, `title-card` and meta line, plus a `link` "See
+     hole" / "Shop" / "Join the tee sheet" by phase (**`card_hole`**).
+4. Story teaser, as on the PDP.
+
+**`/card/[handle]`:**
+1. PDP-style breadcrumb "Home • The Card • Hole 03".
+2. **Hero, editorial split:**
+   - The image half is the edition's photo, and its link carries **`drop_hero`** (unchanged).
+   - The text half holds:
+     - `eyebrow-sm` "Hole 03";
+     - `display-xl` name;
+     - `meta` date and edition size;
+     - for upcoming holes, the large countdown and the tee sheet form;
+     - for live holes, `btn btn-green` "Shop Hole 03" to the product and live stock;
+     - for sold-out holes, "Sold out" as a `badge-dark` and the next hole's link.
+3. **Details accordions:** "The color" (rope and crown names), "The release" (time, edition of 200,
+   numbered inside if true), "Shipping".
+4. **The other holes** as a rail of hole cards (**`card_hole`**).
+
+### E.6.8 Custom orders `/custom` (`page_type: "custom"`)
+
+1. **Hero:** the editorial split.
+   - Text half on #F6F6F6:
+     - `eyebrow` "Custom orders";
+     - `display-xl` "Your crest, our cap.";
+     - `body-editorial` "From 24 caps, $40 each. Clubs, outings, leagues and teams.";
+     - `btn btn-black btn-sm` "Get a Quote" (scrolls to the form).
+   - Image half: `rope-clubhouse.jpg`.
+2. **Terms** as three columns of facts (Eastside about-page "founder" blocks):
+   - `eyebrow-sm` labels "Minimum", "Price" and "Lead time";
+   - `title-section` values "24 caps", "$40 each" and the existing lead-time copy.
+3. **Three steps**, each a Monomakh 38px #207212 number with a `title-card` heading and 14.4px
+   text.
+4. **Quote form** (`QuoteForm`): max 680px centred, the E.5.9 fields in a 2-column grid ≥750px,
+   with `btn btn-charcoal` "Send Request" (**`custom_submit`**). Success replaces the form with a
+   `CheckCircle` and "Thanks — we'll reply within two business days." (the existing copy). The
+   `custom_viewed` and `custom_quote_form_sent` events are unchanged.
+
+### E.6.9 Story `/stories/[handle]` (`page_type: "story"`; Eastside about page)
+
+1. **Hero:** full-bleed photo (`story-crush.jpg`), 75vh / 520px, with `overlay-bottom`.
+   - **Title:** `title-feature` #F7F7F7 (63.6px / 48px Montserrat 500) in the right half on
+     desktop (x = 827 at 1440, max 563px, vertically centred, as Eastside's "Breaking Barriers") and
+     at the bottom on mobile (16px inset).
+   - The headline is the **`story-headline` experiment** variant, exactly as today (exposure
+     unchanged).
+2. **Stance:** a centred 680px column, `body-long`, with an `eyebrow` above ("The crown test").
+3. **Chapters:** Eastside's founder blocks.
+   - Desktop: two-column splits (image 459px, text) alternating sides, 80px apart.
+   - Each chapter has an `eyebrow-sm` label (green), a `title-section` heading and `body-long`
+     text.
+   - Episode links carry **`story_episode`**.
+4. **Proof block:** the existing proof, styled as a #F6F6F6 band with the crown profiles, and a
+   `link` "See the measurements" (**`story_see_proof`**).
+5. **CTAs:**
+   - `btn btn-green` "Shop the Rope Cap" (**`story_shop`**);
+   - `link` "Fit guide" (**`story_fit_guide`**);
+   - a closing editorial split with `btn btn-black btn-sm` (**`story_close_cta`**).
+
+### E.6.10 Offer `/offer/[handle]` (`page_type: "offer"`; PDP pattern)
+
+1. **PDP layout** (E.6.3):
+   - **Media:** a 2×2 grid of 5:6 #F6F6F6 tiles showing the picked colours; 2 tiles for the Pair.
+     They update as colours are picked (M11 fade).
+   - **Buy column:**
+     - PDP breadcrumb;
+     - H1 `title-product`, the **`offer-headline` experiment** variant (exposure unchanged);
+     - the shipping line ("Free shipping on $85+"; the Pair is $88, so it ships free);
+     - `price` "$88.00" with `meta` "$44 a cap";
+     - the `PairPicker` with two rows "Cap 1" and "Cap 2" of E.5.4 swatches;
+     - `btn btn-green btn-atc` "Add The Pair To Bag" (**`offer_add`**);
+     - policy lines.
+2. **The Foursome** (`#foursome`): the same layout in a #F6F6F6 band:
+   - four picker rows, "$152.00", `meta` "$38 a cap";
+   - `btn btn-green btn-atc` (**`offer_foursome_add`**).
+3. **Story link:** `link` "Why one cap" (**`offer_story`**).
+4. **Closing band:** the splash pattern (E.6.1 §8), with `btn btn-white btn-sm` "Pick Your Two" →
+   `#top` (**`offer_close_cta`**).
+5. **Sticky buy bar:** E.6.3's, carrying **`offer_sticky_add`**.
+
+### E.6.11 Listicle `/reasons/rope-cap` (`page_type: "listicle"`; Eastside legacy and about blocks)
+
+1. Collection-style header: breadcrumb, H1 `title-page` "Six reasons", and a 14.4px dek.
+2. **Six reasons:** alternating editorial splits.
+   - Image 50% on #F6F6F6 (product angles, `rope-brim.jpg`, `rope-clubhouse.jpg`).
+   - Text 50%, padding 48px:
+     - `eyebrow` "Reason 01";
+     - `title-section` reason title;
+     - `body-long` text.
+   - Mobile stacks image then text.
+3. **CTAs:**
+   - After reason 3, a centred `btn btn-green` "Shop the Rope Cap" (**`listicle_mid_cta`**).
+   - After reason 6, the same, carrying **`listicle_end_cta`**.
+   - Below that, a `link` "Or get The Pair for $88" (**`listicle_offer`**).
+
+### E.6.12 Advertorial `/read/the-rope-cap` (`page_type: "advertorial"`)
+
+Eastside's article template was not captured. It is built from the about page's typography.
+
+1. **Hero:** `title-feature` headline in #212121 on white, centred, max 900px.
+   - Above it, `eyebrow-sm` "Shelby Journal". This is a section label, not a press claim.
+   - Below it, the byline and date in `meta`.
+2. **Body:**
+   - a 680px column in `body-long`;
+   - H2s in `title-blog`;
+   - images full column width, 4:3, #F6F6F6;
+   - pull quotes in Monomakh 32px with a 2px #207212 rule on the left.
+3. **CTAs:**
+   - Inline CTAs (`kind: "cta"`) are `btn btn-green` (**`advertorial_inline`**).
+   - The offer pack is a #F6F6F6 box with two kit cards (**`advertorial_offer_pack`**).
+   - The story link is a `link` (**`advertorial_story`**).
+
+### E.6.13 Quiz `/quiz` and `/quiz/result`
+
+**`/quiz`** (`page_type: "quiz"`):
+- Collection-style header with H1 `title-page` "Find your color".
+- **Start state:** a centred 560px column with a 14.4px intro and `btn btn-green` "Start the Quiz"
+  (**`quiz_start`**).
+- **Questions:**
+  - a progress `.progress` bar (max 560px) with `meta` "2 of 4";
+  - the question in `display-md` (32 / 22px, not uppercased: `normal-case`) centred;
+  - the answers as full-width `tab` buttons (48px min, 16px text, `aria-pressed`), 12px apart,
+    selected = #141414 (**`quiz_answer`**);
+  - a "Back" `link` (**`quiz_back`**);
+  - a `link` "Read the fit guide" (**`quiz_fit_guide`**).
+- `quiz_started` and `quiz_answered` are unchanged.
+
+**`/quiz/result`** (`page_type: "quiz_result"`; `quiz_completed` unchanged):
+- PDP layout with the recommended colour's tile (2:3 #F6F6F6).
+- **Buy column:**
+  - `eyebrow-sm` "Your color";
+  - `title-product` "Pine Rope Cap";
+  - the reason (14.4px);
+  - `price`;
+  - `btn btn-green btn-atc` "Shop Pine" (**`quiz_core`**).
+- If an edition is recommended, a second card with `btn btn-outline` (**`quiz_edition`**), and
+  the tee sheet when it is upcoming (**`notify_me`**).
+- `link` "Retake the quiz" (**`quiz_retake`**).
+
+### E.6.14 Help `/help/shipping-returns`
+
+Collection-style header ("Shipping & returns"). The policy lines (`POLICY`) as accordion sections
+(Shipping, Returns, Custom orders), in a 680px column.
+
+### E.6.15 404 (`not-found.tsx`)
+
+- Centred 560px column, 96px from the header.
+- `display-xl` "Out of bounds." (69 / 28px). Mixed case; a plain phrase, not a pun on the game.
+- 14.4px "That page isn't here."
+- `btn btn-green` "Shop the Rope Cap" and `btn btn-outline` "Go Home", 12px apart.
+- The four colour cards as a rail beneath.
+
+## E.7 Assets
+
+### E.7.1 Product photos (`web/public/hats/`)
+
+- **The existing Rope Cap photos stay.** They are square, on white: tour-white 1–6;
+  clubhouse-navy, pine, fescue and azalea 1–3; cypress and haar 1 only.
+- **Eastside's look needs product shots on #F6F6F6** at 5:6 (cards) and 2:3 (PDP). The build
+  makes tile versions, in this order:
+  1. **Preferred:** generate `rope-cap-<colour>-<n>-tile.jpg`, 1365×1638 (5:6), with the cap
+     centred and the background flat #F6F6F6.
+     - Use the same image model and prompt rules as `README.md` (no marks), and the existing shot
+       as the reference.
+     - Check each result: the cap's crown and rope colours must match the reference by eye, and
+       Tour White's crown must stay distinct from the tile (a soft contact shadow is allowed).
+     - Record provenance in `README.md`.
+  2. **Fallback**, if a colour's tile version is missing: the original square shot with
+     `object-fit: contain` on a **#FFFFFF** tile for that card only. Never use `mix-blend-mode:
+     multiply`; it erases the white crown.
+- The PDP's 2:3 frame shows the 5:6 tile `contain`ed on #F6F6F6, so the top and bottom extend in
+  the same grey.
+
+### E.7.2 Lifestyle
+
+| Slot | Photo |
+|---|---|
+| Home hero | `rope-lifestyle-hero.jpg` (16:9) / `rope-lifestyle-hero-mobile.jpg` (4:5) |
+| Crown story and story hero | `story-crush.jpg` |
+| Quiz splash and custom hero | `rope-clubhouse.jpg` |
+| Shop-by-color "The Card" tile | `rope-brim.jpg` |
+
+No other imagery. Nothing from Eastside.
+
+### E.7.3 Icons
+
+Phosphor (`@phosphor-icons/react`), regular weight, #212121 (#F7F7F7 on black). The set:
+- `List`, `X`, `MagnifyingGlass`, `Eye`, `Handbag`;
+- `CaretLeft`, `CaretRight`, `CaretDown`, `ArrowRight`;
+- `Plus`, `Minus`, `Sliders`;
+- `CheckCircle`, `CircleNotch`, `Pause`, `Play`.
+
+Sizes: 22px in the header, 24px in drawer heads, 16–18px inline.
+
+### E.7.4 Wordmark and favicon
+
+- **Wordmark:** the text "SHELBY" in Monomakh. No image file.
+- **Favicon:** a 32×32 and a 180×180 black square with a white Monomakh "S" (regenerate
+  `app/icon.png` and `app/apple-icon.png`).
+
+### E.7.5 Missing image
+
+A #F6F6F6 tile with "SHELBY" in Monomakh 18px #646464 centred.
+
+## E.8 Third-party integrations
+
+Unchanged:
+- Medusa v2 (catalog, cart, releases, custom quotes);
+- Stripe Payment Element (appearance per E.6.5);
+- first-party analytics (`/api/e`);
+- Railway.
+
+**Not added:** any of Eastside's apps (Rebuy, Judge.me, Klaviyo popup, Loop, Shop Pay, the
+accessibility overlay).
+
+## E.9 Build notes
+
+1. **Fonts and tokens:** replace `globals.css` (E.3) and the font block in `layout.tsx` (E.4).
+   Delete the Sofia imports.
+2. **Chrome:** announcement bar, header with mega menu and mobile menu, search popdown, prefooter
+   band, footer.
+3. **Shared components:** button classes, product card, badge, swatch, tabs, accordion, rail,
+   breadcrumb, fields, progress, drawers, countdown, tee sheet form, hole card, crown profiles.
+4. **Pages, in this order:** home, PDP, shop, cart drawer and `/cart`, checkout and order,
+   offer, The Card, fit guide, custom, story, listicle, advertorial, quiz and result, help, 404.
+5. **Remove the Ball Box components** once nothing imports them: `components/box/*` except the
+   crown profiles, `digits.tsx`, `rope-rule.tsx` and `rope-buy-block.tsx` if unused. Run a type
+   check after each removal.
+6. **Tile photos** (E.7.1): generate them, or use the fallback.
+7. **Keep untouched:** `src/lib/**` (data, analytics, attribution, experiments, policy, holes,
+   rope), `src/app/api/**`, `next.config.ts` redirects, every server action and event.
+8. **Verify:**
+   - `npm run build` and `npm run lint` pass.
+   - **Tracking:** for every page, list the emitted `data-track` values and diff them against
+     today's list (the names in G.6.0 and Appendix A plus the ones this file repeats). Nothing may
+     be missing.
+   - **Experiments:** `story-headline` and `offer-headline` still record exposures.
+   - **Playwright** at 1440×900 and 390×844 on home, PDP (colour switch, sticky bar), shop
+     (filters), cart flyout, checkout, offer, The Card, quiz, story and 404, plus the same set
+     with `reducedMotion: "reduce"`.
+   - **The 11px floor:** every text node's computed `font-size` is ≥ 11px.
+   - **Hero and splash contrast:** sample the image under the copy box, then compute the contrast
+     against #FFF over the radial backdrop. If it is below 3:1 for the title or 4.5:1 for the
+     body line, raise `--overlay-opacity` for that section in steps of .1 until it passes, max .5.
+   - **Focus order and visible focus:** check them on the header, mega menu, drawers, tabs and
+     forms.
+   - **Hover motion:** compare the button sweep and card swap against the M-table (timing by
+     sampling at 0, 250 and 500ms).
+
+## E.10 Open items (v8)
+
+- **Social accounts:** the footer's "Follow us" stays out until real handles exist.
+- **Tile photos:** the generated #F6F6F6 tiles need a human look before launch (colour fidelity).
+- **The hero is a still** where Eastside runs video. A short loop could replace it later. It must
+  be muted, with no autoplay under reduced motion and a pause control.
+- **The prices, the $85 threshold and the brand name** stay pending exactly as G.11 says.
+
+---
+
+# Functional contract (v6, kept verbatim)
+
+Everything below is the v6 specification, unchanged. **Its functions stay binding:**
+- catalog, data, routes and redirects;
+- `data-track` names, `page_type` values and events;
+- experiments, attribution, continuity, evidence and voice rules;
+- copy facts.
+
+**Its visual values are superseded by Part E:** colours, fonts, sizes, spacing, radius, motion,
+the Allbirds and golf-layer look, and the box components. Where a section below describes a look,
+read it only for what the section contains and does.
 
 # Part G: v6, the golf layer and the single Rope Cap (overrides v5 where they conflict)
 
