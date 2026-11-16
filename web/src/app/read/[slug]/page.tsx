@@ -54,9 +54,8 @@ async function AdvertorialContent({ params }: { params: PageProps<"/read/[slug]"
       <Suspense fallback={null}>
         <ContinuityBanner />
       </Suspense>
-      <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-3 pt-4 md:gap-6 md:px-6 md:pt-8">
+      <div className="box mt-4 md:mt-8">
         <article className="panel">
-          <span className="panel-inner" aria-hidden />
           <div className="relative mx-auto flex max-w-[70ch] flex-col px-[var(--panel-pad)] py-10 md:py-16">
             <p>
               <span className="badge">Advertisement · From Shelby</span>
@@ -107,8 +106,8 @@ async function AdvertorialContent({ params }: { params: PageProps<"/read/[slug]"
             </div>
           </div>
         </article>
-        <section aria-label="The offer" className="mx-auto w-full max-w-[640px]">
-          <RopeBuyBlock showBundles={false} source="advertorial" />
+        <section aria-label="The offer" className="box-flush">
+          <RopeBuyBlock showBundles={false} source="advertorial" withSide />
           <p className="mt-4 text-center">
             <Link href="/offer/the-pair" className="link font-semibold" data-track="advertorial_offer_pack">
               Or two for {tokens.pair_price}

@@ -15,9 +15,8 @@ export default function CustomPage() {
   return (
     <>
       <Track event="custom_viewed" props={{}} />
-      <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-3 pt-3 md:gap-6 md:px-6 md:pt-6">
+      <div className="box mt-3 md:mt-6">
         <section className="panel overflow-hidden">
-          <span className="panel-inner" aria-hidden />
           <div className="relative grid grid-cols-[minmax(0,1fr)] gap-6 p-[var(--panel-pad)] md:grid-cols-[minmax(0,6fr)_minmax(0,5fr)] md:items-center">
             <div className="flex flex-col gap-5">
               <h1 className="model">Rope caps for your club or outing</h1>
@@ -34,7 +33,6 @@ export default function CustomPage() {
         </section>
 
         <section aria-labelledby="terms-title" className="panel">
-          <span className="panel-inner" aria-hidden />
           <div className="relative grid grid-cols-[minmax(0,1fr)] gap-8 p-[var(--panel-pad)] md:grid-cols-[minmax(0,4fr)_minmax(0,7fr)]">
             <div className="flex flex-col gap-3">
               <h2 id="terms-title" className="panel-title">
@@ -86,7 +84,6 @@ export default function CustomPage() {
         </section>
 
         <section id="quote" aria-labelledby="quote-title" className="panel scroll-mt-28">
-          <span className="panel-inner" aria-hidden />
           <div className="relative mx-auto flex max-w-[760px] flex-col gap-6 p-[var(--panel-pad)]">
             <h2 id="quote-title" className="panel-title">
               Request a quote

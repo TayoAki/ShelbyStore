@@ -88,9 +88,8 @@ async function ReasonsContent({ params }: { params: PageProps<"/reasons/[handle]
       <Suspense fallback={null}>
         <ContinuityBanner />
       </Suspense>
-      <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-3 pt-3 md:gap-6 md:px-6 md:pt-6">
+      <div className="box mt-3 md:mt-6">
         <section className="panel overflow-hidden">
-          <span className="panel-inner" aria-hidden />
           <div className="relative grid grid-cols-[minmax(0,1fr)] gap-6 p-[var(--panel-pad)] md:grid-cols-2 md:items-center">
             <div className="window aspect-square">
               <Image src="/hats/rope-cap-tour-white-1.jpg" alt="The Rope Cap in Tour White" fill preload sizes="(min-width: 768px) 45vw, 92vw" className="object-contain p-[8%]" />
@@ -120,7 +119,6 @@ async function ReasonsContent({ params }: { params: PageProps<"/reasons/[handle]
         {reasons.map((r, i) => (
           <Fragment key={r.key}>
             <section id={`reason-${i + 1}`} aria-labelledby={`reason-${i + 1}-title`} className="panel scroll-mt-28">
-              <span className="panel-inner" aria-hidden />
               <div className={`relative grid gap-6 p-[var(--panel-pad)] md:grid-cols-2 md:items-center ${i % 2 ? "md:[&>*:first-child]:order-2" : ""}`}>
                 <div className="window aspect-[4/3]">
                   {r.images ? (
@@ -157,8 +155,8 @@ async function ReasonsContent({ params }: { params: PageProps<"/reasons/[handle]
           </Fragment>
         ))}
 
-        <section id="buy" aria-label="Buy" className="mx-auto w-full max-w-[640px] scroll-mt-28">
-          <RopeBuyBlock source="listicle" />
+        <section id="buy" aria-label="Buy" className="box-flush scroll-mt-28">
+          <RopeBuyBlock source="listicle" withSide />
           <p className="mt-4 text-center">
             <Link href="/offer/the-pair" className="link font-semibold" data-track="listicle_offer">
               Or two for {formatMoney(c.pair ? price(c.pair).amount : null)}

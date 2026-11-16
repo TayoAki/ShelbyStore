@@ -59,9 +59,8 @@ async function StoryContent({ params }: { params: PageProps<"/stories/[handle]">
     <>
       <Exposure experiment={HEADLINE_EXPERIMENT} variant={variant} />
       <Track event="story_viewed" props={{ series: series.handle, from_episode: fromEpisode?.asset_key }} />
-      <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-3 pt-3 md:gap-6 md:px-6 md:pt-6">
+      <div className="box mt-3 md:mt-6">
         <section className="panel overflow-hidden">
-          <span className="panel-inner" aria-hidden />
           <div className="relative grid grid-cols-[minmax(0,1fr)] gap-6 p-[var(--panel-pad)] lg:grid-cols-[minmax(0,6fr)_minmax(0,5fr)] lg:items-center">
             <div className="flex flex-col gap-5 lg:order-2">
               <h1 className={`panel-title ${headline && headline.length > 80 ? "!text-[clamp(2rem,1.5rem+2vw,3rem)]" : ""}`}>{headline}</h1>
@@ -90,7 +89,6 @@ async function StoryContent({ params }: { params: PageProps<"/stories/[handle]">
 
         {series.audience && (
           <section aria-labelledby="problem-title" className="panel">
-            <span className="panel-inner" aria-hidden />
             <div className="relative grid grid-cols-[minmax(0,1fr)] gap-6 p-[var(--panel-pad)] md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:items-center">
               <div className="window aspect-[4/3]">
                 <Image src="/hats/rope-lifestyle-hero.jpg" alt="A golfer in a Pine rope cap on a links course" fill sizes="(min-width: 768px) 40vw, 92vw" className="object-cover" />
@@ -110,7 +108,6 @@ async function StoryContent({ params }: { params: PageProps<"/stories/[handle]">
         )}
 
         <section id="stance" aria-labelledby="stance-title" className="panel ink-dark" style={{ "--panel-bg": "#1E3B2F", "--panel-ink": "#F1ECE0", "--panel-line": "#10241B" } as React.CSSProperties}>
-          <span className="panel-inner" aria-hidden />
           <div className="relative flex flex-col gap-5 p-[var(--panel-pad)] md:py-16">
             <h2 id="stance-title" className="label">
               The stance
@@ -148,15 +145,12 @@ async function StoryContent({ params }: { params: PageProps<"/stories/[handle]">
           </section>
         )}
 
-        <section id="offer" aria-label="The Rope Cap" className="scroll-mt-28">
-          <div className="mx-auto max-w-[640px]">
-            <RopeBuyBlock source="story" />
-          </div>
+        <section id="offer" aria-label="The Rope Cap" className="box-flush scroll-mt-28">
+          <RopeBuyBlock source="story" withSide />
         </section>
 
         {series.participation_prompt && (
           <section aria-labelledby="turn-title" className="panel">
-            <span className="panel-inner" aria-hidden />
             <div className="relative flex flex-col items-start gap-3 p-[var(--panel-pad)]">
               <h2 id="turn-title" className="panel-title">
                 Your turn
@@ -168,7 +162,6 @@ async function StoryContent({ params }: { params: PageProps<"/stories/[handle]">
         )}
 
         <section aria-labelledby="close-title" className="panel ink-dark" style={{ "--panel-bg": "#14213D", "--panel-ink": "#FFFFFF", "--panel-line": "#14213D" } as React.CSSProperties}>
-          <span className="panel-inner" aria-hidden />
           <div className="relative flex flex-col items-start gap-5 p-[var(--panel-pad)] md:flex-row md:items-end md:justify-between">
             <h2 id="close-title" className="model !text-[clamp(2.5rem,1.8rem+3vw,4.5rem)] max-w-[16ch]">
               {series.title}

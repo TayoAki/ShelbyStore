@@ -24,7 +24,7 @@ export const metadata: Metadata = {
  */
 export default function CardPage() {
   return (
-    <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-3 pt-6 md:gap-6 md:px-6 md:pt-10">
+    <div className="box mt-6 md:mt-10">
       <nav aria-label="Breadcrumb" className="label !text-[12px] text-ink-2">
         <Link href="/" className="hover:underline">
           Home
@@ -74,10 +74,9 @@ function NextPanel({ hole }: { hole: Hole }) {
   return (
     <section
       aria-labelledby="next-title"
-      className={`panel ${ink.light ? "" : "ink-dark"}`}
+      className={`panel ${ink.panelDark ? "ink-dark" : ""}`}
       style={{ "--panel-bg": ink.panel, "--panel-ink": ink.ink, "--panel-line": ink.edge, "--window-edge": ink.edge } as React.CSSProperties}
     >
-      <span className="panel-inner" aria-hidden />
       <div className="relative grid grid-cols-[minmax(0,1fr)] gap-8 p-[var(--panel-pad)] md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] md:items-center">
         <div className="window aspect-square">
           {hole.image && <Image src={hole.image} alt={`${hole.name}, Hole ${hole.hole}`} fill sizes="(min-width: 768px) 40vw, 92vw" className="object-contain p-[8%]" />}
@@ -101,7 +100,7 @@ function NextPanel({ hole }: { hole: Hole }) {
           {hole.date && <Countdown iso={hole.date} size="large" />}
           {hole.handle && (
             <div className="max-w-[440px]">
-              <TeeSheetForm releaseHandle={hole.handle} hole={hole.hole} name={hole.name} tone={ink.light ? "light" : "dark"} />
+              <TeeSheetForm releaseHandle={hole.handle} hole={hole.hole} name={hole.name} tone={ink.panelDark ? "dark" : "light"} />
             </div>
           )}
         </div>

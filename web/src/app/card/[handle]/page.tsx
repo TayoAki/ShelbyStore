@@ -42,7 +42,7 @@ async function HoleContent({ params }: { params: PageProps<"/card/[handle]">["pa
   return (
     <>
       <Track event="drop_viewed" props={{ release_id: release.id, handle: release.handle, phase: release.phase }} />
-      <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-3 pt-3 md:gap-6 md:px-6 md:pt-6">
+      <div className="box mt-3 md:mt-6">
         <nav aria-label="Breadcrumb" className="label !text-[12px] text-ink-2">
           <Link href="/" className="hover:underline">
             Home
@@ -54,11 +54,10 @@ async function HoleContent({ params }: { params: PageProps<"/card/[handle]">["pa
           / Hole {hole.hole}
         </nav>
         <section
-          className={`panel ${ink.light ? "" : "ink-dark"}`}
+          className={`panel ${ink.panelDark ? "ink-dark" : ""}`}
           style={{ "--panel-bg": ink.panel, "--panel-ink": ink.ink, "--panel-line": ink.edge, "--window-edge": ink.edge } as React.CSSProperties}
           data-track="drop_hero"
         >
-          <span className="panel-inner" aria-hidden />
           <div className="relative grid grid-cols-[minmax(0,1fr)] gap-8 p-[var(--panel-pad)] md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] md:items-center">
             <div className="window aspect-square">
               {hole.image && <Image src={hole.image} alt={`${hole.name}, Hole ${hole.hole}`} fill preload sizes="(min-width: 768px) 45vw, 92vw" className="object-contain p-[8%]" />}
@@ -85,7 +84,7 @@ async function HoleContent({ params }: { params: PageProps<"/card/[handle]">["pa
               {hole.status === "upcoming" && hole.date && <Countdown iso={hole.date} size="large" />}
               {hole.status === "upcoming" && (
                 <div className="max-w-[440px]">
-                  <TeeSheetForm releaseHandle={handle} hole={hole.hole} name={hole.name} tone={ink.light ? "light" : "dark"} />
+                  <TeeSheetForm releaseHandle={handle} hole={hole.hole} name={hole.name} tone={ink.panelDark ? "dark" : "light"} />
                 </div>
               )}
               {hole.status === "live" && (
@@ -99,7 +98,6 @@ async function HoleContent({ params }: { params: PageProps<"/card/[handle]">["pa
 
         {(release.story || release.proof) && (
           <article className="panel">
-            <span className="panel-inner" aria-hidden />
             <div className="relative mx-auto flex max-w-[68ch] flex-col gap-4 p-[var(--panel-pad)] md:py-12">
               {release.story && <p className="text-[1.125rem] leading-[1.7]">{release.story}</p>}
               {release.proof && (

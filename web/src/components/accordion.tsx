@@ -25,7 +25,6 @@ export function Accordion({ title, children, open = false, id }: { title: string
 export function Faq({ items, title = "Questions" }: { items: { q: string; a: ReactNode }[]; title?: string }) {
   return (
     <section aria-labelledby="faq-title" className="panel">
-      <span className="panel-inner" aria-hidden />
       <div className="relative flex flex-col gap-5 p-[var(--panel-pad)]">
         <h2 id="faq-title" className="panel-title">
           {title}

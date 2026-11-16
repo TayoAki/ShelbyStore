@@ -10,7 +10,6 @@ import { POLICY } from "@/lib/policy"
 export function BackPanelClose() {
   return (
     <section aria-labelledby="close-title" className="panel ink-dark overflow-hidden" style={{ "--panel-bg": "#14213D", "--panel-ink": "#FFFFFF", "--panel-line": "#14213D", "--window-edge": "#0B1427" } as React.CSSProperties}>
-      <span className="panel-inner" aria-hidden />
       <div className="relative grid grid-cols-[minmax(0,1fr)] gap-6 p-[var(--panel-pad)] lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-end">
         <div className="window aspect-[4/5] sm:aspect-[16/9]">
           <Image src="/hats/rope-lifestyle-hero.jpg" alt="A golfer walking a links course in a Pine rope cap" fill sizes="(min-width: 1024px) 55vw, 92vw" className="hidden object-cover sm:block" />

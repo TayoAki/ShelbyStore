@@ -59,7 +59,7 @@ async function OfferContent({ params }: { params: PageProps<"/offer/[handle]">["
       <Suspense fallback={null}>
         <ContinuityBanner />
       </Suspense>
-      <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-3 pt-3 md:gap-6 md:px-6 md:pt-6">
+      <div className="box mt-3 md:mt-6">
         <Suspense fallback={<PairPicker pair={c.pair} colors={colors} single={single} stock={null} headline={headline} />}>
           <LivePair handle={handle} headline={headline} />
         </Suspense>
@@ -69,7 +69,6 @@ async function OfferContent({ params }: { params: PageProps<"/offer/[handle]">["
           </Suspense>
         )}
         <section aria-labelledby="included-title" className="panel">
-          <span className="panel-inner" aria-hidden />
           <div className="relative flex flex-col gap-6 p-[var(--panel-pad)]">
             <h2 id="included-title" className="panel-title">
               What&apos;s in the sleeve
@@ -101,7 +100,6 @@ async function OfferContent({ params }: { params: PageProps<"/offer/[handle]">["
           ]}
         />
         <section aria-labelledby="offer-close" className="panel ink-dark" style={{ "--panel-bg": "#14213D", "--panel-ink": "#FFFFFF", "--panel-line": "#14213D" } as React.CSSProperties}>
-          <span className="panel-inner" aria-hidden />
           <div className="relative flex flex-col items-start gap-5 p-[var(--panel-pad)] md:flex-row md:items-end md:justify-between">
             <h2 id="offer-close" className="model !text-[clamp(2.5rem,1.8rem+3vw,4.5rem)] max-w-[16ch]">
               {headline}
@@ -120,7 +118,7 @@ async function LivePair({ handle, headline }: { handle: string; headline: string
   const c = await ropeCatalog()
   const stock = await getStock([c.pair!.id])
   return (
-    <div id="top" data-offer={handle}>
+    <div id="top" data-offer={handle} className="box-flush">
       <PairPicker pair={c.pair!} colors={[...CORE_COLORS]} single={price(c.core!).amount} stock={stock} headline={headline} />
     </div>
   )
@@ -141,7 +139,6 @@ async function Proof({ stance, handle }: { stance: string | null; handle: string
   })
   return (
     <section aria-labelledby="proof-title" className="panel">
-      <span className="panel-inner" aria-hidden />
       <div className="relative grid grid-cols-[minmax(0,1fr)] gap-8 p-[var(--panel-pad)] md:grid-cols-2">
         <div className="flex flex-col gap-4">
           <h2 id="proof-title" className="panel-title">
