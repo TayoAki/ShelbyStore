@@ -1,26 +1,30 @@
 @import "tailwindcss";
 
-/* Shelby design tokens. Values and rationale: SITE_SPEC.md §2. */
+/* Shelby design tokens (v3, hats). Values and rationale: SITE_SPEC.md §2. */
 @theme inline {
-  --color-page: #ffffff;
-  --color-surface: #f6f3ee;
-  --color-surface-2: #ece7df;
-  --color-ink: #1a1917;
-  --color-ink-muted: #6b665e;
-  --color-ink-faint: #a29c92;
-  --color-line: #e4ded4;
-  --color-accent: #b4532a;
-  --color-accent-soft: #f3e2d8;
-  --color-ok: #2f6b3f;
-  --color-low: #9a5b13;
-  --color-danger: #a3271f;
+  --color-page: #dcd8d0;
+  --color-paper: #efece6;
+  --color-surface: #d2cdc3;
+  --color-surface-2: #c6c0b5;
+  --color-ink: #1c2023;
+  --color-ink-muted: #545049;
+  --color-ink-faint: #8c867c;
+  --color-ink-inverse-muted: #a9a398;
+  --color-line: #bdb7ac;
+  --color-accent: #f2652a;
+  --color-accent-ink: #9a360c;
+  --color-accent-soft: #f4c9b2;
+  --color-ok: #255a33;
+  --color-low: #7a450b;
+  --color-danger: #9e2219;
 
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* Two families: Archivo (display + UI) and IBM Plex Mono (proof numbers). */
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-display: var(--font-archivo), "Arial Narrow", ui-sans-serif, sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
 
   --radius-sm: 2px;
-  --shadow-overlay: 0 12px 40px rgba(26, 25, 23, 0.18);
+  --shadow-overlay: 0 12px 40px rgba(28, 32, 35, 0.22);
 }
 
 body {
@@ -41,6 +45,10 @@ body {
   outline-offset: 2px;
 }
 
+.bg-ink :focus-visible {
+  outline-color: currentColor;
+}
+
 @utility font-display {
   font-family: var(--font-display);
   font-weight: 800;
@@ -50,21 +58,25 @@ body {
 
 /* Display sizes (mobile → desktop at 1024px). */
 @utility text-hero {
-  font-size: 52px;
+  font-size: 48px;
   line-height: 0.9;
   letter-spacing: -0.01em;
   @media (width >= 64rem) {
-    font-size: 104px;
+    font-size: 96px;
   }
 }
 
 @utility text-section {
-  font-size: 32px;
+  font-size: 30px;
   line-height: 0.95;
   letter-spacing: -0.005em;
   @media (width >= 64rem) {
-    font-size: 56px;
+    font-size: 52px;
   }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
 }
 
 @utility text-eyebrow {

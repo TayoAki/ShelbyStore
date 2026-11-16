@@ -7,8 +7,10 @@ import { ButtonLink } from "@/components/ui/button"
 import { listShippingOptions } from "@/lib/actions/checkout"
 import { cartLines } from "@/lib/cart-view"
 import { retrieveCart } from "@/lib/data/cart"
+import { getRegion, listProducts } from "@/lib/data/catalog"
 import { formatMoney } from "@/lib/format"
 import { POLICY } from "@/lib/policy"
+import { variantThumbs } from "@/lib/product"
 
 export const metadata: Metadata = { title: "Checkout", robots: { index: false } }
 
@@ -25,7 +27,7 @@ export default function CheckoutPage() {
 
 async function CheckoutContent() {
   const cart = await retrieveCart()
-  const lines = cart ? cartLines(cart) : []
+  const lines = cart ? cartLines(cart, await lineThumbs()) : []
   if (!cart || !lines.length) {
     return (
       <div className="flex flex-col items-start gap-4 py-12">
@@ -64,7 +66,7 @@ async function CheckoutContent() {
         selectedOption={selected}
       />
       {/* Total always visible (Baymard: 12% abandon when they can't see it). */}
-      <aside className="flex h-fit flex-col gap-3 bg-surface p-5 lg:sticky lg:top-28">
+      <aside className="flex h-fit flex-col gap-3 bg-paper p-5 lg:sticky lg:top-28">
         <p className="text-eyebrow text-ink-muted">Order summary</p>
         <ul>
           {lines.map((l) => (
@@ -90,4 +92,10 @@ function Row({ label, value, strong = false }: { label: string; value: string; s
       <span className="font-mono">{value}</span>
     </div>
   )
+}
+
+/** Colour-correct bag thumbnails from the cached catalog. */
+async function lineThumbs() {
+  const region = await getRegion()
+  return region ? variantThumbs(await listProducts(region.id)) : {}
 }

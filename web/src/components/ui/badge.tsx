@@ -1,11 +1,13 @@
 import type { ReactNode } from "react"
 
-type Tone = "core" | "live" | "past" | "muted"
+type Tone = "core" | "live" | "low" | "past" | "muted"
 
+/** Card and PDP status labels (SITE_SPEC §6.2). Accent fills always carry ink text. */
 const tones: Record<Tone, string> = {
   core: "border border-ink text-ink bg-page",
-  live: "bg-accent text-white",
-  past: "bg-surface-2 text-ink-muted",
+  live: "bg-accent text-ink",
+  low: "bg-paper text-low",
+  past: "bg-surface-2 text-ink",
   muted: "bg-surface text-ink-muted",
 }
 

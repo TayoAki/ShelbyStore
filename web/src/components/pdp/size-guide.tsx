@@ -5,23 +5,23 @@ import { useRef } from "react"
 
 export type SizeChart = { unit?: string; columns: string[]; rows: Record<string, string | number>[] }
 
-/** Size guide dialog, opened from the size row (10/11 studied sites). */
+/** Size chart dialog, opened from the size row (10/11 studied sites; SITE_SPEC §6.4.6). */
 export function SizeGuide({ fitNotes, modelInfo, chart }: { fitNotes: string | null; modelInfo: string | null; chart: SizeChart | null }) {
   const dialog = useRef<HTMLDialogElement>(null)
   return (
     <>
       <button type="button" onClick={() => dialog.current?.showModal()} className="text-[13px] underline underline-offset-4 hover:text-ink-muted">
-        Size guide
+        Size chart
       </button>
       <dialog
         ref={dialog}
-        className="m-auto w-[min(560px,calc(100vw-32px))] rounded-[2px] bg-page p-0 text-ink shadow-[var(--shadow-overlay)] backdrop:bg-ink/40"
+        className="m-auto w-[min(560px,calc(100vw-32px))] rounded-[2px] bg-paper p-0 text-ink shadow-[var(--shadow-overlay)] backdrop:bg-ink/40"
         onClick={(e) => {
           if (e.target === dialog.current) dialog.current?.close()
         }}
       >
         <div className="flex items-center justify-between border-b border-line px-5 py-4">
-          <h2 className="font-display text-[22px]">Size guide</h2>
+          <h2 className="font-display text-[22px]">Size chart</h2>
           <button type="button" aria-label="Close" onClick={() => dialog.current?.close()} className="-mr-2 p-2">
             <X size={20} />
           </button>

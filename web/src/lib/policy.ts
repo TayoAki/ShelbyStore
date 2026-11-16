@@ -12,6 +12,9 @@ export const POLICY = {
   returns: "30-day returns",
   dispatch: "Ships in 1–2 business days",
   limitedRun: "Limited run. Restocked only if it sells through.",
+  /** The adjustable range of the one-size hats (strap / snap). */
+  oneSize: "fits 21.5–23.75 in (55–60 cm)",
+  sized: "Sized styles come in S/M and L/XL",
 }
 
 /** Drop times are announced in the store's timezone, not the server's. */

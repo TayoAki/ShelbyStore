@@ -1,7 +1,8 @@
 import "server-only"
 import { cacheLife, cacheTag } from "next/cache"
 import { sdk } from "../medusa"
-import type { Product, Region, StoreRelease } from "../types"
+import { imageUrl } from "../product"
+import type { Category, Product, Region, StoreRelease } from "../types"
 
 /**
  * Catalog reads are cached ("use cache") and shared by every visitor, so pages
@@ -14,7 +15,7 @@ import type { Product, Region, StoreRelease } from "../types"
 
 export const CORE_COLLECTION_HANDLE = "core"
 
-const PRODUCT_FIELDS = "*variants.calculated_price,*variants.options,*variants.images,*options,*options.values,*images,+metadata,*collection"
+const PRODUCT_FIELDS = "*variants.calculated_price,*variants.options,*variants.images,*options,*options.values,*images,+metadata,*collection,*categories"
 
 export async function getRegion(): Promise<Region | null> {
   "use cache"
@@ -25,6 +26,19 @@ export async function getRegion(): Promise<Region | null> {
     return regions[0] ?? null
   } catch {
     return null
+  }
+}
+
+/** Shapes (product categories), in admin rank order. */
+export async function listCategories(): Promise<Category[]> {
+  "use cache"
+  cacheLife("minutes")
+  cacheTag("categories")
+  try {
+    const { product_categories } = await sdk.store.category.list({ fields: "id,name,handle,rank,description", limit: 50 })
+    return [...product_categories].sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0))
+  } catch {
+    return []
   }
 }
 
@@ -87,7 +101,7 @@ export async function listReleases(): Promise<StoreRelease[]> {
   cacheTag("releases")
   try {
     const { releases } = await sdk.client.fetch<{ releases: StoreRelease[] }>("/store/releases")
-    return releases
+    return releases.map(localImages)
   } catch {
     return []
   }
@@ -101,9 +115,18 @@ export async function getRelease(handle: string): Promise<StoreRelease | null> {
     const { release } = await sdk.client.fetch<{ release: StoreRelease }>(
       `/store/releases/${encodeURIComponent(handle)}`
     )
-    return release
+    return localImages(release)
   } catch {
     return null
+  }
+}
+
+/** Demo photos are stored as absolute URLs to this site; serve them as local paths. */
+function localImages(r: StoreRelease): StoreRelease {
+  return {
+    ...r,
+    hero_image: imageUrl(r.hero_image),
+    products: r.products.map((p) => ({ ...p, thumbnail: imageUrl(p.thumbnail) })),
   }
 }
 

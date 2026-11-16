@@ -3,6 +3,7 @@ import Image from "next/image"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
 import { Container } from "@/components/container"
+import { Countdown } from "@/components/countdown"
 import { NotifyForm } from "@/components/notify-form"
 import { ProductCard } from "@/components/product-card"
 import { RelativeTime } from "@/components/relative-time"
@@ -40,7 +41,7 @@ async function DropContent({ params }: { params: PageProps<"/drops/[handle]">["p
       <Track event="drop_viewed" props={{ release_id: release.id, handle: release.handle, phase: release.phase }} />
       <section className="bg-surface">
         <Container className="grid gap-6 py-6 lg:grid-cols-2 lg:items-center lg:gap-12 lg:py-12">
-          <div className="relative aspect-[4/5] overflow-hidden bg-surface-2 lg:order-2">
+          <div className="relative aspect-[4/5] overflow-hidden bg-page lg:order-2">
             {release.hero_image && (
               <Image src={release.hero_image} alt={release.title} fill preload sizes="(min-width:1024px) 50vw, 100vw" className="object-cover" />
             )}
@@ -51,11 +52,12 @@ async function DropContent({ params }: { params: PageProps<"/drops/[handle]">["p
             {release.story && <p className="max-w-lg text-[16px] leading-relaxed lg:text-[17px]">{release.story}</p>}
             {release.product_promise && <p className="max-w-lg text-[17px] italic text-ink-muted">“{release.product_promise}”</p>}
             {release.proof && (
-              <div className="flex max-w-lg flex-col gap-1 border-l-2 border-accent bg-page px-4 py-3">
-                <p className="text-eyebrow text-accent">What to look for</p>
+              <div className="flex max-w-lg flex-col gap-1 border-l-2 border-accent bg-paper px-4 py-3">
+                <p className="text-eyebrow text-accent-ink">What to look for</p>
                 <p className="text-[15px]">{release.proof}</p>
               </div>
             )}
+            {release.phase === "upcoming" && release.release_at && <Countdown iso={release.release_at} tone="light" />}
             {release.phase === "upcoming" && (
               <div className="flex w-full flex-col gap-2">
                 <p className="text-[13px] text-ink-muted">Get an email the moment it drops.</p>
@@ -77,14 +79,14 @@ async function DropContent({ params }: { params: PageProps<"/drops/[handle]">["p
         )}
 
         {release.phase === "upcoming" ? (
-          <div className="grid grid-cols-2 gap-x-3 gap-y-8 lg:grid-cols-4 lg:gap-x-5">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-8 lg:grid-cols-4">
             {release.products.map((p) => (
               <div key={p.id} className="flex flex-col gap-3">
-                <div className="relative aspect-[4/5] overflow-hidden bg-surface">
+                <div className="relative aspect-[4/5] overflow-hidden bg-page">
                   {p.thumbnail && <Image src={p.thumbnail} alt={p.title} fill sizes="(min-width:1024px) 25vw, 50vw" className="object-cover" />}
                 </div>
                 <p className="text-sm font-medium">{p.title}</p>
-                <p className="text-eyebrow text-accent">Available {release.release_at ? formatDropDate(release.release_at) : "soon"}</p>
+                <p className="text-eyebrow text-accent-ink">Available {release.release_at ? formatDropDate(release.release_at) : "soon"}</p>
               </div>
             ))}
           </div>
@@ -107,7 +109,7 @@ function PhaseBadge({ release }: { release: StoreRelease }) {
     )
   if (release.phase === "past") return <Badge tone="past">Ended</Badge>
   return (
-    <p className="text-eyebrow text-accent">
+    <p className="text-eyebrow text-accent-ink">
       {release.release_at ? `Drops ${formatDropDate(release.release_at)}` : "Date coming soon"}
       {release.release_at && (
         <span className="text-ink-muted">
@@ -126,7 +128,7 @@ async function ProductsWithStock({ products, release }: { products: Product[]; r
 
 function Products({ products, release, stock }: { products: Product[]; release: StoreRelease; stock?: Record<string, number | null> }) {
   return (
-    <div className="grid grid-cols-2 gap-x-3 gap-y-8 lg:grid-cols-4 lg:gap-x-5">
+    <div className="grid grid-cols-2 gap-x-3 gap-y-8 lg:grid-cols-4">
       {products.map((p, i) => (
         <ProductCard
           key={p.id}

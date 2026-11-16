@@ -1,20 +1,23 @@
 import Link from "next/link"
 import type { ComponentProps, ReactNode } from "react"
 
-type Variant = "primary" | "secondary" | "ghost"
-type Size = "md" | "sm"
+type Variant = "primary" | "secondary" | "inverse" | "ghost"
+type Size = "lg" | "md" | "sm"
 
 const base =
   "inline-flex items-center justify-center gap-2 rounded-[2px] font-sans text-[13px] font-semibold uppercase tracking-[0.08em] transition-colors duration-150 disabled:cursor-not-allowed select-none whitespace-nowrap"
 
 const variants: Record<Variant, string> = {
-  primary: "bg-ink text-white hover:bg-black active:translate-y-px disabled:bg-surface-2 disabled:text-ink-faint",
+  primary: "bg-ink text-page hover:bg-black active:translate-y-px disabled:bg-surface-2 disabled:text-ink-muted",
   secondary:
-    "border border-ink text-ink bg-transparent hover:bg-ink hover:text-white active:translate-y-px disabled:border-line disabled:text-ink-faint disabled:hover:bg-transparent",
+    "border border-ink text-ink bg-transparent hover:bg-ink hover:text-page active:translate-y-px disabled:border-line disabled:text-ink-faint disabled:hover:bg-transparent",
+  // For dark (ink) bands.
+  inverse: "bg-page text-ink hover:bg-paper active:translate-y-px",
   ghost: "text-ink underline underline-offset-4 hover:text-ink-muted disabled:text-ink-faint normal-case tracking-normal font-medium",
 }
 
 const sizes: Record<Size, string> = {
+  lg: "h-[52px] px-6",
   md: "h-12 px-6",
   sm: "h-10 px-4",
 }

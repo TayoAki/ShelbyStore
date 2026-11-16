@@ -1,8 +1,10 @@
 import type { Metadata } from "next"
+import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
 import { Container } from "@/components/container"
 import { ContinuityBanner } from "@/components/continuity-banner"
+import { FitScales } from "@/components/fit-scale"
 import { BuyBox } from "@/components/pdp/buy-box"
 import { Gallery } from "@/components/pdp/gallery"
 import { SelectionProvider } from "@/components/pdp/selection"
@@ -13,7 +15,18 @@ import { getProduct, getRegion, liveReleaseIndex, listProducts } from "@/lib/dat
 import { getStock } from "@/lib/data/stock"
 import { formatMoney } from "@/lib/format"
 import { POLICY } from "@/lib/policy"
-import { colorThumbs, detailsOf, imagesFor, meta, modelInfoOf, price, sizeChartOf } from "@/lib/product"
+import {
+  colorThumbs,
+  detailsOf,
+  fitProfileOf,
+  imagesFor,
+  isOneSize,
+  meta,
+  modelInfoOf,
+  price,
+  shapeOf,
+  sizeChartOf,
+} from "@/lib/product"
 import type { Product } from "@/lib/types"
 
 export async function generateMetadata({ params }: PageProps<"/products/[handle]">): Promise<Metadata> {
@@ -28,13 +41,20 @@ export async function generateMetadata({ params }: PageProps<"/products/[handle]
 export default function ProductPage(props: PageProps<"/products/[handle]">) {
   return (
     <Suspense fallback={<ProductSkeleton />}>
-      <ProductContent params={props.params} />
+      <ProductContent params={props.params} searchParams={props.searchParams} />
     </Suspense>
   )
 }
 
-async function ProductContent({ params }: { params: PageProps<"/products/[handle]">["params"] }) {
-  const { handle } = await params
+/** Product page (SITE_SPEC §6.4). */
+async function ProductContent({
+  params,
+  searchParams,
+}: {
+  params: PageProps<"/products/[handle]">["params"]
+  searchParams: PageProps<"/products/[handle]">["searchParams"]
+}) {
+  const [{ handle }, query] = await Promise.all([params, searchParams])
   const region = await getRegion()
   if (!region) notFound()
   const [product, releases, all] = await Promise.all([getProduct(handle, region.id), liveReleaseIndex(), listProducts(region.id)])
@@ -43,15 +63,28 @@ async function ProductContent({ params }: { params: PageProps<"/products/[handle
   const release = releases[product.id] ?? null
   const isCore = product.collection?.handle === "core"
   const md = (product.metadata ?? {}) as Record<string, unknown>
-  const images = imagesFor(product)
   const colors = colorThumbs(product).map((c) => c.color)
+  const requested = typeof query.color === "string" ? query.color : null
+  const initialColor = requested && colors.includes(requested) ? requested : (colors[0] ?? null)
+  const images = imagesFor(product)
   const imagesByColor = Object.fromEntries(colors.map((c) => [c, imagesFor(product, c)]))
   const p = price(product)
   const fitNotes = meta(product, "fit_notes")
   const modelInfo = modelInfoOf(product)
   const sizeChart = sizeChartOf(product)
   const promise = meta(product, "promise")
-  const pairs = all.filter((x) => x.id !== product.id).slice(0, 4)
+  const shape = shapeOf(product)
+  const profile = fitProfileOf(product)
+
+  // Complete the look: other shapes first, then the core, then the rest.
+  const myShape = shape?.handle
+  const pairs = all
+    .filter((x) => x.id !== product.id)
+    .sort((a, b) => {
+      const score = (x: Product) => (shapeOf(x)?.handle !== myShape ? 0 : 2) + (x.collection?.handle === "core" ? 0 : 1)
+      return score(a) - score(b)
+    })
+    .slice(0, 4)
 
   return (
     <>
@@ -59,41 +92,63 @@ async function ProductContent({ params }: { params: PageProps<"/products/[handle
       <Suspense fallback={null}>
         <ContinuityBanner />
       </Suspense>
-      <SelectionProvider initialColor={colors[0] ?? null}>
-      <Container className="grid gap-6 pb-12 lg:grid-cols-12 lg:gap-12 lg:py-10">
-        <div className="lg:col-span-7">
-          <Gallery images={images} imagesByColor={imagesByColor} title={product.title} videoUrl={typeof md.video_url === "string" ? md.video_url : null} />
-        </div>
-        <div className="flex flex-col gap-6 lg:sticky lg:top-28 lg:col-span-5 lg:self-start">
-          <div className="flex flex-col gap-3">
-            <div>
-              {release ? (
-                <Badge tone="live" dot>
-                  From the drop: {release.title}
-                </Badge>
-              ) : isCore ? (
-                <Badge tone="core">Core</Badge>
-              ) : null}
-            </div>
-            <h1 className="text-2xl font-semibold tracking-[-0.01em] lg:text-3xl">{product.title}</h1>
-            <p className="font-mono text-[15px]">{formatMoney(p.amount, p.currency)}</p>
-            {promise && <p className="text-[17px] italic leading-snug text-ink-muted">“{promise}”</p>}
+      <SelectionProvider initialColor={initialColor}>
+        <Container className="grid gap-6 pb-12 lg:grid-cols-12 lg:gap-12 lg:py-10">
+          <div className="lg:col-span-7">
+            <Gallery
+              images={images}
+              imagesByColor={imagesByColor}
+              title={product.title}
+              videoUrl={typeof md.video_url === "string" ? md.video_url : null}
+            />
           </div>
-          <Suspense
-            fallback={
-              <BuyBox product={product} stock={null} release={release} fitNotes={fitNotes} modelInfo={modelInfo} sizeChart={sizeChart} />
-            }
-          >
-            <LiveBuyBox product={product} release={release} fitNotes={fitNotes} modelInfo={modelInfo} sizeChart={sizeChart} />
-          </Suspense>
-          <Details product={product} fitNotes={fitNotes} modelInfo={modelInfo} />
-        </div>
-      </Container>
+          <div className="flex flex-col gap-6 lg:sticky lg:top-28 lg:col-span-5 lg:self-start">
+            <div className="flex flex-col gap-3">
+              <div>
+                {release ? (
+                  <Badge tone="live" dot>
+                    Limited · {release.title}
+                  </Badge>
+                ) : isCore ? (
+                  <Badge tone="core">Core · always in stock</Badge>
+                ) : null}
+              </div>
+              <h1 className="font-display text-[32px] leading-[0.95] lg:text-[44px]">{product.title}</h1>
+              <div className="flex items-baseline justify-between gap-4">
+                <p className="font-mono text-[15px]">{formatMoney(p.amount, p.currency)}</p>
+                {shape && (
+                  <p className="text-[13px] text-ink-muted">
+                    <Link href={`/shop?shape=${shape.handle}`} className="hover:underline">
+                      {shape.name}
+                    </Link>
+                    {" · "}
+                    {isOneSize(product) ? "One size" : "Sized"}
+                  </p>
+                )}
+              </div>
+              {promise && <p className="text-[16px] italic leading-snug text-ink-muted">“{promise}”</p>}
+            </div>
+            <Suspense
+              fallback={
+                <BuyBox product={product} stock={null} release={release} fitNotes={fitNotes} modelInfo={modelInfo} sizeChart={sizeChart} />
+              }
+            >
+              <LiveBuyBox product={product} release={release} fitNotes={fitNotes} modelInfo={modelInfo} sizeChart={sizeChart} />
+            </Suspense>
+            {profile && (
+              <div className="flex flex-col gap-3 border-t border-line pt-5">
+                <p className="text-[15px] font-semibold">How it fits</p>
+                <FitScales profile={profile} />
+              </div>
+            )}
+            <Details product={product} fitNotes={fitNotes} modelInfo={modelInfo} />
+          </div>
+        </Container>
       </SelectionProvider>
       {pairs.length > 0 && (
         <Container className="flex flex-col gap-6 py-12 lg:py-16">
-          <h2 className="font-display text-section">Pairs with</h2>
-          <div className="grid grid-cols-2 gap-x-3 gap-y-8 lg:grid-cols-4 lg:gap-x-5">
+          <h2 className="font-display text-section">Complete the look</h2>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-8 lg:grid-cols-4">
             {pairs.map((x) => (
               <ProductCard key={x.id} product={x} status={x.collection?.handle === "core" ? "core" : releases[x.id] ? "live" : null} />
             ))}
@@ -111,27 +166,42 @@ async function LiveBuyBox(props: Omit<Parameters<typeof BuyBox>[0], "stock">) {
   return <BuyBox {...props} stock={stock} />
 }
 
+/** Accordions: details (mood copy, then spec facts kept separate), fit, shipping & returns. */
 function Details({ product, fitNotes, modelInfo }: { product: Product; fitNotes: string | null; modelInfo: string | null }) {
+  const specs = detailsOf(product)
   const sections: { title: string; body: React.ReactNode; open?: boolean }[] = [
     {
       title: "Details",
-      body: (
-        <>
-          {product.description}
-          {detailsOf(product).length > 0 && (
-            <dl className="mt-4 grid grid-cols-[auto_1fr] gap-x-6 gap-y-2">
-              {detailsOf(product).map(([k, v]) => (
-                <div key={k} className="contents">
-                  <dt className="text-ink">{k}</dt>
-                  <dd>{v}</dd>
-                </div>
-              ))}
-            </dl>
-          )}
-        </>
-      ),
+      body:
+        product.description || specs.length ? (
+          <>
+            {product.description}
+            {specs.length > 0 && (
+              <dl className="mt-4 grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 border-t border-line pt-4">
+                {specs.map(([k, v]) => (
+                  <div key={k} className="contents">
+                    <dt className="text-eyebrow pt-0.5 text-ink">{k}</dt>
+                    <dd>{v}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+          </>
+        ) : null,
+      open: true,
     },
-    { title: "Fit", body: [fitNotes, modelInfo].filter(Boolean).join(" ") || null, open: true },
+    {
+      title: "Fit",
+      body:
+        fitNotes || modelInfo ? (
+          <>
+            {[fitNotes, modelInfo].filter(Boolean).join(" ")}{" "}
+            <Link href={`/fit-guide#${product.handle}`} className="text-ink underline underline-offset-4" data-track="fit_guide">
+              See the fit guide
+            </Link>
+          </>
+        ) : null,
+    },
     { title: "Shipping & returns", body: `${POLICY.shipping}. ${POLICY.dispatch}. ${POLICY.returns}.` },
   ]
   return (
@@ -140,7 +210,7 @@ function Details({ product, fitNotes, modelInfo }: { product: Product; fitNotes:
         .filter((s) => s.body)
         .map((s) => (
           <details key={s.title} open={s.open} className="group border-b border-line">
-            <summary className="flex h-14 cursor-pointer list-none items-center justify-between text-[15px] font-medium [&::-webkit-details-marker]:hidden">
+            <summary className="flex h-14 cursor-pointer list-none items-center justify-between text-[15px] font-semibold [&::-webkit-details-marker]:hidden">
               {s.title}
               <span aria-hidden className="text-xl leading-none transition-transform duration-150 group-open:rotate-45">
                 +

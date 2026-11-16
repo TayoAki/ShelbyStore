@@ -14,7 +14,7 @@ export function DropRow({ release }: { release: StoreRelease }) {
         {image && <Image src={image} alt={release.title} fill sizes="140px" className="object-cover" />}
       </Link>
       <div className="flex flex-col gap-2">
-        <p className="text-eyebrow text-accent">
+        <p className="text-eyebrow text-accent-ink">
           {release.release_at ? formatDropDate(release.release_at) : "Date coming soon"}
           {release.release_at && (
             <span className="text-ink-muted">

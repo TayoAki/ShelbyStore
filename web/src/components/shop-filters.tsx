@@ -50,7 +50,7 @@ export function ShopFilters({ sizes, colors }: { sizes: string[]; colors: string
         </Button>
         <dialog
           ref={drawer}
-          className="mb-0 mt-auto w-full max-w-none rounded-t-[2px] bg-page p-0 text-ink backdrop:bg-ink/40"
+          className="mb-0 mt-auto w-full max-w-none rounded-t-[2px] bg-paper p-0 text-ink backdrop:bg-ink/40"
           onClick={(e) => {
             if (e.target === drawer.current) drawer.current?.close()
           }}
@@ -98,7 +98,7 @@ function Group({
               aria-pressed={on}
               onClick={() => onToggle(v)}
               className={`h-10 min-w-11 rounded-[2px] border px-3 text-[14px] transition-colors duration-150 ${
-                on ? "border-ink bg-ink text-white" : "border-line hover:border-ink"
+                on ? "border-ink bg-ink text-page" : "border-line hover:border-ink"
               }`}
             >
               {v}

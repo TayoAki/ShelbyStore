@@ -16,7 +16,7 @@ export async function ContinuityBanner({ hideForSeries }: { hideForSeries?: stri
   return (
     <div className="border-b border-line bg-surface">
       <Container className="flex flex-wrap items-center gap-x-3 gap-y-1 py-3 text-[13px]">
-        <span className="text-eyebrow text-accent">From {match.series.title}</span>
+        <span className="text-eyebrow text-accent-ink">From {match.series.title}</span>
         <span className="font-medium">{match.episode.title}</span>
         <Link href={`/stories/${match.series.handle}`} className="ml-auto underline underline-offset-4" data-track="continuity_story">
           See the full test

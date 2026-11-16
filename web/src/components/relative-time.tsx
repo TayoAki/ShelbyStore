@@ -22,9 +22,10 @@ export function RelativeTime({ iso }: { iso: string }) {
   if (now === null) return null
   const diff = new Date(iso).getTime() - now
   if (diff <= 0) return <span>going live now</span>
-  const minutes = Math.round(diff / 60_000)
-  const hours = Math.round(minutes / 60)
-  const days = Math.round(hours / 24)
+  // Floor, so it never disagrees with a countdown on the same page.
+  const minutes = Math.floor(diff / 60_000)
+  const hours = Math.floor(minutes / 60)
+  const days = Math.floor(hours / 24)
   const text = days >= 2 ? `in ${days} days` : hours >= 2 ? `in ${hours} hours` : `in ${Math.max(1, minutes)} min`
   return <span>{text}</span>
 }

@@ -5,6 +5,8 @@ import { Container } from "@/components/container"
 import { LineItem } from "@/components/line-item"
 import { ButtonLink } from "@/components/ui/button"
 import { formatMoney } from "@/lib/format"
+import { getRegion, listProducts } from "@/lib/data/catalog"
+import { imageUrl, variantThumbs } from "@/lib/product"
 import { sdk } from "@/lib/medusa"
 
 export const metadata: Metadata = { title: "Order confirmed", robots: { index: false } }
@@ -26,6 +28,8 @@ async function OrderContent({ params }: { params: PageProps<"/order/[id]">["para
     .then((r) => r.order)
     .catch(() => null)
   if (!order) notFound()
+  const region = await getRegion()
+  const thumbs = region ? variantThumbs(await listProducts(region.id)) : {}
   const a = order.shipping_address
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-8">
@@ -44,7 +48,7 @@ async function OrderContent({ params }: { params: PageProps<"/order/[id]">["para
               title: i.product_title ?? i.title,
               variant: i.variant_title ?? null,
               handle: i.product_handle ?? null,
-              thumbnail: i.thumbnail ?? null,
+              thumbnail: (i.variant_id && thumbs[i.variant_id]) || imageUrl(i.thumbnail),
               quantity: i.quantity,
               unitPrice: Number(i.unit_price ?? 0),
               currency: order.currency_code,

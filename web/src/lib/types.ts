@@ -4,6 +4,7 @@ export type Product = HttpTypes.StoreProduct
 export type Variant = HttpTypes.StoreProductVariant
 export type Cart = HttpTypes.StoreCart
 export type Region = HttpTypes.StoreRegion
+export type Category = HttpTypes.StoreProductCategory
 
 /** Shape returned by the backend's custom /store/releases routes. */
 export type StoreRelease = {

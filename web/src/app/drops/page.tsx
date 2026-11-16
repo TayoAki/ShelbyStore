@@ -2,17 +2,22 @@ import type { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
 import { Container } from "@/components/container"
+import { Countdown } from "@/components/countdown"
 import { DropRow } from "@/components/drop-row"
 import { Badge } from "@/components/ui/badge"
 import { ButtonLink } from "@/components/ui/button"
 import { listReleases } from "@/lib/data/catalog"
+import { formatDropDate } from "@/lib/format"
 
 export const metadata: Metadata = { title: "Drops" }
 
 export default async function DropsPage() {
   const releases = await listReleases()
   const live = releases.filter((r) => r.phase === "live")
-  const upcoming = releases.filter((r) => r.phase === "upcoming")
+  const upcoming = releases
+    .filter((r) => r.phase === "upcoming")
+    .sort((a, b) => (a.release_at ? Date.parse(a.release_at) : Infinity) - (b.release_at ? Date.parse(b.release_at) : Infinity))
+  const next = upcoming.find((r) => r.release_at) ?? null
   const past = releases.filter((r) => r.phase === "past")
 
   return (
@@ -24,7 +29,7 @@ export default async function DropsPage() {
 
       {live.map((r) => (
         <section key={r.id} className="grid gap-6 bg-surface p-4 lg:grid-cols-2 lg:items-center lg:gap-12 lg:p-10">
-          <Link href={`/drops/${r.handle}`} className="relative aspect-[4/5] overflow-hidden bg-surface-2">
+          <Link href={`/drops/${r.handle}`} className="relative aspect-[4/5] overflow-hidden bg-page">
             {r.hero_image && <Image src={r.hero_image} alt={r.title} fill sizes="(min-width:1024px) 45vw, 100vw" className="object-cover" preload />}
           </Link>
           <div className="flex flex-col items-start gap-4">
@@ -37,6 +42,18 @@ export default async function DropsPage() {
           </div>
         </section>
       ))}
+
+      {next && (
+        <section className="flex flex-col gap-5 bg-ink p-5 text-page lg:flex-row lg:items-end lg:justify-between lg:p-10">
+          <div className="flex flex-col gap-2">
+            <p className="text-eyebrow text-accent">Next drop · {formatDropDate(next.release_at)}</p>
+            <Link href={`/drops/${next.handle}`} className="font-display text-[34px] leading-[0.95] hover:text-ink-inverse-muted lg:text-[56px]">
+              {next.title}
+            </Link>
+          </div>
+          <Countdown iso={next.release_at!} />
+        </section>
+      )}
 
       {upcoming.length > 0 && (
         <section className="flex flex-col gap-4">
@@ -52,7 +69,7 @@ export default async function DropsPage() {
       {past.length > 0 && (
         <section className="flex flex-col gap-6">
           <h2 className="font-display text-[28px] lg:text-[40px]">Past drops</h2>
-          <div className="grid grid-cols-2 gap-x-3 gap-y-8 lg:grid-cols-4 lg:gap-x-5">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-8 lg:grid-cols-4">
             {past.map((r) => (
               <Link key={r.id} href={`/drops/${r.handle}`} className="group flex flex-col gap-3">
                 <div className="relative aspect-[4/5] overflow-hidden bg-surface">

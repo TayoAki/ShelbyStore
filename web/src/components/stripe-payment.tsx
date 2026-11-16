@@ -15,18 +15,19 @@ export const stripeEnabled = !!PUBLISHABLE_KEY
 const appearance: Appearance = {
   theme: "stripe",
   variables: {
-    colorPrimary: "#1a1917",
-    colorText: "#1a1917",
-    colorTextSecondary: "#6b665e",
-    colorDanger: "#a3271f",
-    colorBackground: "#ffffff",
-    fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+    colorPrimary: "#1c2023",
+    colorText: "#1c2023",
+    colorTextSecondary: "#545049",
+    colorDanger: "#9e2219",
+    colorBackground: "#efece6",
+    // The Payment Element renders in Stripe's iframe, so it can't use our next/font; the system stack keeps it close.
+    fontFamily: "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif",
     borderRadius: "2px",
     spacingUnit: "4px",
   },
   rules: {
-    ".Input": { border: "1px solid #e4ded4", boxShadow: "none" },
-    ".Input:focus": { border: "1px solid #1a1917", boxShadow: "none" },
+    ".Input": { border: "1px solid #8c867c", boxShadow: "none" },
+    ".Input:focus": { border: "1px solid #1c2023", boxShadow: "none" },
   },
 }
 

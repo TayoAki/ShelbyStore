@@ -86,7 +86,7 @@ export function CheckoutForm({
           <legend className="sr-only">Shipping method</legend>
           {options.length === 0 && <p className="text-[14px] text-ink-muted">No delivery options for this address.</p>}
           {options.map((o) => (
-            <label key={o.id} className={`flex cursor-pointer items-center gap-3 rounded-[2px] border p-4 ${current === o.id ? "border-ink" : "border-line"}`}>
+            <label key={o.id} className={`flex cursor-pointer items-center gap-3 rounded-[2px] border bg-paper p-4 ${current === o.id ? "border-ink" : "border-ink-faint"}`}>
               <input
                 type="radio"
                 name="shipping"
@@ -146,10 +146,10 @@ function Step({ n, title, active, done, summary, onEdit, children }: {
   n: number; title: string; active: boolean; done: boolean; summary?: string; onEdit?: () => void; children: React.ReactNode
 }) {
   return (
-    <section className={`border border-line p-4 lg:p-6 ${active ? "" : "bg-page"}`} aria-current={active ? "step" : undefined}>
+    <section className={`border border-line p-4 lg:p-6 ${active ? "bg-paper/50" : ""}`} aria-current={active ? "step" : undefined}>
       <div className="flex items-center justify-between gap-3">
         <h2 className={`flex items-center gap-3 text-[16px] font-semibold ${active || done ? "" : "text-ink-faint"}`}>
-          <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full font-mono text-[12px] ${done ? "bg-ok text-white" : active ? "bg-ink text-white" : "bg-surface-2 text-ink-faint"}`}>
+          <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full font-mono text-[12px] ${done ? "bg-ok text-page" : active ? "bg-ink text-page" : "bg-surface-2 text-ink-muted"}`}>
             {done ? "✓" : n}
           </span>
           {title}
@@ -174,7 +174,7 @@ function Field({ label, error, className = "", ...input }: React.ComponentProps<
         {...input}
         aria-invalid={!!error || undefined}
         aria-describedby={error ? `${id}-err` : undefined}
-        className={`h-12 rounded-[2px] border bg-page px-3 text-[16px] focus:border-ink focus:outline-none ${error ? "border-danger" : "border-line"}`}
+        className={`h-12 rounded-[2px] border bg-paper px-3 text-[16px] focus:border-ink focus:outline-none ${error ? "border-danger" : "border-ink-faint"}`}
       />
       {error && <p id={`${id}-err`} className="text-[12px] text-danger">{error}</p>}
     </div>

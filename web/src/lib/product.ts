@@ -128,9 +128,12 @@ export function colorThumbs(product: Product): { color: string; image: string | 
 export function detailsOf(product: Product): [string, string][] {
   const v = (product.metadata as Record<string, unknown> | null)?.details
   if (!v || typeof v !== "object" || Array.isArray(v)) return []
-  return Object.entries(v as Record<string, unknown>).filter(
-    (e): e is [string, string] => typeof e[1] === "string" && !!e[1].trim()
-  )
+  // JSON metadata doesn't keep key order, so list spec facts in a fixed order.
+  const ORDER = ["Crown", "Knit", "Brim", "Closure", "Fabric", "Origin", "Care"]
+  const at = (k: string) => (ORDER.indexOf(k) === -1 ? ORDER.length : ORDER.indexOf(k))
+  return Object.entries(v as Record<string, unknown>)
+    .filter((e): e is [string, string] => typeof e[1] === "string" && !!e[1].trim())
+    .sort((a, b) => at(a[0]) - at(b[0]))
 }
 
 export const meta = (product: Product, key: "promise" | "fit_notes") => {
@@ -150,4 +153,73 @@ export function sizeChartOf(product: Product): SizeChart | null {
 export function modelInfoOf(product: Product): string | null {
   const v = (product.metadata as Record<string, unknown> | null)?.model_info
   return typeof v === "string" && v.trim() ? v : null
+}
+
+export type FitProfile = {
+  crown: "Low" | "Mid" | "Tall"
+  structure: "Unstructured" | "Semi-structured" | "Structured"
+}
+
+/** metadata.fit_profile, for the crown-height and structure scales (SITE_SPEC §6.4.10). */
+export function fitProfileOf(product: Product): FitProfile | null {
+  const v = (product.metadata as Record<string, unknown> | null)?.fit_profile as Partial<FitProfile> | undefined
+  if (!v || typeof v !== "object") return null
+  const crowns = ["Low", "Mid", "Tall"]
+  const structures = ["Unstructured", "Semi-structured", "Structured"]
+  return crowns.includes(v.crown ?? "") && structures.includes(v.structure ?? "") ? (v as FitProfile) : null
+}
+
+/** The size option group, if any. */
+export function sizeGroupOf(product: Product): OptionGroup | undefined {
+  return optionGroups(product).find((g) => /size/i.test(g.title))
+}
+
+/** One-size hats have no size choice to make (SITE_SPEC §6.4.6). */
+export function isOneSize(product: Product): boolean {
+  const g = sizeGroupOf(product)
+  return !g || g.values.length <= 1
+}
+
+/** The product's shape: its first category (Caps, Truckers, …). */
+export function shapeOf(product: Product): { name: string; handle: string } | null {
+  const c = (product as { categories?: { name?: string; handle?: string }[] | null }).categories?.[0]
+  return c?.name && c.handle ? { name: c.name, handle: c.handle } : null
+}
+
+/**
+ * Card badge for stock: "low" when every variant that is still in stock has
+ * LOW_STOCK or fewer left (an honest count, never faked).
+ */
+export function isLowStock(product: Product, stock: VariantStock | undefined): boolean {
+  if (!stock) return false
+  const counts = (product.variants ?? [])
+    .map((v) => stock[v.id])
+    .filter((n): n is number => typeof n === "number" && n > 0)
+  return counts.length > 0 && counts.every((n) => n <= LOW_STOCK)
+}
+
+/** variant id → the first photo of that variant's colour, for bag and order lines. */
+export function variantThumbs(products: Product[]): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const product of products) {
+    const title = colorOption(product)
+    for (const v of product.variants ?? []) {
+      const img = imagesFor(product, title ? variantOptions(v)[title] : null)[0]
+      if (img) out[v.id] = img
+    }
+  }
+  return out
+}
+
+/**
+ * The adjustable range of a one-size hat, read from its fit notes ("adjusts
+ * from 21.5 to 24 inches"), e.g. "fits 21.5–24 in (55–61 cm)". Falls back to
+ * the store-wide range.
+ */
+export function oneSizeRange(product: Product, fallback: string): string {
+  const notes = meta(product, "fit_notes") ?? ""
+  const m = notes.match(/(\d+(?:\.\d+)?)\s*to\s*(\d+(?:\.\d+)?)\s*in/i)
+  if (!m) return fallback
+  const cm = (inches: string) => Math.round(Number(inches) * 2.54)
+  return `fits ${m[1]}–${m[2]} in (${cm(m[1])}–${cm(m[2])} cm)`
 }
