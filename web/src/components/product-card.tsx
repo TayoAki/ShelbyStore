@@ -61,21 +61,21 @@ export function ProductCard({
   return (
     <article className="group relative flex h-full flex-col gap-3 bg-paper p-3 md:p-4">
       <div className="relative">
-        <Link href={href} className="window block aspect-square !rounded-[20px]" aria-label={`${product.title}, ${active}`}>
+        <Link href={href} className="window block aspect-square" aria-label={`${product.title}, ${active}`}>
           {first && <Image src={first} alt={`${product.title} in ${active}`} fill sizes="(min-width: 768px) 22vw, 45vw" className="object-contain p-[7%]" preload={preload} />}
           {second && <Image src={second} alt="" fill sizes="(min-width: 768px) 22vw, 45vw" className="object-contain p-[7%] opacity-0 md:group-hover:opacity-100" />}
           <span className="window-shade" aria-hidden />
         </Link>
-        {(badge || soldOut) && (
-          <span className={`pointer-events-none absolute top-2 left-2 z-[2] bg-paper ${badge === "LIMITED" || String(badge).startsWith("HOLE") ? "badge-edition" : "badge"}`}>{soldOut ? "Sold out" : badge}</span>
-        )}
       </div>
       <Link href={href} className="flex flex-col gap-0.5">
         {/* The core cap is one model in four inks, so its unit is named by the ink. */}
         <h3 className="font-model text-[1.375rem] leading-none font-[800] uppercase">{multi ? active : product.title}</h3>
-        <p className="min-h-[1.5em] truncate text-[0.9375rem] leading-6 text-ink-2">
-          {multi ? product.title : active}
-          {rope ? `, ${rope.toLowerCase()} rope` : ""}
+        <p className="flex min-h-[1.5em] items-center gap-2 text-[0.9375rem] leading-6 text-ink-2">
+          {(badge || soldOut) && <span className={`shrink-0 ${!soldOut && (badge === "LIMITED" || String(badge).startsWith("HOLE")) ? "badge-edition" : "badge"}`}>{soldOut ? "Sold out" : badge}</span>}
+          <span className="truncate">
+            {multi ? product.title : active}
+            {rope ? `, ${rope.toLowerCase()} rope` : ""}
+          </span>
         </p>
         <p className="text-[1.375rem] leading-none">
           <Digits value={formatMoney(p.amount, p.currency)} />

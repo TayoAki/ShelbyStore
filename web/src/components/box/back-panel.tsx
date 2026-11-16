@@ -1,4 +1,5 @@
 import Image from "next/image"
+import type { CSSProperties } from "react"
 import Link from "next/link"
 import { formatMoney } from "@/lib/format"
 import { price } from "@/lib/product"
@@ -7,6 +8,7 @@ import type { Product } from "@/lib/types"
 import { Countdown } from "../countdown"
 import { Digits } from "../digits"
 import { TeeSheetForm } from "../tee-sheet-form"
+import { SLEEVE_INK } from "./inks"
 
 const lead = (c: string) => `/hats/rope-cap-${c.toLowerCase().replace(/\s+/g, "-")}-1.jpg`
 
@@ -19,7 +21,6 @@ export function HolesPlate({ holes, next }: { holes: Hole[]; next: Hole | null }
   const liveEdition = holes.find((h) => !h.core && h.status === "live") ?? null
   return (
     <section aria-labelledby="holes-title" className="panel">
-      <span className="panel-inner" aria-hidden />
       <div className="relative flex flex-col gap-8 p-[var(--panel-pad)]">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
           <div className="flex flex-col gap-3">
@@ -97,56 +98,54 @@ export function HolesPlate({ holes, next }: { holes: Hole[]; next: Hole | null }
   )
 }
 
+
 /**
- * The box's back panel, part two: The Pair and The Foursome as sleeves, one
- * die-cut window per cap, the live price and what each cap comes to.
+ * The box's back panel, part two: The Pair and The Foursome as sleeves. Each
+ * is one inked panel with a die-cut window per cap in a row, and the price and
+ * the button printed at the sleeve's foot.
  */
-export function Sleeves({ pair, foursome }: { pair: Product | null; foursome: Product | null }) {
+export function Sleeves({ pair, foursome, tracks = { pair: "home_pair", foursome: "home_foursome" } }: { pair: Product | null; foursome: Product | null; tracks?: { pair: string; foursome: string } }) {
   const sleeves = [
-    pair && { p: pair, key: "pair", title: "The Pair", sub: "Any two colors. One for the bag, one for the car.", href: "/offer/the-pair", track: "home_pair", colors: ["Clubhouse Navy", "Pine"] },
-    foursome && { p: foursome, key: "four", title: "The Foursome", sub: "Four caps for the group trip, the outing or Father's Day.", href: "/offer/the-pair#foursome", track: "home_foursome", colors: ["Tour White", "Clubhouse Navy", "Pine", "Fescue"] },
-  ].filter(Boolean) as { p: Product; key: string; title: string; sub: string; href: string; track: string; colors: string[] }[]
+    pair && { p: pair, key: "pair" as const, title: "The Pair", sub: "Any two colors. One for the bag, one for the car.", href: "/offer/the-pair", track: tracks.pair, colors: ["Clubhouse Navy", "Pine"] },
+    foursome && { p: foursome, key: "four" as const, title: "The Foursome", sub: "Four caps for the group trip, the outing or Father's Day.", href: "/offer/the-pair#foursome", track: tracks.foursome, colors: ["Tour White", "Clubhouse Navy", "Pine", "Fescue"] },
+  ].filter(Boolean) as { p: Product; key: "pair" | "four"; title: string; sub: string; href: string; track: string; colors: string[] }[]
   if (!sleeves.length) return null
   return (
-    <section aria-labelledby="sleeves-title" className="flex flex-col gap-4">
-      <h2 id="sleeves-title" className="sr-only">
-        The Pair and The Foursome
-      </h2>
-      <div className="grid gap-4 md:grid-cols-2">
-        {sleeves.map((s) => {
-          const total = price(s.p).amount
-          const each = total !== null ? total / capsIn(s.p) : null
-          return (
-            <article key={s.key} className="panel">
-              <span className="panel-inner" aria-hidden />
-              <div className="relative flex h-full flex-col gap-5 p-[var(--panel-pad)]">
-                <div className={`grid gap-2 ${s.colors.length === 4 ? "grid-cols-4" : "grid-cols-2"}`}>
-                  {s.colors.map((c) => (
-                    <div key={c} className="window aspect-square !rounded-[18px]">
-                      <Image src={lead(c)} alt={`The Rope Cap in ${c}`} fill sizes="(min-width: 768px) 20vw, 40vw" className="object-contain p-[8%]" />
-                      <span className="window-shade" aria-hidden />
-                    </div>
-                  ))}
-                </div>
-                <div className="flex flex-col gap-2">
-                  <h3 className="panel-title !text-[2.5rem]">{s.title}</h3>
-                  <p className="text-[1.0625rem] leading-7">{s.sub}</p>
-                </div>
-                <div className="mt-auto flex flex-wrap items-center gap-x-5 gap-y-3">
-                  <span className="text-[2.5rem] leading-none">
-                    <Digits value={formatMoney(total)} />
-                  </span>
-                  <span className="label">{formatMoney(each)} a cap · ships free</span>
-                  <Link href={s.href} className="btn btn-secondary ml-auto" data-track={s.track}>
+    <>
+      {sleeves.map((s) => {
+        const total = price(s.p).amount
+        const each = total !== null ? total / capsIn(s.p) : null
+        return (
+          <section key={s.key} aria-labelledby={`sleeve-${s.key}`} className="panel ink-dark" style={SLEEVE_INK[s.key] as CSSProperties}>
+            <div className="grid grid-cols-[minmax(0,1fr)] gap-6 p-[var(--panel-pad)] lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-stretch lg:gap-10">
+              <div className={`grid gap-2 lg:order-2 ${s.colors.length === 4 ? "grid-cols-4" : "grid-cols-2"}`}>
+                {s.colors.map((c) => (
+                  <div key={c} className="window aspect-square">
+                    <Image src={lead(c)} alt={`The Rope Cap in ${c}`} fill sizes="(min-width: 1024px) 18vw, 40vw" className="object-contain p-[8%]" />
+                    <span className="window-shade" aria-hidden />
+                  </div>
+                ))}
+              </div>
+              <div className="flex flex-col gap-4">
+                <h2 id={`sleeve-${s.key}`} className="model !text-[clamp(2.5rem,2rem+2.4vw,4rem)]">
+                  {s.title}
+                </h2>
+                <p className="spec-line">
+                  {capsIn(s.p)} caps · {formatMoney(each)} a cap · ships free
+                </p>
+                <p className="max-w-[44ch] text-[1.0625rem] leading-7">{s.sub}</p>
+                <div className="mt-auto flex flex-wrap items-center gap-x-5 gap-y-3 border-t-[1.5px] border-dashed border-[color:var(--inner-crease,var(--color-crease))] pt-4">
+                  <span className="figure text-[2.75rem]">{formatMoney(total)}</span>
+                  <Link href={s.href} className="btn btn-on-ink ml-auto" data-track={s.track}>
                     Choose colors
                   </Link>
                 </div>
               </div>
-            </article>
-          )
-        })}
-      </div>
-    </section>
+            </div>
+          </section>
+        )
+      })}
+    </>
   )
 }
 

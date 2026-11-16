@@ -39,7 +39,7 @@ async function ShopContent({ searchParams }: { searchParams: PageProps<"/shop">[
   return (
     <>
       <Track event="collection_viewed" props={{ group }} />
-      <div className="mx-auto flex max-w-[1440px] flex-col gap-6 px-3 pt-6 md:px-6 md:pt-10">
+      <div className="box mt-6 md:mt-10">
         <nav aria-label="Breadcrumb" className="label !text-[12px] text-ink-2">
           <Link href="/" className="hover:underline">
             Home
@@ -111,13 +111,15 @@ function Grid({ c, group, stock }: { c: RopeCatalog; group: Group; stock: Varian
       {showLimited &&
         upcoming.map((h) => (
           <Link key={h.hole} href={`/card/${h.handle}`} className="group flex h-full flex-col gap-3 bg-paper p-3 md:p-4" data-track="card_hole">
-            <span className="window relative block aspect-square !rounded-[20px]">
+            <span className="window relative block aspect-square">
               {h.image && <Image src={h.image} alt={`${h.name}, Hole ${h.hole}`} fill sizes="(min-width: 768px) 22vw, 45vw" className="object-contain p-[7%]" />}
               <span className="window-shade" aria-hidden />
-              <span className="badge-edition absolute top-2 left-2 z-[2]">Hole {h.hole}</span>
             </span>
             <span className="font-model text-[1.375rem] leading-none font-[800] uppercase">{h.name}</span>
-            <span className="text-[0.875rem] text-ink-2">{h.size ? `Edition of ${h.size}` : "Numbered edition"}</span>
+            <span className="flex items-center gap-2 text-[0.9375rem] text-ink-2">
+              <span className="badge-edition">Hole {h.hole}</span>
+              {h.size ? `Edition of ${h.size}` : "Numbered edition"}
+            </span>
             <span className="label mt-auto underline decoration-1 underline-offset-4 group-hover:decoration-2">Join the tee sheet</span>
           </Link>
         ))}
