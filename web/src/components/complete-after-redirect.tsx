@@ -1,5 +1,6 @@
 "use client"
 
+import { CircleNotch } from "@phosphor-icons/react"
 import { useEffect, useRef, useState } from "react"
 import { placeOrder } from "@/lib/actions/checkout"
 import { ButtonLink } from "./ui/button"
@@ -20,11 +21,21 @@ export function CompleteAfterRedirect() {
       if (r && !r.ok) setError(r.error)
     })
   }, [])
-  if (!error) return <p className="text-sm leading-5 text-light-charcoal" role="status">Confirming your payment with Stripe.</p>
+  if (!error)
+    return (
+      <p className="flex flex-col items-center gap-3 text-[14.4px]" role="status">
+        <CircleNotch size={28} className="spin text-green" aria-hidden />
+        Confirming your order…
+      </p>
+    )
   return (
     <div className="flex flex-col items-center gap-3">
-      <p className="text-sm leading-5 text-red" role="alert">{error}</p>
-      <ButtonLink href="/checkout" variant="secondary">BACK TO CHECKOUT</ButtonLink>
+      <p className="field-error" role="alert">
+        {error}
+      </p>
+      <ButtonLink href="/checkout" variant="secondary">
+        Back to checkout
+      </ButtonLink>
     </div>
   )
 }

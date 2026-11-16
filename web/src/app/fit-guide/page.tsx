@@ -1,9 +1,9 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { Suspense } from "react"
-import { SidePanel } from "@/components/box/side-panel"
-import { Digits } from "@/components/digits"
-import { ropeCatalog } from "@/lib/data/rope"
+import { Faq } from "@/components/accordion"
+import { CrownProfiles } from "@/components/crown-profiles"
+import { ButtonLink } from "@/components/ui/button"
+import { POLICY } from "@/lib/policy"
 
 export const metadata: Metadata = {
   title: "Fit guide",
@@ -17,92 +17,93 @@ const STEPS = [
 ]
 
 /**
- * Fit guide (Read, in the box's vocabulary): the crown drawn to true size with
- * the printed spec (the side panel), how to measure as numbered steps on one
- * plate, the size table, and the way into the quiz.
+ * Fit guide (SITE_SPEC v8 E.6.6): a collection-style header, an editorial
+ * split with the crown profiles drawn to scale, the size table, three
+ * numbered steps, the FAQ and the way into the quiz.
  */
 export default function FitGuidePage() {
   return (
-    <div className="box mt-6 md:mt-10">
-      <nav aria-label="Breadcrumb" className="label !text-[12px] text-ink-2">
-        <Link href="/" className="hover:underline">
-          Home
-        </Link>{" "}
-        / Fit guide
-      </nav>
-      <div className="flex flex-col gap-3">
-        <h1 className="model">How it fits</h1>
-        <p className="max-w-[60ch] text-[1.125rem] leading-[1.6]">One size. The strap fits 21.5–23.75 in (55–60 cm). The crown sits mid, about 11–11.5 cm.</p>
-      </div>
-      <Suspense fallback={<div className="panel h-96" />}>
-        <FitSpec />
-      </Suspense>
-      <section aria-labelledby="measure-title" className="panel">
-        <div className="relative grid grid-cols-[minmax(0,1fr)] gap-10 p-[var(--panel-pad)] lg:grid-cols-2">
-          <div className="flex flex-col gap-5">
-            <h2 id="measure-title" className="panel-title">
-              How to measure
-            </h2>
-            <ol className="flex flex-col border-2 border-ink">
-              {STEPS.map((step, i) => (
-                <li key={step} className="flex gap-4 border-ink p-4 [&+&]:border-t-2">
-                  <span className="text-[2.25rem] leading-none" aria-hidden>
-                    <Digits value={String(i + 1).padStart(2, "0")} />
-                  </span>
-                  <span className="text-[1.0625rem] leading-7">{step}</span>
-                </li>
-              ))}
-            </ol>
-          </div>
-          <div className="flex flex-col gap-5">
-            <h2 className="panel-title">Size</h2>
-            <table className="scorecard">
-              <thead>
-                <tr>
-                  {["Size", "Inches", "Centimetres", "Fitted"].map((h) => (
-                    <th key={h} scope="col">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <th scope="row">One size</th>
-                  <td>21.5–23.75</td>
-                  <td>55–60</td>
-                  <td>6⅞–7½</td>
-                </tr>
-              </tbody>
-            </table>
-            <p className="text-[1rem] leading-6 text-ink-2">Outside that range? Use the 30-day returns.</p>
-          </div>
-        </div>
-      </section>
-      <section aria-labelledby="quiz-title" className="panel ink-dark" style={{ "--panel-bg": "#1E3B2F", "--panel-ink": "#F1ECE0", "--panel-line": "#10241B" } as React.CSSProperties}>
-        <div className="relative flex flex-col items-start gap-5 p-[var(--panel-pad)] md:flex-row md:items-end md:justify-between">
-          <div className="flex flex-col gap-3">
-            <h2 id="quiz-title" className="panel-title">
-              Find your color
-            </h2>
-            <p className="max-w-[48ch] text-[1.125rem] leading-[1.6]">Four questions about where you wear it and what you reach for. One color that&apos;s in stock, and the right bundle.</p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <Link href="/quiz" className="btn btn-on-ink btn-large" style={{ "--btn-bg": "#F1ECE0", "--btn-fg": "#1E3B2F" } as React.CSSProperties} data-track="fit_guide_quiz">
-              Take the quiz
-            </Link>
-            <Link href="/products/rope-cap" className="btn btn-outline-white btn-large" data-track="fit_guide_shop">
-              Shop the Rope Cap
-            </Link>
-          </div>
-        </div>
-      </section>
-    </div>
-  )
-}
+    <>
+      <header className="wrap pt-4 text-center">
+        <nav aria-label="Breadcrumb" className="crumbs-coll">
+          <Link href="/">Home</Link> / <span aria-current="page">Fit guide</span>
+        </nav>
+        <h1 className="title-page mt-[13px]">Fit guide</h1>
+      </header>
 
-async function FitSpec() {
-  const { core } = await ropeCatalog()
-  if (!core) return null
-  return <SidePanel product={core} id="crown" />
+      <section aria-labelledby="crown-title" className="mt-8 grid md:grid-cols-2">
+        <div className="band-tile flex items-center justify-center p-6 md:p-12">
+          <CrownProfiles low={11} top={11.5} fallbackColor="Tour White" />
+        </div>
+        <div className="flex flex-col items-start justify-center p-6 md:p-12">
+          <p className="eyebrow">The mid crown</p>
+          <h2 id="crown-title" className="title-section mt-2 !text-[30px] md:!text-[38.4px]">
+            About 11–11.5 cm
+          </h2>
+          <p className="body-long mt-4 max-w-[52ch]">
+            The rope caps that sell best are built high, and their buyers say the height takes getting used to. The Rope Cap is cut to a mid crown, measured from the button to the brim, so it sits on your head the first time you put it on. The drawing is to scale against a 12 cm high crown.
+          </p>
+          <ButtonLink href="/products/rope-cap" className="mt-6" track="fit_guide_shop">
+            Shop the Rope Cap
+          </ButtonLink>
+        </div>
+      </section>
+
+      <section aria-labelledby="size-title" className="wrap mx-auto max-w-[780px] pt-14">
+        <h2 id="size-title" className="title-card text-center">
+          Size
+        </h2>
+        <p className="mt-3 text-center text-[14.4px] font-bold">One size {POLICY.oneSize}</p>
+        <table className="spec-table mt-6">
+          <thead>
+            <tr>
+              {["Head circumference", "Inches", "Centimetres"].map((h) => (
+                <th key={h} scope="col">
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row" className="font-normal">
+                One size (fitted 6⅞–7½)
+              </th>
+              <td className="tabular">21.5–23.75</td>
+              <td className="tabular">55–60</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section aria-labelledby="measure-title" className="wrap mx-auto max-w-[780px] pt-14">
+        <h2 id="measure-title" className="title-card text-center">
+          How to measure
+        </h2>
+        <ol className="mt-6 flex flex-col">
+          {STEPS.map((step, i) => (
+            <li key={step} className="flex items-center gap-5 border-b border-border py-4">
+              <span className="w-10 shrink-0 font-display text-[38px] leading-none text-green" aria-hidden>
+                {i + 1}
+              </span>
+              <span className="text-[14.4px] leading-[19.73px]">{step}</span>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <Faq
+        items={[
+          { q: "What if I'm between sizes?", a: "There is one size. The strap adjusts from 21.5 to 23.75 in (55–60 cm), which covers fitted sizes 6⅞ to 7½." },
+          { q: "Does it shrink?", a: "It's garment-washed before it reaches you, so it won't shrink further. Spot clean and air dry." },
+          { q: "Can I return it if it doesn't fit?", a: `${POLICY.returns}.` },
+        ]}
+      />
+      <p className="wrap pb-16 text-center text-[14.4px]">
+        <Link href="/quiz" className="link" data-track="fit_guide_quiz">
+          Still unsure? Take the quiz
+        </Link>
+      </p>
+    </>
+  )
 }

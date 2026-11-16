@@ -6,12 +6,14 @@ import { cookies } from "next/headers"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
 import { Exposure } from "@/components/exposure"
-import { Digits } from "@/components/digits"
+import { CrownProfiles } from "@/components/crown-profiles"
 import { RopeBuyBlock } from "@/components/rope-buy-block"
 import { Track } from "@/components/track"
+import { ButtonLink } from "@/components/ui/button"
 import { ATTRIBUTION_COOKIE, parseAttribution } from "@/lib/attribution"
 import { getSeries } from "@/lib/data/content"
 import { getVariant } from "@/lib/experiments"
+import { pad2 } from "@/lib/rope"
 
 /** The A/B test on this page's headline (Admin → Analytics → Experiments). */
 const HEADLINE_EXPERIMENT = "story-headline"
@@ -23,14 +25,15 @@ export async function generateMetadata({ params }: PageProps<"/stories/[handle]"
 }
 
 /**
- * Story page for cold social traffic, in the box's vocabulary: the headline
- * (under test) on the front panel with a die-cut window, the problem, the
- * stance printed on a full ink panel, the proof as numbered episodes on one
- * keylined plate, the Rope Cap's front panel, your turn, and the close.
+ * Story page for cold social traffic (SITE_SPEC v8 E.6.9, Eastside's about
+ * page): a full-bleed hero with the headline under test, the stance, the
+ * chapters as alternating splits (the problem, then each episode), the proof
+ * band with the crown profiles, the Rope Cap in the PDP layout, your turn,
+ * and a closing editorial split.
  */
 export default function StoryPage(props: PageProps<"/stories/[handle]">) {
   return (
-    <Suspense fallback={<div className="mx-auto mt-6 h-[70vh] max-w-[1440px] animate-pulse bg-wash" />}>
+    <Suspense fallback={<div className="h-[75vh] bg-tile" aria-busy />}>
       <StoryContent params={props.params} />
     </Suspense>
   )
@@ -55,123 +58,127 @@ async function StoryContent({ params }: { params: PageProps<"/stories/[handle]">
 
   const episodes = [...series.episodes].sort((x, y) => Date.parse(x.published_at) - Date.parse(y.published_at))
 
+  const photos = ["/hats/rope-brim.jpg", "/hats/rope-lifestyle-hero.jpg", "/hats/rope-clubhouse.jpg", "/hats/story-crush.jpg"]
+  const chapters = [
+    ...(series.audience ? [{ key: "problem", label: "The problem", title: "Most rope caps run tall.", body: series.audience, href: "/fit-guide", linkLabel: "How our crown compares", track: "story_fit_guide", external: false }] : []),
+    ...episodes.map((e, i) => ({
+      key: e.asset_key,
+      label: `Episode ${pad2(i + 1)} · ${series.channel === "tiktok" ? "TikTok" : series.channel}`,
+      title: e.title,
+      body: e.subject ?? "",
+      href: e.post_url ?? `/stories/${series.handle}`,
+      linkLabel: fromEpisode?.asset_key === e.asset_key ? "You just watched this" : "Watch the episode",
+      track: "story_episode",
+      external: !!e.post_url,
+    })),
+  ]
+
   return (
     <>
       <Exposure experiment={HEADLINE_EXPERIMENT} variant={variant} />
       <Track event="story_viewed" props={{ series: series.handle, from_episode: fromEpisode?.asset_key }} />
-      <div className="box mt-3 md:mt-6">
-        <section className="panel overflow-hidden">
-          <div className="relative grid grid-cols-[minmax(0,1fr)] gap-6 p-[var(--panel-pad)] lg:grid-cols-[minmax(0,6fr)_minmax(0,5fr)] lg:items-center">
-            <div className="flex flex-col gap-5 lg:order-2">
-              <h1 className={`panel-title ${headline && headline.length > 80 ? "!text-[clamp(2rem,1.5rem+2vw,3rem)]" : ""}`}>{headline}</h1>
-              {subhead && <p className="max-w-[56ch] text-[1.125rem] leading-[1.6] text-ink-2">{subhead}</p>}
-              {fromEpisode && (
-                <p className="flex items-center gap-2 text-[0.9375rem]">
-                  <PlayCircle size={20} weight="fill" aria-hidden /> You just watched: <span className="font-semibold">{fromEpisode.title}</span>
-                </p>
-              )}
-              <div className="flex flex-wrap gap-3">
-                <Link href="#offer" className="btn btn-secondary btn-large" data-track="story_shop">
-                  Shop the Rope Cap
-                </Link>
-                <Link href="#proof" className="btn btn-outline-black btn-large" data-track="story_see_proof">
-                  See the proof
-                </Link>
-              </div>
-              <p className="label text-ink-2">{series.title} · from Shelby</p>
-            </div>
-            <div className="window aspect-[4/3] lg:order-1">
-              <Image src="/hats/rope-brim.jpg" alt="A golfer setting the brim of a navy rope cap on the course" fill preload sizes="(min-width: 1024px) 50vw, 92vw" className="object-cover" />
-              <span className="window-shade" aria-hidden />
-            </div>
-          </div>
-        </section>
 
-        {series.audience && (
-          <section aria-labelledby="problem-title" className="panel">
-            <div className="relative grid grid-cols-[minmax(0,1fr)] gap-6 p-[var(--panel-pad)] md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:items-center">
-              <div className="window aspect-[4/3]">
-                <Image src="/hats/rope-lifestyle-hero.jpg" alt="A golfer in a Pine rope cap on a links course" fill sizes="(min-width: 768px) 40vw, 92vw" className="object-cover" />
-                <span className="window-shade" aria-hidden />
+      <section className="overlay-bottom relative h-[520px] overflow-hidden bg-ink md:h-[75vh] md:min-h-[520px]">
+        <Image src="/hats/story-crush.jpg" alt="" fill preload sizes="100vw" className="object-cover" />
+        <div className="absolute inset-x-4 bottom-4 z-[1] md:inset-x-auto md:top-1/2 md:right-[50px] md:bottom-auto md:left-[57.4%] md:max-w-[563px] md:-translate-y-1/2">
+          <h1 className={`title-feature text-on-ink ${headline && headline.length > 80 ? "!text-[32px] md:!text-[44px]" : ""}`}>{headline}</h1>
+          {fromEpisode && (
+            <p className="mt-3 flex items-center gap-2 text-[14.4px] text-on-ink">
+              <PlayCircle size={18} weight="fill" aria-hidden /> You just watched: <span className="font-medium">{fromEpisode.title}</span>
+            </p>
+          )}
+        </div>
+      </section>
+
+      <section aria-labelledby="stance-title" className="wrap mx-auto max-w-[780px] py-14 text-center">
+        <p id="stance-title" className="eyebrow">
+          {series.title}
+        </p>
+        {subhead && <p className="body-long mt-3">{subhead}</p>}
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
+          <ButtonLink href="#offer" track="story_shop">
+            Shop the Rope Cap
+          </ButtonLink>
+          <Link href="/fit-guide" className="link text-[14.4px]" data-track="story_fit_guide">
+            Fit guide
+          </Link>
+        </div>
+      </section>
+
+      {chapters.length > 0 && (
+        <div className="wrap flex flex-col gap-14 pb-14 md:gap-20">
+          {chapters.map((ch, i) => (
+            <section key={ch.key} aria-labelledby={`ch-${i}`} className="grid items-center gap-6 md:grid-cols-[459px_minmax(0,1fr)] md:gap-16">
+              <div className={`relative aspect-[4/5] overflow-hidden bg-tile ${i % 2 ? "md:order-2" : ""}`}>
+                <Image src={photos[i % photos.length]} alt="" fill sizes="(min-width: 750px) 459px, 100vw" className="object-cover" />
               </div>
-              <div className="flex flex-col gap-4">
-                <h2 id="problem-title" className="panel-title">
-                  The problem
+              <div className={`flex max-w-[560px] flex-col items-start ${i % 2 ? "md:order-1 md:justify-self-end" : ""}`}>
+                <p className="eyebrow-sm">{ch.label}</p>
+                <h2 id={`ch-${i}`} className="title-section mt-2 !text-[28px] md:!text-[38.4px]">
+                  {ch.title}
                 </h2>
-                <p className="max-w-[60ch] text-[1.125rem] leading-[1.6]">{series.audience}</p>
-                <Link href="/fit-guide" className="link w-fit font-semibold" data-track="story_fit_guide">
-                  How our crown compares
+                {ch.body && <p className="body-long mt-3">{ch.body}</p>}
+                <Link
+                  href={ch.href}
+                  {...(ch.external ? { target: "_blank", rel: "noreferrer" } : {})}
+                  data-track={ch.track}
+                  aria-current={ch.linkLabel === "You just watched this" ? "true" : undefined}
+                  className="link mt-4 text-[14.4px]"
+                >
+                  {ch.linkLabel}
                 </Link>
               </div>
-            </div>
-          </section>
-        )}
+            </section>
+          ))}
+        </div>
+      )}
 
-        <section id="stance" aria-labelledby="stance-title" className="panel ink-dark" style={{ "--panel-bg": "#1E3B2F", "--panel-ink": "#F1ECE0", "--panel-line": "#10241B" } as React.CSSProperties}>
-          <div className="relative flex flex-col gap-5 p-[var(--panel-pad)] md:py-16">
-            <h2 id="stance-title" className="label">
-              The stance
+      <section id="proof" aria-labelledby="proof-title" className="band-tile scroll-mt-24 py-14">
+        <div className="wrap grid items-center gap-8 md:grid-cols-2">
+          <CrownProfiles low={11} top={11.5} fallbackColor="Pine" />
+          <div className="flex flex-col items-start">
+            <p className="eyebrow-sm">The proof</p>
+            <h2 id="proof-title" className="title-section mt-2 !text-[28px] md:!text-[38.4px]">
+              About 11–11.5 cm
             </h2>
-            <p className="model !text-[clamp(2.25rem,1.5rem+3.2vw,4.5rem)] max-w-[22ch] !leading-[.95]">{series.stance}</p>
-            {series.proof && <p className="max-w-[60ch] text-[1.125rem] leading-[1.6] opacity-90">{series.proof}</p>}
-          </div>
-        </section>
-
-        {episodes.length > 0 && (
-          <section id="proof" aria-labelledby="proof-title" className="flex scroll-mt-28 flex-col gap-4">
-            <h2 id="proof-title" className="panel-title">
-              The proof
-            </h2>
-            <ol className="grid plate sm:grid-cols-2 lg:grid-cols-4">
-              {episodes.map((e, i) => (
-                <li key={e.asset_key} className="bg-paper">
-                  <Link
-                    href={e.post_url ?? `/stories/${series.handle}`}
-                    {...(e.post_url ? { target: "_blank", rel: "noreferrer" } : {})}
-                    data-track="story_episode"
-                    aria-current={fromEpisode?.asset_key === e.asset_key ? "true" : undefined}
-                    className={`flex h-full flex-col gap-2 p-5 hover:bg-wash ${fromEpisode?.asset_key === e.asset_key ? "outline-[3px] outline-offset-[-3px] outline-ink" : ""}`}
-                  >
-                    <span className="text-[2.5rem] leading-none" aria-hidden>
-                      <Digits value={String(i + 1).padStart(2, "0")} />
-                    </span>
-                    <span className="label">Episode {i + 1} · TikTok</span>
-                    <span className="text-[1.125rem] font-semibold">{e.title}</span>
-                    {e.subject && <span className="text-[0.9375rem] leading-6 text-ink-2">{e.subject}</span>}
-                  </Link>
-                </li>
-              ))}
-            </ol>
-          </section>
-        )}
-
-        <section id="offer" aria-label="The Rope Cap" className="box-flush scroll-mt-28">
-          <RopeBuyBlock source="story" withSide />
-        </section>
-
-        {series.participation_prompt && (
-          <section aria-labelledby="turn-title" className="panel">
-            <div className="relative flex flex-col items-start gap-3 p-[var(--panel-pad)]">
-              <h2 id="turn-title" className="panel-title">
-                Your turn
-              </h2>
-              <p className="max-w-[56ch] text-[1.25rem] leading-[1.5]">{series.participation_prompt}</p>
-              <p className="text-[0.9375rem] text-ink-2">Reply on {series.channel === "tiktok" ? "TikTok" : series.channel}. Your answers shape the next episode.</p>
-            </div>
-          </section>
-        )}
-
-        <section aria-labelledby="close-title" className="panel ink-dark" style={{ "--panel-bg": "#14213D", "--panel-ink": "#FFFFFF", "--panel-line": "#14213D" } as React.CSSProperties}>
-          <div className="relative flex flex-col items-start gap-5 p-[var(--panel-pad)] md:flex-row md:items-end md:justify-between">
-            <h2 id="close-title" className="model !text-[clamp(2.5rem,1.8rem+3vw,4.5rem)] max-w-[16ch]">
-              {series.title}
-            </h2>
-            <Link href="#offer" className="btn btn-on-ink btn-large shrink-0" style={{ "--btn-bg": "#FFFFFF", "--btn-fg": "#14213D" } as React.CSSProperties} data-track="story_close_cta">
-              Get the Rope Cap
+            {series.proof && <p className="body-long mt-3">{series.proof}</p>}
+            <Link href="/fit-guide" className="link mt-4 text-[14.4px]" data-track="story_see_proof">
+              See the measurements
             </Link>
           </div>
+        </div>
+      </section>
+
+      <section id="offer" aria-label="The Rope Cap" className="scroll-mt-24">
+        <RopeBuyBlock source="story" />
+      </section>
+
+      {series.participation_prompt && (
+        <section aria-labelledby="turn-title" className="wrap mx-auto max-w-[780px] pb-14 text-center">
+          <p className="eyebrow-sm">Your turn</p>
+          <h2 id="turn-title" className="title-blog mt-2">
+            {series.participation_prompt}
+          </h2>
+          <p className="meta mt-3">Reply on {series.channel === "tiktok" ? "TikTok" : series.channel}. Your answers shape the next episode.</p>
         </section>
-      </div>
+      )}
+
+      <section aria-labelledby="close-title" className="grid md:grid-cols-2">
+        <div className="relative aspect-square overflow-hidden md:order-2">
+          <Image src="/hats/rope-clubhouse.jpg" alt="" fill sizes="(min-width: 750px) 50vw, 100vw" className="object-cover" />
+        </div>
+        <div className="band-tile flex items-center justify-center p-6 md:order-1">
+          <div className="flex max-w-[420px] flex-col items-center text-center">
+            <h2 id="close-title" className="display-xl">
+              {series.title}
+            </h2>
+            <p className="body-editorial mt-3">A mid crown that sits right the first time.</p>
+            <a href="#offer" className="btn btn-black btn-sm mt-5" data-track="story_close_cta">
+              Get the Rope Cap
+            </a>
+          </div>
+        </div>
+      </section>
     </>
   )
 }

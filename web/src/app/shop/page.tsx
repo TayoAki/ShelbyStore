@@ -1,33 +1,56 @@
 import type { Metadata } from "next"
-import Image from "next/image"
 import Link from "next/link"
 import { Suspense } from "react"
-import { Sleeves } from "@/components/box/back-panel"
+import { Faq } from "@/components/accordion"
+import { lead } from "@/components/header"
+import { HoleCard } from "@/components/hole-card"
+import { KitCard } from "@/components/kit-card"
 import { ProductCard } from "@/components/product-card"
+import { ShopBrowser, type ShopItem } from "@/components/shop/shop-browser"
 import { Track } from "@/components/track"
 import { liveStock, ropeCatalog, type RopeCatalog } from "@/lib/data/rope"
-import { colorThumbs } from "@/lib/product"
-import { CORE_COLORS } from "@/lib/rope"
+import { POLICY } from "@/lib/policy"
+import { colorThumbs, price } from "@/lib/product"
+import { CORE_COLORS, editionOf, type Hole } from "@/lib/rope"
 import type { VariantStock } from "@/lib/types"
 
 export const metadata: Metadata = {
-  title: "The Rope Cap",
-  description: "One rope cap, four core colors and a numbered edition each season.",
+  title: "Shop",
+  description: "The Rope Cap in four core colors, the numbered holes, and the Pair and Foursome kits.",
 }
 
 const GROUPS = ["all", "core", "limited", "bundles"] as const
 type Group = (typeof GROUPS)[number]
+const GROUP_LABEL: Record<Group, string> = { all: "All", core: "Core", limited: "Numbered", bundles: "Kits" }
+const COLORWAYS = ["Tour White", "Clubhouse Navy", "Pine", "Fescue", "Azalea", "Cypress", "Haar"]
+const SIZES = "(min-width: 990px) 260px, 45vw"
 
 /**
- * The range, printed like the model line-up on a box's back: the four core
- * colourways and the numbered editions as units on one keylined plate, the
- * printed group tabs, then the Pair and Foursome sleeves.
+ * Eastside's collection page (SITE_SPEC v8 E.6.2): breadcrumb and title, the
+ * filter bar, the sidebar and the 4-column grid (core colours, numbered
+ * editions, holes without products, then the kits), and the FAQ.
  */
 export default function ShopPage(props: PageProps<"/shop">) {
   return (
-    <Suspense fallback={<div className="mx-auto mt-6 aspect-[4/1] max-w-[1440px] animate-pulse bg-wash" />}>
-      <ShopContent searchParams={props.searchParams} />
-    </Suspense>
+    <>
+      <header className="wrap pt-4 text-center">
+        <nav aria-label="Breadcrumb" className="crumbs-coll">
+          <Link href="/">Home</Link> / <span aria-current="page">Shop</span>
+        </nav>
+        <h1 className="title-page mt-[13px]">Shop</h1>
+      </header>
+      <Suspense fallback={<div className="mt-6 h-[62px] border-y border-border" />}>
+        <ShopContent searchParams={props.searchParams} />
+      </Suspense>
+      <Faq
+        items={[
+          { q: "How does the Rope Cap fit?", a: `One size, ${POLICY.oneSize}, with an adjustable strap. The crown is mid height, about 11–11.5 cm, so it sits on your head rather than on top of it.` },
+          { q: "What is a numbered hole?", a: `Each season adds a numbered color to The Card, one hole at a time. ${POLICY.limitedRun}` },
+          { q: "How much is shipping?", a: POLICY.shipping },
+          { q: "Can I return it?", a: `${POLICY.returns}.` },
+        ]}
+      />
+    </>
   )
 }
 
@@ -35,94 +58,62 @@ async function ShopContent({ searchParams }: { searchParams: PageProps<"/shop">[
   const sp = await searchParams
   const group: Group = GROUPS.includes(sp.group as Group) ? (sp.group as Group) : "all"
   const c = await ropeCatalog()
-  const limited = c.holes.filter((h) => !h.core && h.status !== "announced")
   return (
     <>
       <Track event="collection_viewed" props={{ group }} />
-      <div className="box mt-6 md:mt-10">
-        <nav aria-label="Breadcrumb" className="label !text-[12px] text-ink-2">
-          <Link href="/" className="hover:underline">
-            Home
-          </Link>{" "}
-          / The Rope Cap
-        </nav>
-        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-          <div className="flex flex-col gap-3">
-            <h1 className="model">The range</h1>
-            <p className="max-w-[56ch] text-[1.125rem] leading-[1.6]">
-              One cap in four core colors, always in stock, and {limited.length} numbered {limited.length === 1 ? "edition" : "editions"} on the season&apos;s dates.
-            </p>
-          </div>
-          <div className="flex gap-6 border-b-2 border-ink" role="tablist" aria-label="Groups">
-            {GROUPS.map((g) => (
-              <Link
-                key={g}
-                href={g === "all" ? "/shop" : `/shop?group=${g}`}
-                role="tab"
-                aria-selected={group === g}
-                data-track="color_pill"
-                className="tab-title -mb-[2px] flex min-h-11 items-end"
-              >
-                {g === "limited" ? "Numbered" : g}
-              </Link>
-            ))}
-          </div>
-        </div>
-        <Suspense fallback={<Grid c={c} group={group} stock={undefined} />}>
-          <LiveGrid c={c} group={group} />
-        </Suspense>
-        {(group === "all" || group === "bundles") && <Sleeves pair={c.pair} foursome={c.foursome} />}
-      </div>
+      <Suspense fallback={<Browser c={c} group={group} stock={undefined} holes={c.holes} />}>
+        <LiveBrowser c={c} group={group} />
+      </Suspense>
     </>
   )
 }
 
-async function LiveGrid({ c, group }: { c: RopeCatalog; group: Group }) {
-  const { stock } = await liveStock(c)
-  return <Grid c={c} group={group} stock={stock} />
+async function LiveBrowser({ c, group }: { c: RopeCatalog; group: Group }) {
+  const { stock, holes } = await liveStock(c)
+  return <Browser c={c} group={group} stock={stock} holes={holes} />
 }
 
-function Grid({ c, group, stock }: { c: RopeCatalog; group: Group; stock: VariantStock | undefined }) {
-  if (group === "bundles") return null
+function Browser({ c, group, stock, holes }: { c: RopeCatalog; group: Group; stock: VariantStock | undefined; holes: Hole[] }) {
+  const items: ShopItem[] = []
+  let order = 0
   const showCore = group === "all" || group === "core"
   const showLimited = group === "all" || group === "limited"
-  const upcoming = c.holes.filter((h) => !h.core && h.status === "upcoming")
-  const cards = [
-    ...(showCore && c.core ? CORE_COLORS.map((color, i) => <ProductCard key={color} product={c.core!} color={color} colors={[...CORE_COLORS]} stock={stock} preload={i < 2} />) : []),
-    ...(showLimited
-      ? c.editions.map((e) => {
-          const h = c.holes.find((x) => x.productHandle === e.handle)
-          return <ProductCard key={e.handle} product={e} color={colorThumbs(e)[0]?.color ?? e.title} stock={stock} badge={h ? `HOLE ${h.hole}` : "LIMITED"} />
-        })
-      : []),
-  ]
-  if (!cards.length && !(showLimited && upcoming.length))
-    return (
-      <div className="panel flex flex-col items-start gap-4 p-[var(--panel-pad)]">
-        <p className="text-[1.125rem]">No numbered edition is on sale right now. The next one is on The Card.</p>
-        <Link href="/card" className="btn btn-secondary">
-          See The Card
-        </Link>
-      </div>
-    )
-  return (
-    <div className="grid grid-cols-2 plate md:grid-cols-4">
-      {cards}
-      {showLimited &&
-        upcoming.map((h) => (
-          <Link key={h.hole} href={`/card/${h.handle}`} className="group flex h-full flex-col gap-3 bg-paper p-3 md:p-4" data-track="card_hole">
-            <span className="window relative block aspect-square">
-              {h.image && <Image src={h.image} alt={`${h.name}, Hole ${h.hole}`} fill sizes="(min-width: 768px) 22vw, 45vw" className="object-contain p-[7%]" />}
-              <span className="window-shade" aria-hidden />
-            </span>
-            <span className="font-model text-[1.375rem] leading-none font-[800] uppercase">{h.name}</span>
-            <span className="flex items-center gap-2 text-[0.9375rem] text-ink-2">
-              <span className="badge-edition">Hole {h.hole}</span>
-              {h.size ? `Edition of ${h.size}` : "Numbered edition"}
-            </span>
-            <span className="label mt-auto underline decoration-1 underline-offset-4 group-hover:decoration-2">Join the tee sheet</span>
-          </Link>
-        ))}
-    </div>
-  )
+  const showKits = group === "all" || group === "bundles"
+  const dateOf = (h: Hole | undefined) => h?.date ?? null
+
+  if (showCore && c.core)
+    for (const color of CORE_COLORS)
+      items.push({
+        key: `core-${color}`,
+        colors: [color],
+        price: price(c.core).amount,
+        date: null,
+        order: order++,
+        node: <ProductCard product={c.core} color={color} colors={[...CORE_COLORS]} stock={stock} preload={order < 3} linkTrack="core_product" sizes={SIZES} />,
+      })
+  if (showLimited) {
+    for (const e of c.editions) {
+      const h = holes.find((x) => x.hole === editionOf(e)?.hole)
+      const color = colorThumbs(e)[0]?.color ?? e.title
+      items.push({
+        key: e.handle,
+        colors: [color],
+        price: price(e).amount,
+        date: dateOf(h),
+        order: order++,
+        node: <ProductCard product={e} color={color} stock={stock} badge={h ? `HOLE ${h.hole}` : null} linkTrack="card_hole" sizes={SIZES} />,
+      })
+    }
+    for (const h of holes.filter((x) => !x.core && !c.editions.some((e) => e.handle === x.productHandle)))
+      items.push({ key: `hole-${h.hole}`, colors: COLORWAYS.includes(h.name) ? [h.name] : [], price: null, date: h.date, order: order++, node: <HoleCard hole={h} price={null} /> })
+  }
+  if (showKits) {
+    if (c.pair)
+      items.push({ key: "pair", colors: [...CORE_COLORS], price: price(c.pair).amount, date: null, order: order++, node: <KitCard product={c.pair} title="The Pair" href="/offer/the-pair" image={lead("Clubhouse Navy")} hover={lead("Pine")} track="home_pair" sizes={SIZES} /> })
+    if (c.foursome)
+      items.push({ key: "foursome", colors: [...CORE_COLORS], price: price(c.foursome).amount, date: null, order: order++, node: <KitCard product={c.foursome} title="The Foursome" href="/offer/the-pair#foursome" image={lead("Fescue")} hover={lead("Tour White")} track="home_foursome" sizes={SIZES} /> })
+  }
+  const colors = COLORWAYS.filter((col) => items.some((i) => i.colors.includes(col)))
+  const groups = GROUPS.map((g) => ({ key: g, label: GROUP_LABEL[g], href: g === "all" ? "/shop" : `/shop?group=${g}` }))
+  return <ShopBrowser items={items} groups={groups} group={group} colors={colors} />
 }

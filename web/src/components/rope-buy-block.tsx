@@ -2,38 +2,38 @@ import { Suspense, type ReactNode } from "react"
 import { getStock } from "@/lib/data/stock"
 import { ropeCatalog } from "@/lib/data/rope"
 import { fitProfileOf, imagesFor } from "@/lib/product"
-import { CORE_COLORS, crownCm, holeDate, ropeName } from "@/lib/rope"
+import { CORE_COLORS, crownCm, pad2, ropeName } from "@/lib/rope"
 import type { Product } from "@/lib/types"
 import { BundleRows } from "./bundle-rows"
 import { BuyCard } from "./pdp/buy-card"
+import { Gallery } from "./pdp/gallery"
 import { SelectionProvider } from "./pdp/selection"
-import { SidePanel } from "./box/side-panel"
 
 /**
- * The core Rope Cap's front panel for landing pages (story, listicle,
- * advertorial, quiz result): its own colour state (no URL writes), live stock,
- * its die-cut window and the bundle sleeves.
+ * The core Rope Cap in Eastside's PDP layout for landing pages (story,
+ * listicle, advertorial): the colour-synced gallery beside the buy block, its
+ * own colour state (no URL writes), live stock and the kit rows.
  */
 export async function RopeBuyBlock({
   initialColor,
   showBundles = true,
   source = "landing",
-  withGallery = false,
-  aside,
   bundleTrack,
-  withSide = false,
+  heading,
+  intro,
 }: {
   initialColor?: string | null
   showBundles?: boolean
   source?: string
-  /** The v5 PDP layout: the colour-synced gallery beside the buy card (quiz result). */
-  withGallery?: boolean
-  /** Rendered above the buy card (the quiz result's "Why it fits you" card). */
-  aside?: ReactNode
-  /** data-track names for the bundle rows (the quiz result uses `quiz_bundle`). */
+  /** data-track names for the kit rows. */
   bundleTrack?: { pair: string; foursome: string }
-  /** Open the front panel beside the side panel, as one box row (landing pages inside a box). */
+  heading?: string
+  /** Rendered above the title in the buy column. */
+  intro?: ReactNode
+  /** Accepted for older callers; v8 always uses the PDP layout. */
+  withGallery?: boolean
   withSide?: boolean
+  aside?: ReactNode
 }) {
   const c = await ropeCatalog()
   if (!c.core) return null
@@ -46,12 +46,7 @@ export async function RopeBuyBlock({
       group: "LIMITED" as const,
       swatches: c.holes
         .filter((h) => !h.core && (h.status === "live" || h.status === "upcoming"))
-        .map((h) => ({
-          name: h.name,
-          href: h.productHandle ? `/products/${h.productHandle}` : `/card/${h.handle}`,
-          caption: h.status === "upcoming" ? (holeDate(h.date).day ?? "").replace(/ \d{4}$/, "") : null,
-          selected: false,
-        })),
+        .map((h) => ({ name: h.name, href: h.productHandle ? `/products/${h.productHandle}` : `/card/${h.handle}`, caption: `No. ${pad2(h.hole)}`, selected: false })),
     },
     ropeByColor: Object.fromEntries(CORE_COLORS.map((col) => [col, ropeName(core, col)])),
     edition: null,
@@ -60,36 +55,19 @@ export async function RopeBuyBlock({
     bundles: showBundles ? <BundleRows pair={c.pair} foursome={c.foursome} trackPair={bundleTrack?.pair} trackFoursome={bundleTrack?.foursome} /> : null,
     titleAs: "h2" as const,
     source,
-    imagesByColor: Object.fromEntries(CORE_COLORS.map((col) => [col, imagesFor(core, col)])),
-    fallbackImages: imagesFor(core),
-    modelNumber: 1,
+    heading,
+    crumbs: intro,
+    compact: true,
   }
   const initial = initialColor && (CORE_COLORS as readonly string[]).includes(initialColor) ? initialColor : CORE_COLORS[0]
-  const card = (
-    <Suspense fallback={<BuyCard {...props} stock={null} />}>
-      <Live core={core} props={props} />
-    </Suspense>
-  )
-  // The front panel carries its own die-cut window; `withGallery` sets it beside the aside on wide screens.
-  // Inside a flattened box the panels butt edge to edge: a box row (front beside side, or the aside beside the front).
   return (
     <SelectionProvider initialColor={initial} syncUrl={false}>
-      {withSide ? (
-        <div className="box-row">
-          {card}
-          <SidePanel product={c.core} id={`${source}-spec`} headingLevel="h3" fallbackColor={initial} />
-        </div>
-      ) : withGallery && aside ? (
-        <div className="box-row">
-          {aside}
-          {card}
-        </div>
-      ) : (
-        <div className="box-flush">
-          {aside}
-          {card}
-        </div>
-      )}
+      <div className="pdp-grid wrap py-10">
+        <Gallery single title={core.title} imagesByColor={Object.fromEntries(CORE_COLORS.map((col) => [col, imagesFor(core, col)]))} fallback={imagesFor(core)} initialColor={initial} />
+        <Suspense fallback={<BuyCard {...props} stock={null} />}>
+          <Live core={core} props={props} />
+        </Suspense>
+      </div>
     </SelectionProvider>
   )
 }

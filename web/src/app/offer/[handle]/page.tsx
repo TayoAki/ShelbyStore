@@ -1,21 +1,21 @@
 import type { Metadata } from "next"
+import Image from "next/image"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
 import { Faq } from "@/components/accordion"
 import { ContinuityBanner } from "@/components/continuity-banner"
 import { Exposure } from "@/components/exposure"
-import { Digits } from "@/components/digits"
-import { SwatchFace } from "@/components/swatch"
 import { FoursomePicker, PairPicker } from "@/components/offer/pair-picker"
 import { ScrollTo } from "@/components/scroll-to"
 import { Track } from "@/components/track"
 import { listSeries } from "@/lib/data/content"
-import { liveStock, ropeCatalog } from "@/lib/data/rope"
+import { ropeCatalog } from "@/lib/data/rope"
 import { getStock } from "@/lib/data/stock"
 import { getVariant } from "@/lib/experiments"
 import { formatMoney } from "@/lib/format"
 import { price } from "@/lib/product"
+import { POLICY } from "@/lib/policy"
 import { CORE_COLORS } from "@/lib/rope"
 
 /** The A/B test on this page's headline (Admin → Analytics → Experiments; SITE_SPEC G.6.5). */
@@ -27,13 +27,13 @@ export const metadata: Metadata = {
 }
 
 /**
- * The offer: The Pair as a two-window sleeve above the fold, The Foursome as
- * the step-up sleeve printed in pine, then what's included, the live proof,
- * the FAQ, and the close. `/offer/the-foursome` is the same page.
+ * The offer (SITE_SPEC v8 E.6.10): The Pair in the PDP layout, the story
+ * link, The Foursome in a #F6F6F6 band, the FAQ and the closing splash.
+ * `/offer/the-foursome` is the same page, scrolled to the Foursome.
  */
 export default function OfferPage(props: PageProps<"/offer/[handle]">) {
   return (
-    <Suspense fallback={<div className="mx-auto mt-6 h-[70vh] max-w-[1440px] animate-pulse bg-wash" />}>
+    <Suspense fallback={<div className="wrap h-[70vh] pt-6" aria-busy />}>
       <OfferContent params={props.params} />
     </Suspense>
   )
@@ -51,6 +51,16 @@ async function OfferContent({ params }: { params: PageProps<"/offer/[handle]">["
   const stance = series[0]?.stance ?? null
   const colors = [...CORE_COLORS] as string[]
 
+  const crumbs = (
+    <nav aria-label="Breadcrumb" className="crumbs-pdp">
+      <Link href="/">Home</Link>
+      <span className="dot" aria-hidden />
+      <Link href="/products/rope-cap">The Rope Cap</Link>
+      <span className="dot" aria-hidden />
+      <span aria-current="page">The Pair</span>
+    </nav>
+  )
+
   return (
     <>
       <Exposure experiment={HEADLINE_EXPERIMENT} variant={variant} />
@@ -59,115 +69,59 @@ async function OfferContent({ params }: { params: PageProps<"/offer/[handle]">["
       <Suspense fallback={null}>
         <ContinuityBanner />
       </Suspense>
-      <div className="box mt-3 md:mt-6">
-        <Suspense fallback={<PairPicker pair={c.pair} colors={colors} single={single} stock={null} headline={headline} />}>
-          <LivePair handle={handle} headline={headline} />
+      <div id="top" data-offer={handle} className="scroll-mt-24">
+        <Suspense fallback={<PairPicker pair={c.pair} colors={colors} single={single} stock={null} headline={headline} crumbs={crumbs} />}>
+          <LivePair headline={headline} crumbs={crumbs} />
         </Suspense>
-        {c.foursome && (
-          <Suspense fallback={<FoursomePicker foursome={c.foursome} colors={colors} single={single} stock={null} />}>
-            <LiveFoursome />
-          </Suspense>
-        )}
-        <section aria-labelledby="included-title" className="panel">
-          <div className="relative flex flex-col gap-6 p-[var(--panel-pad)]">
-            <h2 id="included-title" className="panel-title">
-              What&apos;s in the sleeve
-            </h2>
-            <dl className="grid plate md:grid-cols-3">
-              {[
-                ["Included", "Two Rope Caps, one size each. Mid crown, washed cotton, braided rope, strap with a brass slide."],
-                ["Why two", "A light one and a dark one. One for the bag, one for the car. You already know the fit."],
-                ["Shipping", `The Pair is ${formatMoney(pairPrice)}, over the $85 line, so it ships free. 30-day returns.`],
-              ].map(([t, b]) => (
-                <div key={t} className="flex flex-col gap-2 bg-paper p-5">
-                  <dt className="label">{t}</dt>
-                  <dd className="text-[1.0625rem] leading-7">{b}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-        </section>
-        <Suspense fallback={null}>
-          <Proof stance={stance} handle={series[0]?.handle ?? null} />
+      </div>
+      {stance && series[0] && (
+        <p className="wrap pt-8 pb-10 text-[14.4px] lg:pl-[calc(var(--gutter-page)+670px+50px+35px)]">
+          {stance}{" "}
+          <Link href={`/stories/${series[0].handle}`} className="link" data-track="offer_story">
+            Why one cap
+          </Link>
+        </p>
+      )}
+      {c.foursome && (
+        <Suspense fallback={<FoursomePicker foursome={c.foursome} colors={colors} single={single} stock={null} />}>
+          <LiveFoursome />
         </Suspense>
-        <Faq
-          items={[
-            { q: "Will it fit?", a: "One size. The strap fits 21.5–23.75 in (55–60 cm), and the crown sits mid. The fit guide shows how to measure." },
-            { q: "Can I pick the same color twice?", a: "Yes. Pick it for both caps." },
-            { q: "Returns", a: "30 days, on the pair." },
-            { q: "Shipping", a: "The Pair ships free (orders of $85 or more). Ships in 1–2 business days." },
-            { q: "Is this a sale?", a: `No. Singles stay ${formatMoney(single)}; two are ${formatMoney(pairPrice)} and four are ${formatMoney(c.foursome ? price(c.foursome).amount : null)}, every day.` },
-          ]}
-        />
-        <section aria-labelledby="offer-close" className="panel ink-dark" style={{ "--panel-bg": "#14213D", "--panel-ink": "#FFFFFF", "--panel-line": "#14213D" } as React.CSSProperties}>
-          <div className="relative flex flex-col items-start gap-5 p-[var(--panel-pad)] md:flex-row md:items-end md:justify-between">
-            <h2 id="offer-close" className="model !text-[clamp(2.5rem,1.8rem+3vw,4.5rem)] max-w-[16ch]">
-              {headline}
+      )}
+      <Faq
+        items={[
+          { q: "Will it fit?", a: `One size. The strap fits ${POLICY.oneSize.replace(/^fits /, "")}, and the crown sits mid. The fit guide shows how to measure.` },
+          { q: "Can I pick the same color twice?", a: "Yes. Pick it for both caps." },
+          { q: "Returns", a: `${POLICY.returns}, on the pair.` },
+          { q: "Shipping", a: `The Pair ships free (orders of $${POLICY.freeShippingThreshold} or more). ${POLICY.dispatch}.` },
+          { q: "Is this a sale?", a: `No. Singles stay ${formatMoney(single)}; two are ${formatMoney(pairPrice)} and four are ${formatMoney(c.foursome ? price(c.foursome).amount : null)}, every day.` },
+        ]}
+      />
+      <section aria-labelledby="offer-close" className="overlay-bottom relative h-[403px] overflow-hidden md:h-[635px]">
+        <Image src="/hats/rope-clubhouse.jpg" alt="" fill sizes="100vw" className="object-cover" />
+        <div className="absolute inset-0 z-[1] flex items-center justify-center px-4">
+          <div className="backdrop-radial flex max-w-[418px] flex-col items-center text-center text-white">
+            <h2 id="offer-close" className="display-splash">
+              Two caps. {formatMoney(pairPrice)}.
             </h2>
-            <a href="#top" className="btn btn-on-ink btn-large shrink-0" style={{ "--btn-bg": "#FFFFFF", "--btn-fg": "#14213D" } as React.CSSProperties} data-track="offer_close_cta">
-              Add the pair · {formatMoney(pairPrice)}
+            <p className="mt-3 text-[14.4px] leading-[19.73px]">Any two colors. Free shipping.</p>
+            <a href="#top" className="btn btn-white btn-sm mt-5" data-track="offer_close_cta">
+              Pick Your Two
             </a>
           </div>
-        </section>
-      </div>
+        </div>
+      </section>
     </>
   )
 }
 
-async function LivePair({ handle, headline }: { handle: string; headline: string }) {
+async function LivePair({ headline, crumbs }: { headline: string; crumbs: React.ReactNode }) {
   const c = await ropeCatalog()
   const stock = await getStock([c.pair!.id])
-  return (
-    <div id="top" data-offer={handle} className="box-flush">
-      <PairPicker pair={c.pair!} colors={[...CORE_COLORS]} single={price(c.core!).amount} stock={stock} headline={headline} />
-    </div>
-  )
+  return <PairPicker pair={c.pair!} colors={[...CORE_COLORS]} single={price(c.core!).amount} stock={stock} headline={headline} crumbs={crumbs} />
 }
 
 async function LiveFoursome() {
   const c = await ropeCatalog()
   const stock = await getStock([c.foursome!.id])
   return <FoursomePicker foursome={c.foursome!} colors={[...CORE_COLORS]} single={price(c.core!).amount} stock={stock} />
-}
-
-async function Proof({ stance, handle }: { stance: string | null; handle: string | null }) {
-  const c = await ropeCatalog()
-  const { stock } = await liveStock(c)
-  const rows = CORE_COLORS.map((col) => {
-    const v = c.core?.variants?.find((x) => x.options?.some((o) => o.value === col))
-    return { col, n: v ? stock[v.id] : undefined }
-  })
-  return (
-    <section aria-labelledby="proof-title" className="panel">
-      <div className="relative grid grid-cols-[minmax(0,1fr)] gap-8 p-[var(--panel-pad)] md:grid-cols-2">
-        <div className="flex flex-col gap-4">
-          <h2 id="proof-title" className="panel-title">
-            In stock today
-          </h2>
-          <ul className="flex flex-col border-2 border-ink">
-            {rows.map((r) => (
-              <li key={r.col} className="flex items-center justify-between gap-3 border-ink px-4 py-3 [&+&]:border-t-2">
-                <span className="flex items-center gap-3 text-[1.0625rem]">
-                  <SwatchFace name={r.col} size={20} /> {r.col}
-                </span>
-                <span className="text-[1.375rem] leading-none">
-                  {typeof r.n === "number" ? r.n > 0 ? <Digits value={r.n} label={`${r.n} in stock`} /> : <span className="label">Restocking</span> : <span className="label">In stock</span>}
-                </span>
-              </li>
-            ))}
-          </ul>
-          <p className="text-[0.875rem] text-ink-2">Live counts from the warehouse.</p>
-        </div>
-        {stance && handle && (
-          <div className="flex flex-col gap-4">
-            <h2 className="panel-title">The Crown Test</h2>
-            <p className="text-[1.25rem] leading-[1.5]">{stance}</p>
-            <Link href={`/stories/${handle}`} className="link w-fit font-semibold" data-track="offer_story">
-              See the test
-            </Link>
-          </div>
-        )}
-      </div>
-    </section>
-  )
 }

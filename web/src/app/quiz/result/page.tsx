@@ -6,16 +6,19 @@ import { redirect } from "next/navigation"
 import { Suspense } from "react"
 import { ContinuityBanner } from "@/components/continuity-banner"
 import { FoursomePicker, PairPicker } from "@/components/offer/pair-picker"
-import { RopeBuyBlock } from "@/components/rope-buy-block"
 import { TeeSheetForm } from "@/components/tee-sheet-form"
 import { Track } from "@/components/track"
 import { ButtonLink } from "@/components/ui/button"
+import { BundleRows } from "@/components/bundle-rows"
+import { shortDate } from "@/components/hole-card"
 import { liveStock, ropeCatalog, type RopeCatalog } from "@/lib/data/rope"
 import { getStock } from "@/lib/data/stock"
 import { formatMoney } from "@/lib/format"
-import { price } from "@/lib/product"
+import { findVariant, imagesFor, price } from "@/lib/product"
+import { POLICY } from "@/lib/policy"
+import type { VariantStock } from "@/lib/types"
 import { answerLabel, matchQuiz, parseAnswers, QUESTIONS, type Answers, type QuizMatch } from "@/lib/quiz"
-import { CORE_COLORS, holeDate, type Hole } from "@/lib/rope"
+import { CORE_COLORS, holeDate, pad2, type Hole } from "@/lib/rope"
 
 export const metadata: Metadata = {
   title: "Your match",
@@ -25,14 +28,14 @@ export const metadata: Metadata = {
 const short = (c: string) => c.replace(/^Clubhouse /, "")
 
 /**
- * Quiz result: the match as the H1, "Why it fits you" printed on a pine
- * panel, the matching front panel preselected (`source: "quiz"`), and the
- * bundle nudge for one cap.
- * Stateless: the answers live in the URL, so a result can be shared.
+ * Quiz result (SITE_SPEC v8 E.6.13): the match in the PDP layout with
+ * "Your color", the reasons, the price and the way to buy it; the kit rows
+ * for one cap. Stateless: the answers live in the URL, so a result can be
+ * shared.
  */
 export default function QuizResultPage(props: PageProps<"/quiz/result">) {
   return (
-    <Suspense fallback={<div className="panel mx-3 mt-6 h-[80vh] md:mx-6" />}>
+    <Suspense fallback={<div className="h-[80vh]" aria-busy />}>
       <Result searchParams={props.searchParams} />
     </Suspense>
   )
@@ -72,23 +75,16 @@ async function Result({ searchParams }: { searchParams: PageProps<"/quiz/result"
       <Suspense fallback={null}>
         <ContinuityBanner />
       </Suspense>
-      <div className="box mt-6 md:mt-10">
-      <header className="flex flex-col gap-2">
-        <h1 className="model">{title}</h1>
-        <p className="text-[1.125rem] text-ink-2">Your match, from your four answers.</p>
-      </header>
+      {match.kind === "single" && <SingleMatch c={c} color={match.color} title={title} why={why} stock={stock} />}
+      {match.kind === "edition" && <EditionMatch hole={match.hole} why={why} c={c} title={title} />}
+      {match.kind === "pair" && c.pair && <PairMatch c={c} match={match} why={why} title={title} />}
+      {match.kind === "foursome" && c.foursome && <FoursomeMatch c={c} match={match} why={why} title={title} />}
 
-      {match.kind === "single" && <RopeBuyBlock withGallery initialColor={match.color} source="quiz" aside={why} bundleTrack={{ pair: "quiz_bundle", foursome: "quiz_bundle" }} />}
-      {match.kind === "edition" && <EditionMatch hole={match.hole} why={why} c={c} />}
-      {match.kind === "pair" && c.pair && <PairMatch c={c} match={match} why={why} />}
-      {match.kind === "foursome" && c.foursome && <FoursomeMatch c={c} match={match} why={why} />}
-
-      <div className="flex flex-col gap-2">
+      <div className="wrap flex flex-col items-center gap-3 py-12 text-center">
         <AnswersLine answers={answers} />
-        <Link href="/quiz" className="btn btn-outline-black w-fit" data-track="quiz_retake">
+        <Link href="/quiz" className="link text-[14.4px]" data-track="quiz_retake">
           Retake the quiz
         </Link>
-      </div>
       </div>
     </>
   )
@@ -96,52 +92,89 @@ async function Result({ searchParams }: { searchParams: PageProps<"/quiz/result"
 
 function WhyCard({ lines }: { lines: string[] }) {
   return (
-    <section aria-labelledby="why-title" className="panel ink-dark" style={{ "--panel-bg": "#1E3B2F", "--panel-ink": "#F1ECE0", "--panel-line": "#10241B" } as React.CSSProperties}>
-      <div className="relative p-[var(--panel-pad)]">
-      <h2 id="why-title" className="panel-title !text-[2rem]">Why it fits you</h2>
-      <ul className="mt-4 flex flex-col gap-3">
-        {lines.map((w) => (
-          <li key={w} className="flex gap-3 text-[1.0625rem] leading-7">
-            <CheckCircle size={20} weight="fill" className="mt-[4px] shrink-0" aria-hidden />
-            {w}
-          </li>
-        ))}
-      </ul>
-      </div>
-    </section>
+    <ul className="mt-4 flex flex-col gap-2" aria-label="Why it fits you">
+      {lines.map((w) => (
+        <li key={w} className="flex gap-2 text-[14.4px] leading-[19.73px]">
+          <CheckCircle size={18} weight="fill" className="mt-px shrink-0 text-green" aria-hidden />
+          {w}
+        </li>
+      ))}
+    </ul>
   )
 }
 
-function EditionMatch({ hole, why, c }: { hole: Hole; why: React.ReactNode; c: RopeCatalog }) {
-  const { day, time } = holeDate(hole.date)
+/** One core colour: the PDP layout with "Your color", the reasons, the price and "Shop Pine". */
+function SingleMatch({ c, color, title, why, stock }: { c: RopeCatalog; color: string; title: string; why: React.ReactNode; stock: VariantStock }) {
+  const core = c.core!
+  const v = findVariant(core, { Color: color })
+  const n = v ? stock[v.id] : undefined
+  const images = imagesFor(core, color)
+  return (
+    <div className="pdp-grid wrap pt-4 lg:pt-6">
+      <div className="pdp-gallery">
+        <div className="tile relative aspect-[5/6] lg:aspect-[2/3] lg:max-w-[565px]">
+          {images[0] && <Image src={images[0]} alt={title} fill preload sizes="(min-width: 990px) 565px, 100vw" className="tile-photo object-contain" />}
+        </div>
+      </div>
+      <div className="pdp-side">
+        <div className="pdp-head pt-4 lg:pt-0">
+          <p className="eyebrow-sm">Your color</p>
+          <h1 className="title-product mt-1">{`${color} Rope Cap`}</h1>
+          {why}
+          <p className="price mt-4">{formatMoney(price(core, v).amount)}</p>
+        </div>
+        <div className="pdp-buy pt-4">
+          <ButtonLink href={`/products/rope-cap?color=${encodeURIComponent(color)}`} size="atc" track="quiz_core">
+            {`Shop ${color.replace(/^Clubhouse /, "")}`}
+          </ButtonLink>
+          <p className="meta mt-3">{typeof n === "number" && n <= 0 ? `Sold out in ${color} right now.` : `In stock · ${POLICY.dispatch.toLowerCase()}`}</p>
+          <div className="mt-6">
+            <BundleRows pair={c.pair} foursome={c.foursome} trackPair="quiz_bundle" trackFoursome="quiz_bundle" />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function EditionMatch({ hole, why, c, title }: { hole: Hole; why: React.ReactNode; c: RopeCatalog; title: string }) {
+  const { time } = holeDate(hole.date)
+  const d = shortDate(hole.date)
   const edition = hole.productHandle ? c.editions.find((p) => p.handle === hole.productHandle) : null
   const amount = edition ? price(edition).amount : null
   return (
-    <div className="box-row">
-      <div className="panel p-[var(--panel-pad)]">
-      <div className="window aspect-square">
-        {hole.image ? (
-          <Image src={hole.image} alt={`The Rope Cap in ${hole.name}`} fill preload sizes="(min-width: 768px) 55vw, 100vw" className="object-contain" />
-        ) : (
-          <div className="flex size-full items-center justify-center bg-wash font-model text-[3rem] font-[800] text-ink">{hole.hole}</div>
-        )}
+    <div className="pdp-grid wrap pt-4 lg:pt-6">
+      <div className="pdp-gallery">
+        <div className="tile relative aspect-[5/6] lg:aspect-[2/3] lg:max-w-[565px]">
+          {hole.image ? (
+            <Image src={hole.image} alt={title} fill preload sizes="(min-width: 990px) 565px, 100vw" className="tile-photo object-contain" />
+          ) : (
+            <span className="absolute inset-0 flex items-center justify-center font-display text-[96px] leading-none" aria-hidden>
+              {pad2(hole.hole)}
+            </span>
+          )}
+        </div>
       </div>
-      </div>
-      <div className="box-flush">
-        {why}
-        <div className="panel flex flex-col gap-4 p-[var(--panel-pad)]">
-          <p className="label">
-            Hole {hole.hole} · {hole.status === "live" ? "Live now" : `${day ?? "Date to come"}${time ? ` · ${time}` : ""}`}
+      <div className="pdp-side">
+        <div className="pdp-head pt-4 lg:pt-0">
+          <p className="eyebrow-sm">Your color · Hole {pad2(hole.hole)}</p>
+          <h1 className="title-product mt-1">{`${hole.name} Rope Cap`}</h1>
+          {why}
+          <p className="meta mt-3">
+            {hole.status === "live" ? "Out now" : d ? `Opens ${d}${time ? `, ${time.replace(" PT", " Pacific")}` : ""}` : "Date to come"}
+            {hole.size ? ` · Edition of ${hole.size}` : ""}
           </p>
-          {hole.size && <span className="badge-edition w-fit">Edition of {hole.size}</span>}
+          {amount !== null && <p className="price mt-2">{formatMoney(amount)}</p>}
+        </div>
+        <div className="pdp-buy flex flex-col gap-4 pt-4">
           {hole.status === "live" && hole.productHandle ? (
-            <ButtonLink href={`/products/${hole.productHandle}`} variant="secondary" size="atc" track="quiz_edition">
-              {`Shop ${hole.name}${amount !== null ? ` · ${formatMoney(amount)}` : ""}`}
+            <ButtonLink href={`/products/${hole.productHandle}`} variant="outline" block track="quiz_edition">
+              {`Shop ${hole.name}`}
             </ButtonLink>
           ) : hole.handle ? (
-            <TeeSheetForm releaseHandle={hole.handle} hole={hole.hole} name={hole.name} tone="light" />
+            <TeeSheetForm releaseHandle={hole.handle} hole={hole.hole} name={hole.name} />
           ) : null}
-          <Link href="/products/rope-cap" className="link" data-track="quiz_core">
+          <Link href="/products/rope-cap" className="link w-fit text-[14.4px]" data-track="quiz_core">
             Or a core color, in stock today
           </Link>
         </div>
@@ -150,39 +183,43 @@ function EditionMatch({ hole, why, c }: { hole: Hole; why: React.ReactNode; c: R
   )
 }
 
-async function PairMatch({ c, match, why }: { c: RopeCatalog; match: Extract<QuizMatch, { kind: "pair" }>; why: React.ReactNode }) {
+async function PairMatch({ c, match, why, title }: { c: RopeCatalog; match: Extract<QuizMatch, { kind: "pair" }>; why: React.ReactNode; title: string }) {
   const stock = await getStock([c.pair!.id])
   return (
-    <>
-      {why}
-      <PairPicker
-        pair={c.pair!}
-        colors={[...CORE_COLORS]}
-        single={price(c.core!).amount}
-        stock={stock}
-        headline="Two rope caps, picked for you."
-        initial={[match.first, match.second]}
-        source="quiz"
-        headingAs="h2"
-      />
-    </>
+    <PairPicker
+      pair={c.pair!}
+      colors={[...CORE_COLORS]}
+      single={price(c.core!).amount}
+      stock={stock}
+      headline={title}
+      initial={[match.first, match.second]}
+      source="quiz"
+      crumbs={
+        <>
+          <p className="eyebrow-sm">Your match</p>
+          {why}
+        </>
+      }
+    />
   )
 }
 
-async function FoursomeMatch({ c, match, why }: { c: RopeCatalog; match: Extract<QuizMatch, { kind: "foursome" }>; why: React.ReactNode }) {
+async function FoursomeMatch({ c, match, why, title }: { c: RopeCatalog; match: Extract<QuizMatch, { kind: "foursome" }>; why: React.ReactNode; title: string }) {
   const stock = await getStock([c.foursome!.id])
   return (
     <>
-      {why}
-      <FoursomePicker foursome={c.foursome!} colors={[...CORE_COLORS]} single={price(c.core!).amount} stock={stock} initial={match.value} source="quiz" plain />
+      <header className="wrap pt-6 text-center">
+        <p className="eyebrow-sm">Your match</p>
+        <h1 className="title-page mt-2">{title}</h1>
+        <div className="mx-auto flex max-w-[560px] justify-center text-left">{why}</div>
+      </header>
+      <div className="mt-6">
+        <FoursomePicker foursome={c.foursome!} colors={[...CORE_COLORS]} single={price(c.core!).amount} stock={stock} initial={match.value} source="quiz" />
+      </div>
     </>
   )
 }
 
 function AnswersLine({ answers }: { answers: Answers }) {
-  return (
-    <p className="label text-ink-2">
-      Your answers: {QUESTIONS.map((q) => answerLabel(q.key, answers[q.key])).join(" · ")}
-    </p>
-  )
+  return <p className="meta">Your answers: {QUESTIONS.map((q) => answerLabel(q.key, answers[q.key])).join(" · ")}</p>
 }

@@ -1,5 +1,6 @@
 "use client"
 
+import { CheckCircle } from "@phosphor-icons/react"
 import { useActionState, useEffect, useState } from "react"
 import { requestQuote, type QuoteState } from "@/lib/actions/custom-quote"
 import { track } from "@/lib/analytics"
@@ -7,10 +8,10 @@ import { CORE_COLORS } from "@/lib/rope"
 import { SwatchFace } from "../swatch"
 
 const input = "field"
-const label = "label mb-1.5 block"
+const label = "mb-1.5 block text-[12.6px] font-medium"
 
 /**
- * The custom quote form (G.6.10): name, email, organisation, quantity (24+),
+ * The custom quote form (SITE_SPEC v8 E.6.8, G.6.10): name, email, organisation, quantity (24+),
  * caps per colour in twelves that add up to the quantity, needed-by date,
  * artwork link, notes, a rights confirmation and a hidden honeypot.
  */
@@ -29,14 +30,15 @@ export function QuoteForm() {
 
   if (state?.ok)
     return (
-      <p className="panel-title !text-[2rem]" role="status">
+      <p className="flex flex-col items-center gap-3 py-8 text-center text-[14.4px]" role="status">
+        <CheckCircle size={40} className="text-green" aria-hidden />
         Thanks, {state.firstName}. We&apos;ll reply within two business days.
       </p>
     )
 
-  const err = (k: string) => (fe[k] ? <p className="mt-1 text-[0.875rem] leading-5 text-red">{fe[k]}</p> : null)
+  const err = (k: string) => (fe[k] ? <p className="field-error">{fe[k]}</p> : null)
   return (
-    <form action={action} className="grid gap-5 md:grid-cols-2" noValidate>
+    <form action={action} className="grid gap-3 md:grid-cols-2" noValidate>
       <div>
         <label htmlFor="q-name" className={label}>
           Name
@@ -75,10 +77,10 @@ export function QuoteForm() {
         <legend className={label}>Colors, in twelves</legend>
         <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
           {CORE_COLORS.map((c) => (
-            <div key={c} className="flex items-center gap-3 rounded-[4px] border-2 border-ink/30 p-3">
+            <div key={c} className="flex items-center gap-3 rounded-sm border border-border p-3">
               <SwatchFace name={c} size={20} />
               <div className="flex flex-1 flex-col">
-                <label htmlFor={`q-${c}`} className="text-[0.875rem] leading-5">
+                <label htmlFor={`q-${c}`} className="text-[12.6px]">
                   {c}
                 </label>
                 <input
@@ -95,7 +97,7 @@ export function QuoteForm() {
             </div>
           ))}
         </div>
-        <p className={`mt-2 text-[0.875rem] leading-5 ${total === qty ? "text-ink-2" : "text-low"}`}>
+        <p className={`meta mt-2 ${total === qty ? "" : "!text-error"}`}>
           {total} of {qty} caps assigned.
         </p>
         {err("colors")}
@@ -117,17 +119,17 @@ export function QuoteForm() {
         <label htmlFor="q-hp">Company website</label>
         <input id="q-hp" name="company_website" tabIndex={-1} autoComplete="off" />
       </div>
-      <label className="flex items-start gap-3 text-[1rem] leading-6 md:col-span-2">
-        <input type="checkbox" name="rights" defaultChecked={v.rights === "on"} required className="checkbox mt-0.5" />I have the right to use this artwork.
+      <label className="flex min-h-11 items-center gap-1.5 text-[14.4px] md:col-span-2">
+        <input type="checkbox" name="rights" defaultChecked={v.rights === "on"} required className="check" />I have the right to use this artwork.
       </label>
       {err("rights")}
       {state?.error && (
-        <p className="text-[0.875rem] leading-5 text-red md:col-span-2" role="alert">
+        <p className="field-error md:col-span-2" role="alert">
           {state.error}
         </p>
       )}
-      <button type="submit" className="btn btn-secondary btn-atc md:col-span-2" disabled={pending} data-track="custom_submit">
-        REQUEST A QUOTE
+      <button type="submit" className="btn btn-charcoal btn-block md:col-span-2" disabled={pending} aria-busy={pending || undefined} data-track="custom_submit">
+        Send Request
       </button>
     </form>
   )

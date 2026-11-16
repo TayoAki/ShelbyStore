@@ -1,15 +1,21 @@
 import type { Metadata } from "next"
+import Link from "next/link"
 import { Suspense } from "react"
 import { BagContents } from "@/components/cart/bag-contents"
 
 export const metadata: Metadata = { title: "Your bag" }
 
-/** /cart for direct visits and checkout back links (SITE_SPEC §6.7): the drawer's pieces on a page. */
+/** /cart (SITE_SPEC v8 E.6.4): lines at 66%, a #F6F6F6 summary at 34%, then Complete the look. */
 export default function CartPage() {
   return (
-    <div className="mx-auto max-w-[1200px] px-3 pt-6 md:px-6 md:pt-10">
-      <h1 className="model mb-6">Your bag</h1>
-      <Suspense fallback={<div className="panel h-40" />}>
+    <div className="wrap pt-4 pb-16">
+      <header className="text-center">
+        <nav aria-label="Breadcrumb" className="crumbs-coll">
+          <Link href="/">Home</Link> / <span aria-current="page">Your bag</span>
+        </nav>
+        <h1 className="title-page mt-[13px] mb-8">Your bag</h1>
+      </header>
+      <Suspense fallback={<div className="h-40 bg-tile" aria-busy />}>
         <BagContents mode="page" />
       </Suspense>
     </div>

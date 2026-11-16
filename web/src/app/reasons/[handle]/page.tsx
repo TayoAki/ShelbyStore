@@ -4,9 +4,9 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Fragment, Suspense, type ReactNode } from "react"
 import { ContinuityBanner } from "@/components/continuity-banner"
-import { Digits } from "@/components/digits"
 import { RopeBuyBlock } from "@/components/rope-buy-block"
 import { Track } from "@/components/track"
+import { ButtonLink } from "@/components/ui/button"
 import { liveStock, ropeCatalog } from "@/lib/data/rope"
 import { formatMoney } from "@/lib/format"
 import { findVariant, price } from "@/lib/product"
@@ -21,13 +21,14 @@ export const metadata: Metadata = {
 type Reason = { key: string; title: string; image: string; images?: string[]; fact: ReactNode }
 
 /**
- * The listicle: six numbered reasons printed as panels, each with a die-cut
- * window and the checkable fact behind it; a reason whose fact source is empty
- * is dropped. Calls to action after reasons 3 and 6, then the front panel.
+ * The listicle (SITE_SPEC v8 E.6.11): six reasons as alternating editorial
+ * splits, each with the checkable fact behind it; a reason whose fact source
+ * is empty is dropped. Calls to action after reasons 3 and 6, then the Rope
+ * Cap in the PDP layout.
  */
 export default function ReasonsPage(props: PageProps<"/reasons/[handle]">) {
   return (
-    <Suspense fallback={<div className="mx-auto mt-6 h-[60vh] max-w-[1440px] animate-pulse bg-wash" />}>
+    <Suspense fallback={<div className="h-[60vh]" aria-busy />}>
       <ReasonsContent params={props.params} />
     </Suspense>
   )
@@ -49,8 +50,8 @@ async function ReasonsContent({ params }: { params: PageProps<"/reasons/[handle]
           image: "/hats/rope-cap-pine-3.jpg",
           fact: (
             <>
-              About <Digits value={cm} /> cm, against 12 cm on a high-crown rope cap.{" "}
-              <Link href="/fit-guide" className="link font-semibold">
+              About {cm} cm, against 12 cm on a high-crown rope cap.{" "}
+              <Link href="/fit-guide" className="link">
                 See it drawn to scale
               </Link>
             </>
@@ -68,7 +69,7 @@ async function ReasonsContent({ params }: { params: PageProps<"/reasons/[handle]
       image: "",
       images: CORE_COLORS.map((x) => `/hats/rope-cap-${x.toLowerCase().replace(/\s+/g, "-")}-1.jpg`),
       fact: (
-        <Suspense fallback={<span className="text-ink-2">Checking stock…</span>}>
+        <Suspense fallback={<span className="text-text-light">Checking stock…</span>}>
           <StockFact />
         </Suspense>
       ),
@@ -88,82 +89,60 @@ async function ReasonsContent({ params }: { params: PageProps<"/reasons/[handle]
       <Suspense fallback={null}>
         <ContinuityBanner />
       </Suspense>
-      <div className="box mt-3 md:mt-6">
-        <section className="panel overflow-hidden">
-          <div className="relative grid grid-cols-[minmax(0,1fr)] gap-6 p-[var(--panel-pad)] md:grid-cols-2 md:items-center">
-            <div className="window aspect-square">
-              <Image src="/hats/rope-cap-tour-white-1.jpg" alt="The Rope Cap in Tour White" fill preload sizes="(min-width: 768px) 45vw, 92vw" className="object-contain p-[8%]" />
-              <span className="window-shade" aria-hidden />
-            </div>
-            <div className="flex flex-col gap-5">
-              <h1 className="model">Six things that make this rope cap different</h1>
-              <p className="max-w-[48ch] text-[1.125rem] leading-[1.6] text-ink-2">Every reason comes with the fact behind it, so you can check it on this page.</p>
-              <nav aria-label="Reasons">
-                <ol className="grid grid-cols-2 plate sm:grid-cols-3">
-                  {reasons.map((r, i) => (
-                    <li key={r.key} className="bg-paper">
-                      <a href={`#reason-${i + 1}`} className="flex min-h-12 items-center gap-2 px-3 hover:bg-wash">
-                        <span className="text-[1.25rem] leading-none" aria-hidden>
-                          <Digits value={String(i + 1).padStart(2, "0")} />
-                        </span>
-                        <span className="label">{r.key}</span>
-                      </a>
-                    </li>
-                  ))}
-                </ol>
-              </nav>
-            </div>
-          </div>
-        </section>
+      <header className="wrap pt-4 text-center">
+        <nav aria-label="Breadcrumb" className="crumbs-coll">
+          <Link href="/">Home</Link> / <span aria-current="page">Six reasons</span>
+        </nav>
+        <h1 className="title-page mt-[13px]">Six reasons</h1>
+        <p className="mx-auto mt-3 max-w-[560px] text-[14.4px]">Six things that make this rope cap different. Every reason comes with the fact behind it, so you can check it on this page.</p>
+      </header>
 
+      <div className="mt-10">
         {reasons.map((r, i) => (
           <Fragment key={r.key}>
-            <section id={`reason-${i + 1}`} aria-labelledby={`reason-${i + 1}-title`} className="panel scroll-mt-28">
-              <div className={`relative grid gap-6 p-[var(--panel-pad)] md:grid-cols-2 md:items-center ${i % 2 ? "md:[&>*:first-child]:order-2" : ""}`}>
-                <div className="window aspect-[4/3]">
-                  {r.images ? (
-                    <div className="grid size-full grid-cols-4 items-center gap-2 p-4">
-                      {r.images.map((src) => (
-                        <span key={src} className="relative aspect-square">
-                          <Image src={src} alt="" fill sizes="12vw" className="object-contain" />
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <Image src={r.image} alt="" fill sizes="(min-width: 768px) 45vw, 92vw" className={r.image.includes("rope-cap-") ? "object-contain p-[8%]" : "object-cover"} />
-                  )}
-                  <span className="window-shade" aria-hidden />
-                </div>
-                <div className="flex flex-col gap-4">
-                  <span className="text-[4rem] leading-none" aria-hidden>
-                    <Digits value={String(i + 1).padStart(2, "0")} />
-                  </span>
-                  <h2 id={`reason-${i + 1}-title`} className="panel-title">
+            <section id={`reason-${i + 1}`} aria-labelledby={`reason-${i + 1}-title`} className="grid scroll-mt-24 md:grid-cols-2">
+              <div className={`relative aspect-square overflow-hidden bg-tile ${i % 2 ? "md:order-2" : ""}`}>
+                {r.images ? (
+                  <div className="grid size-full grid-cols-2 gap-1 p-1">
+                    {r.images.map((src) => (
+                      <span key={src} className="relative bg-white">
+                        <Image src={src} alt="" fill sizes="25vw" className="tile-photo object-contain" />
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <Image src={r.image} alt="" fill sizes="(min-width: 750px) 50vw, 100vw" className={r.image.includes("rope-cap-") ? "tile-photo object-contain" : "object-cover"} />
+                )}
+              </div>
+              <div className={`flex items-center p-6 md:p-12 ${i % 2 ? "md:order-1 md:justify-end" : ""}`}>
+                <div className="flex max-w-[520px] flex-col items-start">
+                  <p className="eyebrow">Reason {String(i + 1).padStart(2, "0")}</p>
+                  <h2 id={`reason-${i + 1}-title`} className="title-section mt-2 !text-[28px] md:!text-[38.4px]">
                     {r.title}
                   </h2>
-                  <div className="max-w-[46ch] text-[1.125rem] leading-[1.6]">{r.fact}</div>
+                  <div className="body-long mt-3">{r.fact}</div>
                 </div>
               </div>
             </section>
             {(i === 2 || i === reasons.length - 1) && (
-              <div className="flex justify-center">
-                <Link href="#buy" className="btn btn-secondary btn-large" data-track={i === 2 ? "listicle_mid_cta" : "listicle_end_cta"}>
+              <div className="flex flex-col items-center gap-3 py-10">
+                <ButtonLink href="#buy" track={i === 2 ? "listicle_mid_cta" : "listicle_end_cta"}>
                   Shop the Rope Cap
-                </Link>
+                </ButtonLink>
+                {i === reasons.length - 1 && c.pair && (
+                  <Link href="/offer/the-pair" className="link text-[14.4px]" data-track="listicle_offer">
+                    Or get The Pair for {formatMoney(price(c.pair).amount)}
+                  </Link>
+                )}
               </div>
             )}
           </Fragment>
         ))}
-
-        <section id="buy" aria-label="Buy" className="box-flush scroll-mt-28">
-          <RopeBuyBlock source="listicle" withSide />
-          <p className="mt-4 text-center">
-            <Link href="/offer/the-pair" className="link font-semibold" data-track="listicle_offer">
-              Or two for {formatMoney(c.pair ? price(c.pair).amount : null)}
-            </Link>
-          </p>
-        </section>
       </div>
+
+      <section id="buy" aria-label="Buy" className="scroll-mt-24 border-t border-border">
+        <RopeBuyBlock source="listicle" />
+      </section>
     </>
   )
 }
@@ -177,9 +156,9 @@ async function StockFact() {
         const v = c.core ? findVariant(c.core, { Color: col }) : undefined
         const n = v ? stock[v.id] : undefined
         return (
-          <li key={col} className="flex justify-between gap-4 border-b border-dashed border-crease py-1.5">
+          <li key={col} className="flex justify-between gap-4 border-b border-border py-1.5">
             <span>{col}</span>
-            <span>{typeof n === "number" ? <><Digits value={n} /> in stock</> : "In stock"}</span>
+            <span className="tabular">{typeof n === "number" ? `${n} in stock` : "In stock"}</span>
           </li>
         )
       })}

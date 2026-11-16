@@ -1,3 +1,4 @@
+import { CheckCircle } from "@phosphor-icons/react/dist/ssr"
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
@@ -11,11 +12,11 @@ import { editionOf } from "@/lib/rope"
 
 export const metadata: Metadata = { title: "Order confirmed", robots: { index: false } }
 
-/** Order confirmation (Operate): one panel; never shows a specific edition number. */
+/** Order confirmation (SITE_SPEC v8 E.6.5): a centred 680px column; never shows a specific edition number. */
 export default function OrderPage(props: PageProps<"/order/[id]">) {
   return (
-    <div className="mx-auto max-w-[860px] px-3 pt-6 md:px-6 md:pt-10">
-      <Suspense fallback={<div className="panel h-60" />}>
+    <div className="wrap mx-auto max-w-[780px] py-12 md:py-16">
+      <Suspense fallback={<div className="h-60 bg-tile" aria-busy />}>
         <OrderContent params={props.params} />
       </Suspense>
     </div>
@@ -25,7 +26,7 @@ export default function OrderPage(props: PageProps<"/order/[id]">) {
 async function OrderContent({ params }: { params: PageProps<"/order/[id]">["params"] }) {
   const { id } = await params
   const order = await sdk.store.order
-    .retrieve(id, { fields: "id,display_id,email,total,currency_code,*items,*shipping_address" })
+    .retrieve(id, { fields: "id,display_id,email,total,subtotal,item_subtotal,shipping_total,tax_total,currency_code,*items,*shipping_address" })
     .then((r) => r.order)
     .catch(() => null)
   if (!order) notFound()
@@ -34,17 +35,20 @@ async function OrderContent({ params }: { params: PageProps<"/order/[id]">["para
   const thumbs = variantThumbs(catalog)
   const numbered = (order.items ?? []).some((i) => editionOf(catalog.find((p) => p.id === i.product_id))?.numberedInside)
   const a = order.shipping_address
+  const n = (v: unknown) => Number(v ?? 0)
   return (
-    <div className="panel flex flex-col gap-6 p-[var(--panel-pad)]">
-      <h1 className="model">Thanks{a?.first_name ? `, ${a.first_name}` : ""}.</h1>
-      <p className="text-[1.125rem] leading-[1.6]">
-        Order <span className="font-semibold tabular-nums">#{order.display_id}</span> is confirmed. We&apos;ll email tracking to {order.email} when it ships.
+    <div className="mx-auto flex max-w-[680px] flex-col items-center gap-4 text-center">
+      <CheckCircle size={40} weight="regular" className="text-green" aria-hidden />
+      <h1 className="title-page">Thank you{a?.first_name ? `, ${a.first_name}` : ""}</h1>
+      <p className="text-[14.4px]">
+        Order <span className="tabular font-medium">#{order.display_id}</span> is confirmed. We&apos;ve emailed a receipt to {order.email}, and tracking follows when it ships.
       </p>
-      <ul className="border-t-2 border-ink">
+      <ul className="mt-4 w-full border-t border-border text-left">
         {(order.items ?? []).map((i) => (
           <LineItem
             key={i.id}
             editable={false}
+            size="page"
             line={{
               id: i.id,
               title: i.product_title ?? i.title,
@@ -58,19 +62,35 @@ async function OrderContent({ params }: { params: PageProps<"/order/[id]">["para
           />
         ))}
       </ul>
-      <div className="flex w-full items-baseline justify-between border-t-2 border-ink pt-4">
-        <span className="label">Total</span>
-        <span className="font-model text-[2rem] leading-none font-[800] tabular-nums">{formatMoney(Number(order.total ?? 0), order.currency_code)}</span>
-      </div>
+      <table className="spec-table w-full text-left">
+        <tbody>
+          <tr>
+            <th scope="row" className="font-normal">Subtotal</th>
+            <td className="tabular text-right">{formatMoney(n(order.item_subtotal ?? order.subtotal), order.currency_code)}</td>
+          </tr>
+          <tr>
+            <th scope="row" className="font-normal">Shipping</th>
+            <td className="tabular text-right">{formatMoney(n(order.shipping_total), order.currency_code)}</td>
+          </tr>
+          <tr>
+            <th scope="row" className="font-normal">Tax</th>
+            <td className="tabular text-right">{formatMoney(n(order.tax_total), order.currency_code)}</td>
+          </tr>
+          <tr>
+            <th scope="row" className="font-medium">Total</th>
+            <td className="tabular text-right text-[18px] font-medium">{formatMoney(n(order.total), order.currency_code)}</td>
+          </tr>
+        </tbody>
+      </table>
       {a && (
-        <p className="text-[1rem] leading-6 text-ink-2">
+        <p className="meta">
           Shipping to {a.first_name} {a.last_name}, {a.address_1}
           {a.address_2 ? `, ${a.address_2}` : ""}, {a.city} {a.province} {a.postal_code}
         </p>
       )}
-      {numbered && <p className="text-[1rem] leading-6 text-ink-2">Your edition number is printed inside the cap.</p>}
-      <ButtonLink href="/" className="w-fit" track="checkout_complete">
-        Keep shopping
+      {numbered && <p className="meta">Your cap&apos;s number is printed inside.</p>}
+      <ButtonLink href="/" variant="outline" className="mt-2" track="checkout_complete">
+        Keep Shopping
       </ButtonLink>
     </div>
   )

@@ -1,7 +1,10 @@
+import { CaretDown } from "@phosphor-icons/react/dist/ssr"
 import type { Metadata } from "next"
 import Image from "next/image"
+import Link from "next/link"
 import { Suspense } from "react"
 import { CheckoutForm } from "@/components/checkout-form"
+import type { Line } from "@/components/line-item"
 import { ButtonLink } from "@/components/ui/button"
 import { listShippingOptions } from "@/lib/actions/checkout"
 import { cartLines } from "@/lib/cart-view"
@@ -9,19 +12,19 @@ import { retrieveCart } from "@/lib/data/cart"
 import { getRegion, listCatalog } from "@/lib/data/catalog"
 import { formatMoney } from "@/lib/format"
 import { variantThumbs } from "@/lib/product"
-import type { Line } from "@/components/line-item"
 
 export const metadata: Metadata = { title: "Checkout", robots: { index: false } }
 
-/** Checkout (Operate): three numbered steps printed on one panel, the summary panel right (first on mobile, collapsed). */
+/**
+ * Checkout (SITE_SPEC v8 E.6.5): Shelby's own Stripe checkout in Eastside's
+ * tokens. The "Bag • Details • Payment" crumbs, the form at 58% and the
+ * summary at 42% on #F6F6F6 (a collapsible bar first on mobile).
+ */
 export default function CheckoutPage() {
   return (
-    <div className="mx-auto max-w-[1200px] px-3 pt-6 md:px-6 md:pt-10">
-      <h1 className="model mb-6">Checkout</h1>
-      <Suspense fallback={<div className="panel h-80" />}>
-        <CheckoutContent />
-      </Suspense>
-    </div>
+    <Suspense fallback={<div className="wrap h-80 pt-6" aria-busy />}>
+      <CheckoutContent />
+    </Suspense>
   )
 }
 
@@ -30,9 +33,12 @@ async function CheckoutContent() {
   const lines = cart ? cartLines(cart, await lineThumbs()) : []
   if (!cart || !lines.length) {
     return (
-      <div className="panel flex flex-col items-start gap-5 p-[var(--panel-pad)]">
-        <p className="panel-title">Your bag is empty.</p>
-        <ButtonLink href="/products/rope-cap">Shop the Rope Cap</ButtonLink>
+      <div className="wrap flex flex-col items-center gap-5 py-20 text-center">
+        <h1 className="title-page">Checkout</h1>
+        <p className="text-[14.4px]">Your bag is empty.</p>
+        <ButtonLink href="/products/rope-cap" variant="secondary">
+          Shop the Rope Cap
+        </ButtonLink>
       </div>
     )
   }
@@ -54,6 +60,7 @@ async function CheckoutContent() {
   const selected = cart.shipping_methods?.[0]?.shipping_option_id ?? null
   const currency = cart.currency_code
   const n = (v: unknown) => Number(v ?? 0)
+  const step = address ? "Payment" : "Details"
   const summary = (
     <>
       <ul className="flex flex-col gap-4">
@@ -61,31 +68,50 @@ async function CheckoutContent() {
           <SummaryLine key={l.id} line={l} />
         ))}
       </ul>
-      <div className="mt-4 flex flex-col gap-2 border-t-2 border-dashed border-ink/40 pt-4 text-[1rem] leading-6">
+      <div className="mt-6 flex flex-col gap-2 border-t border-border pt-4 text-[14.4px]">
         <Row label="Subtotal" value={formatMoney(n(cart.item_subtotal ?? cart.subtotal), currency)} />
-        <Row label="Shipping" value={cart.shipping_methods?.length ? formatMoney(n(cart.shipping_subtotal ?? cart.shipping_total), currency) : "Choose at step 2"} />
+        <Row label="Shipping" value={cart.shipping_methods?.length ? formatMoney(n(cart.shipping_subtotal ?? cart.shipping_total), currency) : "Calculated at the next step"} />
         <Row label="Tax" value={formatMoney(n(cart.tax_total), currency)} />
       </div>
-      <div className="mt-4 flex items-baseline justify-between border-t-2 border-ink pt-4">
-        <span className="label">Total</span>
-        <span className="font-model text-[2rem] leading-none font-[800] tabular-nums">{formatMoney(n(cart.total), currency)}</span>
+      <div className="mt-4 flex items-baseline justify-between border-t border-border pt-4">
+        <span className="text-[16px] font-medium">Total</span>
+        <span className="tabular text-[21.6px] font-medium">{formatMoney(n(cart.total), currency)}</span>
       </div>
     </>
   )
 
   return (
-    <div className="grid items-start gap-4 md:grid-cols-[minmax(0,1fr)_400px] md:gap-6">
+    <div className="md:grid md:min-h-[calc(100dvh-106px)] md:grid-cols-[58fr_42fr]">
       {/* Mobile: the summary comes first, collapsed. */}
-      <details className="panel md:hidden">
-        <summary className="label flex min-h-12 cursor-pointer items-center justify-between px-5">
-          Show order summary <span>{formatMoney(n(cart.total), currency)}</span>
+      <details className="group band-tile md:hidden">
+        <summary className="wrap flex min-h-12 cursor-pointer list-none items-center justify-between text-[14.4px] [&::-webkit-details-marker]:hidden">
+          <span className="flex items-center gap-1">
+            Show order summary <CaretDown size={14} aria-hidden className="transition-transform group-open:rotate-180" />
+          </span>
+          <span className="tabular font-medium">{formatMoney(n(cart.total), currency)}</span>
         </summary>
-        <div className="border-t-2 border-ink p-5">{summary}</div>
+        <div className="wrap pb-6">{summary}</div>
       </details>
-      <CheckoutForm cartId={cart.id} total={n(cart.total)} currency={currency} address={address} options={options} selectedOption={selected} />
-      <aside className="panel hidden h-fit p-6 md:sticky md:top-[96px] md:block">
-        <h2 className="label mb-4">Order summary</h2>
-        {summary}
+      <div className="wrap py-6 md:py-10 md:pr-12">
+        <nav aria-label="Checkout steps" className="flex items-center gap-2 text-[12.6px] text-text-light">
+          <Link href="/cart">Bag</Link>
+          <span aria-hidden>•</span>
+          <span className={step === "Details" ? "text-text" : ""} aria-current={step === "Details" ? "step" : undefined}>
+            Details
+          </span>
+          <span aria-hidden>•</span>
+          <span className={step === "Payment" ? "text-text" : ""} aria-current={step === "Payment" ? "step" : undefined}>
+            Payment
+          </span>
+        </nav>
+        <h1 className="title-page mt-4 mb-6">Checkout</h1>
+        <CheckoutForm cartId={cart.id} total={n(cart.total)} currency={currency} address={address} options={options} selectedOption={selected} />
+      </div>
+      <aside className="band-tile hidden md:block">
+        <div className="sticky top-[70px] p-8">
+          <h2 className="sr-only">Order summary</h2>
+          {summary}
+        </div>
       </aside>
     </div>
   )
@@ -94,26 +120,24 @@ async function CheckoutContent() {
 function SummaryLine({ line }: { line: Line }) {
   return (
     <li className="flex items-center gap-3">
-      <span className="relative size-16 shrink-0 rounded-[4px] border-2 border-ink bg-paper">
-        {line.thumbnail && <Image src={line.thumbnail} alt="" fill sizes="64px" className="object-contain p-1" />}
-        <span className="absolute -top-2 -right-2 flex h-6 min-w-6 items-center justify-center rounded-[3px] border-2 border-ink bg-paper px-1 text-[0.8125rem] font-bold">
-          {line.quantity}
-        </span>
+      <span className="relative h-[77px] w-16 shrink-0 bg-white">
+        {line.thumbnail && <Image src={line.thumbnail} alt="" fill sizes="64px" className="tile-photo object-contain" />}
+        <span className="tabular absolute -top-2 -right-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-text-light px-1 text-[11px] font-bold text-white">{line.quantity}</span>
       </span>
       <span className="flex min-w-0 flex-1 flex-col">
-        <span className="label">{line.title}</span>
-        {line.variant && <span className="text-[0.9375rem] leading-5 text-ink-2">{line.variant}</span>}
+        <span className="text-[14.4px] font-medium">{line.title}</span>
+        {line.variant && <span className="meta">{line.variant}</span>}
       </span>
-      <span className="text-[1rem] leading-5 font-semibold tabular-nums">{formatMoney(line.unitPrice * line.quantity, line.currency)}</span>
+      <span className="tabular text-[14.4px]">{formatMoney(line.unitPrice * line.quantity, line.currency)}</span>
     </li>
   )
 }
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between">
-      <span className="text-ink-2">{label}</span>
-      <span className="tabular-nums">{value}</span>
+    <div className="flex justify-between gap-4">
+      <span>{label}</span>
+      <span className="tabular text-right">{value}</span>
     </div>
   )
 }
