@@ -3,137 +3,72 @@
 import { MagnifyingGlass } from "@phosphor-icons/react"
 import Image from "next/image"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { useEffect, useMemo, useRef, useState } from "react"
-import { track } from "@/lib/analytics"
+import { useEffect, useMemo, useState } from "react"
 import type { CatalogItem } from "@/lib/catalog-items"
 import { formatMoney } from "@/lib/format"
 
-const PLACEHOLDERS = ["Search", 'Search "cap"', 'Search "beanie"', 'Search "trucker"', 'Search "olive"']
+const PLACEHOLDERS = ["Search", 'Search "navy"', 'Search "pine"', 'Search "pair"', 'Search "azalea"']
 
-/** Case-insensitive match on title, shape and colour names. */
 export function searchCatalog(catalog: CatalogItem[], term: string): CatalogItem[] {
   const q = term.trim().toLowerCase()
   if (!q) return []
-  return catalog.filter((c) =>
-    [c.title, c.shape ?? "", c.type, ...c.colors].some((field) => field.toLowerCase().includes(q))
-  )
+  const words = q.split(/\s+/)
+  return catalog.filter((i) => words.every((w) => i.terms.toLowerCase().includes(w) || i.meta.toLowerCase().includes(w)))
 }
 
 /**
- * Header search (SITE_SPEC §6.0.5): a pill input whose placeholder rotates
- * every 2s, filtering the catalog client-side. Enter goes to /shop?q=.
- * `desktop`: 197px block, 153×30 input, results 420px right-aligned.
- * `mobile`: full-width 36px pill, results full width under the header.
+ * The search dropdown body (SITE_SPEC §6.0.5, G.6.1): pill input with a
+ * rotating placeholder, an inline SEARCH button, up to 6 results.
  */
-export function Search({ catalog, variant }: { catalog: CatalogItem[]; variant: "desktop" | "mobile" }) {
-  const router = useRouter()
+export function SearchPanel({ catalog, onNavigate }: { catalog: CatalogItem[]; onNavigate: () => void }) {
   const [term, setTerm] = useState("")
-  const [focused, setFocused] = useState(false)
-  const [open, setOpen] = useState(false)
-  const [tick, setTick] = useState(0)
-  const root = useRef<HTMLDivElement>(null)
+  const [ph, setPh] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => setPh((n) => (n + 1) % PLACEHOLDERS.length), 2000)
+    return () => clearInterval(id)
+  }, [])
   const results = useMemo(() => searchCatalog(catalog, term).slice(0, 6), [catalog, term])
 
-  useEffect(() => {
-    if (focused || term) return
-    const id = setInterval(() => setTick((t) => t + 1), 2000)
-    return () => clearInterval(id)
-  }, [focused, term])
-
-  useEffect(() => {
-    if (!open) return
-    const onDown = (e: MouseEvent) => {
-      if (root.current && !root.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener("mousedown", onDown)
-    return () => document.removeEventListener("mousedown", onDown)
-  }, [open])
-
-  const submit = () => {
-    const q = term.trim()
-    if (!q) return
-    track("search_submit", { term: q })
-    setOpen(false)
-    router.push(`/shop?q=${encodeURIComponent(q)}`)
-  }
-
-  const desktop = variant === "desktop"
   return (
-    <div ref={root} className={desktop ? "relative flex w-[197px] justify-end" : "w-full"}>
-      <form
-        role="search"
-        onSubmit={(e) => {
-          e.preventDefault()
-          submit()
-        }}
-        className={`relative ${desktop ? "w-[153px]" : "w-full"}`}
-      >
-        <MagnifyingGlass
-          size={desktop ? 12 : 14}
-          aria-hidden
-          className={`pointer-events-none absolute top-1/2 -translate-y-1/2 text-black ${desktop ? "left-[10px]" : "left-3"}`}
-        />
+    <div className="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-5">
+      <form role="search" onSubmit={(e) => e.preventDefault()} className="relative">
+        <MagnifyingGlass size={20} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2" aria-hidden />
         <input
-          type="search"
+          autoFocus
           value={term}
-          aria-label="Search hats"
-          placeholder={PLACEHOLDERS[tick % PLACEHOLDERS.length]}
-          onChange={(e) => {
-            setTerm(e.target.value)
-            setOpen(true)
-          }}
-          onFocus={() => {
-            setFocused(true)
-            setOpen(true)
-          }}
-          onBlur={() => setFocused(false)}
-          onKeyDown={(e) => e.key === "Escape" && setOpen(false)}
-          className={`w-full rounded-full bg-band font-system text-black placeholder:text-black/60 focus:outline focus:outline-1 focus:outline-black [&::-webkit-search-cancel-button]:hidden ${
-            desktop ? "h-[30px] py-[6px] pl-[28px] pr-[6px] text-[12px] leading-[18px]" : "h-9 pl-8 pr-3 text-[16px] leading-6"
-          }`}
+          onChange={(e) => setTerm(e.target.value)}
+          placeholder={PLACEHOLDERS[ph]}
+          aria-label="Search The Rope Cap"
+          className="w-full rounded-full border border-black bg-white py-2.5 pr-24 pl-10 text-base"
         />
+        <button type="submit" className="btn btn-outline-black btn-small absolute top-1/2 right-1 -translate-y-1/2" data-track="search_submit">
+          SEARCH
+        </button>
       </form>
-      {open && term.trim() && (
-        <div
-          className={`z-50 bg-white p-4 shadow-sticky ${
-            desktop ? "absolute right-0 top-[calc(100%+15px)] w-[420px]" : "absolute inset-x-0 top-full"
-          }`}
-        >
+      {term.trim() && (
+        <div className="flex flex-col">
           {results.length ? (
-            <ul className="flex flex-col gap-2">
-              {results.map((r) => (
-                <li key={r.handle}>
-                  <Link
-                    href={`/products/${r.handle}`}
-                    data-track="search_result"
-                    onClick={() => setOpen(false)}
-                    className="flex items-center gap-3 hover:bg-band"
-                  >
-                    <span className="relative h-14 w-14 shrink-0 bg-white">
-                      {r.image && <Image src={r.image} alt="" fill sizes="56px" className="object-contain" />}
-                    </span>
-                    <span className="flex flex-col">
-                      <span className="font-heading text-[14px] leading-[21px]">{r.title}</span>
-                      <span className="font-body text-[12px] leading-[18px] text-muted-card">
-                        {r.colors.length} {r.colors.length === 1 ? "Color" : "Colors"} · {formatMoney(r.price, r.currency)}
-                      </span>
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            results.map((r) => (
+              <Link key={r.key} href={r.href} onClick={onNavigate} data-track="search_result" className="flex items-center gap-4 rounded-xl p-2 hover:bg-natural-white-25">
+                <span className="relative size-14 shrink-0 overflow-hidden rounded-lg bg-white">
+                  {r.image && <Image src={r.image} alt="" fill sizes="56px" className="object-contain" />}
+                </span>
+                <span className="flex flex-col">
+                  <span className="text-xs leading-4 font-medium tracking-[.05em] uppercase">{r.title}</span>
+                  <span className="text-xs leading-4 text-light-charcoal">
+                    {[r.meta, formatMoney(r.price, r.currency)].filter(Boolean).join(" · ")}
+                  </span>
+                </span>
+              </Link>
+            ))
           ) : (
-            <p className="font-body text-[13px]">No hats match &ldquo;{term.trim()}&rdquo;</p>
+            <p className="text-sm">No caps match &ldquo;{term}&rdquo;</p>
           )}
-          <Link
-            href={`/shop?q=${encodeURIComponent(term.trim())}`}
-            onClick={() => setOpen(false)}
-            data-track="search_submit"
-            className="btn btn--link mt-3"
-          >
-            <span>View All Results</span>
-          </Link>
+          {results.length > 0 && (
+            <Link href="/shop" onClick={onNavigate} className="link mt-2 text-xs">
+              View all results
+            </Link>
+          )}
         </div>
       )}
     </div>

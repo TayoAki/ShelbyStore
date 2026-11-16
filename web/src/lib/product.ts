@@ -1,15 +1,7 @@
-import type { Product, Variant, VariantStock } from "./types"
+import type { Product, Variant } from "./types"
 
 export const LOW_STOCK = 5
 const SIZE_ORDER = ["ONE SIZE", "XXS", "XS", "S", "S/M", "M", "L", "L/XL", "XL", "XXL", "3XL"]
-
-export type StockState = "in_stock" | "low" | "sold_out" | "untracked"
-
-export function stockState(available: number | null | undefined): StockState {
-  if (available === null) return "untracked"
-  if (available === undefined || available <= 0) return "sold_out"
-  return available <= LOW_STOCK ? "low" : "in_stock"
-}
 
 export type OptionGroup = { id: string; title: string; values: string[] }
 
@@ -52,27 +44,6 @@ export function price(product: Product, variant?: Variant) {
     original: cp?.original_amount ?? null,
     currency: cp?.currency_code ?? "usd",
   }
-}
-
-/** Availability for each value of `optionTitle`, given the other selected options. */
-export function valueAvailability(
-  product: Product,
-  stock: VariantStock,
-  optionTitle: string,
-  selection: Record<string, string>
-): Record<string, StockState> {
-  const out: Record<string, StockState> = {}
-  for (const v of product.variants ?? []) {
-    const opts = variantOptions(v)
-    const matchesOthers = Object.entries(selection).every(([k, val]) => k === optionTitle || opts[k] === val)
-    if (!matchesOthers || !opts[optionTitle]) continue
-    const state = stockState(v.id in stock ? stock[v.id] : undefined)
-    const prev = out[opts[optionTitle]]
-    // Best availability wins when several variants share the value.
-    const order: StockState[] = ["sold_out", "low", "in_stock", "untracked"]
-    if (!prev || order.indexOf(state) > order.indexOf(prev)) out[opts[optionTitle]] = state
-  }
-  return out
 }
 
 /**
@@ -124,35 +95,9 @@ export function colorThumbs(product: Product): { color: string; image: string | 
   return (group?.values ?? []).map((color) => ({ color, image: imagesFor(product, color)[0] ?? null }))
 }
 
-/** Spec lines from product metadata.details, e.g. { Crown: "...", Brim: "..." }. */
-export function detailsOf(product: Product): [string, string][] {
-  const v = (product.metadata as Record<string, unknown> | null)?.details
-  if (!v || typeof v !== "object" || Array.isArray(v)) return []
-  // JSON metadata doesn't keep key order, so list spec facts in a fixed order.
-  const ORDER = ["Crown", "Knit", "Brim", "Closure", "Fabric", "Origin", "Care"]
-  const at = (k: string) => (ORDER.indexOf(k) === -1 ? ORDER.length : ORDER.indexOf(k))
-  return Object.entries(v as Record<string, unknown>)
-    .filter((e): e is [string, string] => typeof e[1] === "string" && !!e[1].trim())
-    .sort((a, b) => at(a[0]) - at(b[0]))
-}
-
 export const meta = (product: Product, key: "promise" | "fit_notes") => {
   const value = (product.metadata as Record<string, unknown> | null)?.[key]
   return typeof value === "string" && value.trim() ? value : null
-}
-
-export type SizeChart = { unit?: string; columns: string[]; rows: Record<string, string | number>[] }
-
-export function sizeChartOf(product: Product): SizeChart | null {
-  const v = (product.metadata as Record<string, unknown> | null)?.size_chart
-  return !!v && typeof v === "object" && Array.isArray((v as SizeChart).columns) && Array.isArray((v as SizeChart).rows)
-    ? (v as SizeChart)
-    : null
-}
-
-export function modelInfoOf(product: Product): string | null {
-  const v = (product.metadata as Record<string, unknown> | null)?.model_info
-  return typeof v === "string" && v.trim() ? v : null
 }
 
 export type FitProfile = {
@@ -167,35 +112,6 @@ export function fitProfileOf(product: Product): FitProfile | null {
   const crowns = ["Low", "Mid", "Tall"]
   const structures = ["Unstructured", "Semi-structured", "Structured"]
   return crowns.includes(v.crown ?? "") && structures.includes(v.structure ?? "") ? (v as FitProfile) : null
-}
-
-/** The size option group, if any. */
-export function sizeGroupOf(product: Product): OptionGroup | undefined {
-  return optionGroups(product).find((g) => /size/i.test(g.title))
-}
-
-/** One-size hats have no size choice to make (SITE_SPEC §6.4.6). */
-export function isOneSize(product: Product): boolean {
-  const g = sizeGroupOf(product)
-  return !g || g.values.length <= 1
-}
-
-/** The product's shape: its first category (Caps, Truckers, …). */
-export function shapeOf(product: Product): { name: string; handle: string } | null {
-  const c = (product as { categories?: { name?: string; handle?: string }[] | null }).categories?.[0]
-  return c?.name && c.handle ? { name: c.name, handle: c.handle } : null
-}
-
-/**
- * Card badge for stock: "low" when every variant that is still in stock has
- * LOW_STOCK or fewer left (an honest count, never faked).
- */
-export function isLowStock(product: Product, stock: VariantStock | undefined): boolean {
-  if (!stock) return false
-  const counts = (product.variants ?? [])
-    .map((v) => stock[v.id])
-    .filter((n): n is number => typeof n === "number" && n > 0)
-  return counts.length > 0 && counts.every((n) => n <= LOW_STOCK)
 }
 
 /**
@@ -231,40 +147,3 @@ export function offerOf(product: Product): OfferMeta | null {
 }
 
 export const isOffer = (product: Product) => offerOf(product) !== null
-
-/** metadata.uses: what the hat is for, as the quiz asks it (everyday, running, sun, cold). */
-export function usesOf(product: Product): string[] {
-  const v = (product.metadata as Record<string, unknown> | null)?.uses
-  return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []
-}
-
-/**
- * The adjustable range of a one-size hat, read from its fit notes ("adjusts
- * from 21.5 to 24 inches"), e.g. "fits 21.5–24 in (55–61 cm)". Falls back to
- * the store-wide range.
- */
-export function oneSizeRange(product: Product, fallback: string): string {
-  const notes = meta(product, "fit_notes") ?? ""
-  const m = notes.match(/(\d+(?:\.\d+)?)\s*to\s*(\d+(?:\.\d+)?)\s*in/i)
-  if (!m) return fallback
-  const cm = (inches: string) => Math.round(Number(inches) * 2.54)
-  return `fits ${m[1]}–${m[2]} in (${cm(m[1])}–${cm(m[2])} cm)`
-}
-
-/**
- * Melin-style product type line (SITE_SPEC §6.2 row 3), from shape, structure
- * and closure: "Unstructured Strapback Cap", "Structured Snapback Trucker",
- * "Knit Beanie", "Sized Bucket Hat".
- */
-export function productTypeOf(product: Product): string {
-  const shape = shapeOf(product)?.handle ?? ""
-  const noun: Record<string, string> = { caps: "Cap", truckers: "Trucker", beanies: "Beanie", "bucket-hats": "Bucket Hat" }
-  const base = noun[shape] ?? shapeOf(product)?.name ?? "Hat"
-  if (shape === "beanies") return "Knit Beanie"
-  const profile = fitProfileOf(product)
-  const closure = (Object.fromEntries(detailsOf(product)).Closure ?? "").toLowerCase()
-  const structure = profile ? profile.structure.replace("Semi-structured", "Semi-Structured") : null
-  const fit = closure.includes("snap") ? "Snapback" : closure.includes("strap") ? "Strapback" : !isOneSize(product) ? "Sized" : null
-  if (shape === "bucket-hats") return isOneSize(product) ? base : `Sized ${base}`
-  return [structure, fit, base].filter(Boolean).join(" ")
-}

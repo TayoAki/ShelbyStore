@@ -1,39 +1,57 @@
-import { swatchBackground } from "@/lib/swatches"
+import Link from "next/link"
+import type { CSSProperties } from "react"
+import { colorway } from "@/lib/swatches"
 
-const LIGHT = new Set(["bone", "cream", "stone", "sand", "white", "bone / brown"])
-
-/**
- * Melin's colour swatch (SITE_SPEC §6.4.7): a circle filled with the colour
- * (two-tone names split at 135°), 1px transparent border and 1px padding so
- * the selected black border leaves a white gap ring. Light fills get an inner
- * #e4e4e4 ring; sold-out colours get a diagonal strike.
- */
-export function SwatchDot({
-  name,
-  size = 42,
-  selected = false,
-  soldOut = false,
-}: {
+type Props = {
   name: string
-  size?: number
+  /** 36px on the PDP and value tiles, 20px on cards (G.5.6). */
+  size?: 36 | 20
   selected?: boolean
   soldOut?: boolean
-}) {
-  const light = LIGHT.has(name.trim().toLowerCase())
+  className?: string
+}
+
+/**
+ * A Rope Cap swatch (SITE_SPEC G.5.6): the crown colour with a band of the rope
+ * colour across the lower third. Light crowns keep an inset ring; the selected
+ * ring is golf green (G.2.2); sold out adds the crossed line.
+ */
+export function SwatchFace({ name, size = 36, selected = false, soldOut = false, className = "" }: Props) {
+  const c = colorway(name)
   return (
     <span
-      className={`relative inline-flex shrink-0 rounded-full border p-px ${selected ? "border-black" : "border-transparent"}`}
-      style={{ width: size, height: size }}
+      aria-hidden
+      data-selected={selected || undefined}
+      className={`swatch-face relative inline-block shrink-0 rounded-full transition-all duration-200 ease-in-out ${className}`}
+      style={
+        {
+          width: size,
+          height: size,
+          background: c.crown,
+          boxShadow: [
+            c.light ? "inset 0 0 0 1px #575757b3" : "",
+            selected ? `0 0 0 ${size === 36 ? 3 : 2}px #fff, 0 0 0 ${size === 36 ? 4 : 3}px var(--color-golf-green)` : "",
+          ]
+            .filter(Boolean)
+            .join(", ") || undefined,
+        } as CSSProperties
+      }
     >
       <span
-        className="block h-full w-full rounded-full"
-        style={{ background: swatchBackground(name), boxShadow: light ? "inset 0 0 0 1px #e4e4e4" : undefined }}
+        className="rope-band absolute rounded-full transition-transform duration-200 ease-in-out"
+        style={{ top: "62%", left: "18%", right: "18%", height: size === 36 ? 3 : 2, background: c.rope, transform: `scaleX(${selected ? 1 : 0.6})` }}
       />
-      {soldOut && (
-        <span aria-hidden className="absolute inset-0 overflow-hidden rounded-full">
-          <span className="absolute left-1/2 top-1/2 h-px w-[142%] -translate-x-1/2 -translate-y-1/2 -rotate-45 bg-black" />
-        </span>
-      )}
+      {soldOut && <span className="crossed-bg absolute inset-0 rounded-full" />}
     </span>
+  )
+}
+
+/** A swatch that links to another product (limited editions in the colour picker). */
+export function SwatchLink({ name, href, caption, track, selected }: { name: string; href: string; caption?: string | null; track?: string; selected?: boolean }) {
+  return (
+    <Link href={href} data-track={track} className="flex flex-col items-center gap-1" aria-label={`${name}${caption ? `, ${caption}` : ""}`}>
+      <SwatchFace name={name} selected={selected} />
+      {caption && <span className="font-mono text-[10px] leading-3 tracking-[.05em] text-light-charcoal uppercase">{caption}</span>}
+    </Link>
   )
 }

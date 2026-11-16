@@ -9,7 +9,7 @@ import { formatMoney } from "@/lib/format"
 import { DrawerClose, SideDrawer } from "./cart/side-drawer"
 
 /**
- * "Previously Viewed" (Melin's eye icon, SITE_SPEC §6.0.4): the last 12
+ * "Previously Viewed" (SITE_SPEC §6.0.4): the last 12
  * product handles in localStorage, local to this browser only. Storage can be
  * missing (private mode, previews), so every read and write is guarded.
  */
@@ -67,90 +67,68 @@ export function RecordView({ handle }: { handle: string }) {
   return null
 }
 
-/** Eye icon with a count; opens the drawer. Hidden when nothing was viewed. */
+/** Unique items (one per product) for the viewed handles, newest first. */
+export function viewedItems(catalog: CatalogItem[], handles: string[]): CatalogItem[] {
+  return handles.map((h) => catalog.find((i) => i.handle === h)).filter((i): i is CatalogItem => !!i)
+}
+
+/** Eye icon with a count (hidden when empty); opens the Previously Viewed drawer. */
 export function RecentlyViewedButton({ catalog }: { catalog: CatalogItem[] }) {
-  const viewed = useViewed()
+  const handles = useViewed()
+  const items = viewedItems(catalog, handles)
   const [open, setOpen] = useState(false)
-  const items = viewed.map((h) => catalog.find((c) => c.handle === h)).filter((c): c is CatalogItem => !!c)
   if (!items.length) return null
   return (
     <>
-      <button
-        type="button"
-        aria-label={`Previously viewed (${items.length})`}
-        data-track="recently_viewed"
-        onClick={() => setOpen(true)}
-        className="relative flex h-6 w-6 items-center justify-center"
-      >
+      <button type="button" className="relative flex size-6 items-center justify-center" aria-label={`Previously viewed (${items.length})`} onClick={() => setOpen(true)} data-track="recently_viewed">
         <Eye size={24} />
         <CountBadge count={items.length} />
       </button>
-      <SideDrawer open={open} onClose={() => setOpen(false)} label="Previously viewed" className="bg-white">
-        <div className="flex h-[75px] shrink-0 items-center justify-between border-b border-line px-4">
-          <div className="flex items-baseline gap-3">
-            <h2 className="font-heading text-[16px] leading-6">Previously Viewed</h2>
-            <span className="font-body text-[13px] text-muted">
-              {items.length} {items.length === 1 ? "Product" : "Products"}
-            </span>
-          </div>
-          <DrawerClose onClose={() => setOpen(false)} />
-        </div>
-        <div className="grid min-h-0 flex-1 grid-cols-2 content-start gap-4 overflow-y-auto p-4">
-          {items.map((item) => (
-            <MiniCard key={item.handle} item={item} />
-          ))}
-        </div>
-      </SideDrawer>
+      <ViewedDrawer open={open} onClose={() => setOpen(false)} items={items} />
     </>
   )
 }
 
-export function CountBadge({ count }: { count: number }) {
-  if (!count) return null
+export function ViewedDrawer({ open, onClose, items }: { open: boolean; onClose: () => void; items: CatalogItem[] }) {
   return (
-    <span className="absolute -right-[6px] -top-[6px] flex h-4 min-w-4 items-center justify-center rounded-full bg-black px-[3px] font-heading text-[10px] leading-4 text-white">
+    <SideDrawer open={open} onClose={onClose} label="Previously viewed">
+      <div className="flex items-center justify-between border-b border-natural-white px-5 py-4">
+        <p className="text-xs leading-4 font-medium uppercase">Previously viewed ({items.length})</p>
+        <DrawerClose onClose={onClose} />
+      </div>
+      <div className="grid flex-1 grid-cols-2 content-start gap-2.5 overflow-y-auto p-5">
+        {items.map((i) => (
+          <MiniCard key={i.key} item={i} track="recently_viewed" />
+        ))}
+      </div>
+    </SideDrawer>
+  )
+}
+
+/** Count badge on header icons (§6.0.2): hidden at 0, M32 fade. */
+export function CountBadge({ count }: { count: number }) {
+  return (
+    <span
+      aria-hidden
+      className={`absolute top-2.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full bg-black text-[9px] font-medium text-white transition-opacity duration-50 ease-[var(--ease-sine-in)] ${count ? "opacity-100" : "opacity-0"}`}
+    >
       {count}
     </span>
   )
 }
 
-/** Product card without quick add, for the viewed drawer and carousel (SITE_SPEC §6.2). */
+/** A small product card (no quick add) for drawers. */
 export function MiniCard({ item, track }: { item: CatalogItem; track?: string }) {
   return (
-    <Link href={`/products/${item.handle}`} className="group flex flex-col" data-track={track}>
-      <span className="relative block aspect-square border-b border-line-header bg-white pb-2">
-        {item.image && <Image src={item.image} alt={item.title} fill sizes="(min-width:1024px) 220px, 45vw" className="object-contain" />}
+    <Link href={item.href} data-track={track} className="group flex flex-col overflow-hidden rounded-2xl bg-white">
+      <span className="relative aspect-square">
+        {item.image && <Image src={item.image} alt="" fill sizes="200px" className="object-contain" />}
       </span>
-      <span className="mt-[7px] flex items-baseline justify-between gap-2">
-        <span className="line-clamp-2 type-item">{item.title}</span>
-        <span className="shrink-0 font-body text-[14px] leading-[21px] tracking-[0.4px]">{formatMoney(item.price, item.currency)}</span>
+      <span className="flex flex-col gap-0.5 p-3">
+        <span className="text-xs leading-4 font-medium tracking-[.05em] uppercase">{item.title}</span>
+        <span className="text-xs leading-4 text-light-charcoal">{item.meta}</span>
+        <span className="text-xs leading-4 font-medium">{formatMoney(item.price, item.currency)}</span>
       </span>
-      {item.colors[0] && <span className="font-body text-[12px] capitalize leading-[18px] tracking-[0.4px] text-muted-card">{item.colors[0]}</span>}
-      <span className="font-body text-[12px] capitalize leading-[18px] tracking-[0.4px] text-muted-card">{item.type}</span>
     </Link>
-  )
-}
-
-/** "Previously Viewed" band on the PDP (SITE_SPEC §6.4.16 #4), excluding the current product. */
-export function ViewedCarousel({ catalog, exclude }: { catalog: CatalogItem[]; exclude: string }) {
-  const viewed = useViewed()
-  const items = viewed
-    .filter((h) => h !== exclude)
-    .map((h) => catalog.find((c) => c.handle === h))
-    .filter((c): c is CatalogItem => !!c)
-  if (!items.length) return null
-  return (
-    <section className="bg-band py-[28.432px] lg:py-[50.512px]">
-      <div className="container-shop">
-        <h2 className="mb-[22.08px] type-section">Previously Viewed</h2>
-        <div className="scrollbar-none -mx-[21.328px] flex snap-x gap-4 overflow-x-auto px-[21.328px] lg:gap-[28.432px]">
-          {items.map((item) => (
-            <div key={item.handle} className="w-[calc((100%-32px)/2.2)] shrink-0 snap-start lg:w-[calc((100%-3*28.432px)/4)]">
-              <MiniCard item={item} />
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
   )
 }

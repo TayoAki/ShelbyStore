@@ -24,7 +24,7 @@ export function Countdown({ iso, size = "small", tone = "dark" }: { iso: string;
   const now = useSyncExternalStore(secondClock.subscribe, secondClock.now, secondClock.server)
   const diff = now === null ? null : new Date(iso).getTime() - now
   const ink = tone === "dark" ? "text-black" : "text-white"
-  if (diff !== null && diff <= 0) return <p className={`font-heading text-[14px] ${ink}`}>Going live shortly</p>
+  if (diff !== null && diff <= 0) return <p className={`font-display text-sm ${ink}`}>Going live shortly</p>
   const total = diff === null ? null : Math.floor(diff / 1000)
   const parts: [string, number | null][] = [
     ["Days", total === null ? null : Math.floor(total / 86400)],
@@ -32,19 +32,19 @@ export function Countdown({ iso, size = "small", tone = "dark" }: { iso: string;
     ["Min", total === null ? null : Math.floor((total % 3600) / 60)],
     ["Sec", total === null ? null : total % 60],
   ]
-  const digits = size === "large" ? "text-[34px]" : "text-[22px]"
+  const digits = size === "large" ? "text-[40px]" : "text-[24px]"
   return (
-    <div className="flex items-start gap-2" role="timer" aria-label="Time until this drop">
+    <div className="flex items-start gap-2" role="timer" aria-label="Time until this hole">
       {parts.map(([name, value], i) => (
         <div key={name} className="flex items-start gap-2">
           <div className="flex flex-col items-center gap-1">
-            <span className={`font-heading tabular leading-none ${digits} ${ink}`} aria-hidden>
+            <span className={`font-display tabular-nums leading-none ${digits} ${ink}`} aria-hidden>
               {value === null ? "--" : pad(value)}
             </span>
-            <span className={`font-body text-[10px] uppercase tracking-[1px] ${tone === "dark" ? "text-muted" : "text-white/70"}`}>{name}</span>
+            <span className={`font-mono text-[10px] uppercase tracking-[.1em] ${tone === "dark" ? "text-light-charcoal" : "text-white/70"}`}>{name}</span>
           </div>
           {i < parts.length - 1 && (
-            <span className={`font-heading leading-none ${digits} ${ink}`} aria-hidden>
+            <span className={`font-display leading-none ${digits} ${ink}`} aria-hidden>
               :
             </span>
           )}

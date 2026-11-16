@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next"
-import { Inter, Plus_Jakarta_Sans } from "next/font/google"
+import { IBM_Plex_Mono, Inter, Libre_Caslon_Text, Plus_Jakarta_Sans } from "next/font/google"
 import { Suspense } from "react"
 import { AnalyticsProvider } from "@/components/analytics-provider"
 import { AnnouncementBar } from "@/components/announcement-bar"
@@ -8,31 +8,36 @@ import { CartDrawer } from "@/components/cart/cart-drawer"
 import { CartDrawerProvider } from "@/components/cart/drawer-context"
 import { Footer } from "@/components/footer"
 import { Header } from "@/components/header"
-import { Newsletter } from "@/components/newsletter"
 import "./globals.css"
 
-// Avenir LT Pro (paid) is substituted per the site-clone rule: Plus Jakarta Sans
-// for the heading/subheading roles, Inter for body (SITE_SPEC §2.2).
-const pjs = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["500", "700", "800"], variable: "--font-pjs", display: "swap" })
-const inter = Inter({ subsets: ["latin"], weight: ["400"], variable: "--font-inter", display: "swap" })
+// Allbirds' proprietary families are substituted per the site-clone rule
+// (SITE_SPEC §2.2): Plus Jakarta Sans for headings, Inter for body, IBM Plex
+// Mono for mono roles. The serif role is Libre Caslon Text (G.2.3).
+const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "700"], variable: "--font-inter", display: "swap" })
+const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-jakarta", display: "swap" })
+const plexMono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-plex-mono", display: "swap" })
+const caslon = Libre_Caslon_Text({ subsets: ["latin"], weight: ["400"], style: ["normal", "italic"], variable: "--font-caslon", display: "swap" })
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3001"),
-  title: { default: "Shelby | The Everyday Cap, Always In Stock", template: "%s | Shelby" },
-  description: "The Everyday Cap, a low-profile washed-cotton cap that never runs out, plus small hat drops on a calendar.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
+  title: { default: "Shelby | One Rope Cap, Made Properly", template: "%s | Shelby" },
+  description: "Shelby makes one rope cap: washed cotton, a mid crown that sits right, a rope worth looking at, and a new numbered color when the golf season turns.",
 }
 
 export const viewport: Viewport = {
-  themeColor: "#000000",
+  themeColor: "#212121",
 }
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${pjs.variable} ${inter.variable}`}>
-      <body className="flex min-h-dvh flex-col bg-white font-system text-primary antialiased">
+    <html lang="en" className={`${inter.variable} ${jakarta.variable} ${plexMono.variable} ${caslon.variable}`}>
+      <body className="flex min-h-dvh flex-col bg-natural-white-60 font-sans text-black antialiased">
+        <noscript>
+          <style>{"[data-reveal],[data-reveal-child]{opacity:1!important}"}</style>
+        </noscript>
         <a
           href="#main"
-          className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-[70] focus:bg-black focus:px-3 focus:py-2 focus:text-white"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[90] focus:rounded-full focus:bg-black focus:px-3 focus:py-2 focus:text-white"
         >
           Skip to content
         </a>
@@ -42,7 +47,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <main id="main" className="flex-1">
             {children}
           </main>
-          <Newsletter />
           <Footer />
           <CartDrawer policy={DRAWER_POLICY}>
             <Suspense fallback={<div className="flex-1" aria-busy />}>

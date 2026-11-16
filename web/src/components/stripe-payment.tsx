@@ -11,23 +11,23 @@ const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 const stripePromise = PUBLISHABLE_KEY ? loadStripe(PUBLISHABLE_KEY) : null
 export const stripeEnabled = !!PUBLISHABLE_KEY
 
-/** Payment Element appearance with Melin's tokens (SITE_SPEC §6.8). */
+/** Payment Element appearance with the Allbirds tokens (v5 §6.8). */
 const appearance: Appearance = {
   theme: "stripe",
   variables: {
-    colorPrimary: "#000000",
-    colorText: "#000000",
-    colorTextSecondary: "#736b67",
-    colorDanger: "#c70000",
+    colorPrimary: "#212121",
+    colorText: "#212121",
+    colorTextSecondary: "#575757",
+    colorDanger: "#9c0f0f",
     colorBackground: "#ffffff",
     // Stripe's iframe can't use next/font; Inter is requested by name with the system stack after it.
     fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
-    borderRadius: "3px",
+    borderRadius: "12px",
     spacingUnit: "4px",
   },
   rules: {
-    ".Input": { border: "1px solid #e4e4e4", boxShadow: "none" },
-    ".Input:focus": { border: "1px solid #000000", boxShadow: "none" },
+    ".Input": { border: "1px solid #cdcdcd", boxShadow: "none" },
+    ".Input:focus": { border: "1px solid #212121", boxShadow: "none" },
   },
 }
 
@@ -54,9 +54,9 @@ export function StripePayment({ total, currency, cartKey }: { total: number; cur
     }
   }, [cartKey])
 
-  if (error) return <p className="font-body text-[12px] text-error" role="alert">{error}</p>
+  if (error) return <p className="text-xs leading-4 text-red" role="alert">{error}</p>
   if (!clientSecret || !stripePromise) {
-    return <div className="h-40 animate-pulse rounded-button bg-tile" aria-label="Loading payment form" />
+    return <div className="h-40 animate-pulse rounded-2xl bg-natural-white-25" aria-label="Loading payment form" />
   }
   return (
     <Elements key={clientSecret} stripe={stripePromise} options={{ clientSecret, appearance }}>
@@ -102,14 +102,14 @@ function PaymentForm({ total, currency }: { total: number; currency: string }) {
     <div className="flex flex-col gap-4">
       <PaymentElement onReady={() => setReady(true)} options={{ layout: "tabs" }} />
       {error && (
-        <p className="font-body text-[12px] text-error" role="alert">
+        <p className="text-xs leading-4 text-red" role="alert">
           {error}
         </p>
       )}
-      <Button block size="checkout" onClick={pay} loading={pending} disabled={!stripe || !ready} track="place_order">
+      <Button block size="atc" onClick={pay} loading={pending} disabled={!stripe || !ready} track="place_order">
         Place order · {formatMoney(total, currency)}
       </Button>
-      <p className="text-center font-heading text-[10px] uppercase leading-[15px] tracking-[1px]">Payments are processed securely by Stripe</p>
+      <p className="text-center text-xs leading-4 text-light-charcoal">Payments are processed securely by Stripe</p>
     </div>
   )
 }

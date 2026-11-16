@@ -19,7 +19,14 @@ export type StoreRelease = {
   product_promise: string | null
   proof: string | null
   hero_image: string | null
-  products: { id: string; handle: string; title: string; thumbnail: string | null }[]
+  products: {
+    id: string
+    handle: string
+    title: string
+    thumbnail: string | null
+    /** Public edition facts (hole number, edition size); present for rope-cap holes. */
+    edition?: { hole: number; size: number | null } | null
+  }[]
 }
 
 /** Live stock per variant, fetched at request time. null = not tracked (always available). */

@@ -1,41 +1,25 @@
+import { CircleNotch } from "@phosphor-icons/react/dist/ssr"
 import Link from "next/link"
 import type { ComponentProps, ReactNode } from "react"
 
 /**
- * Melin's button system (SITE_SPEC §5): the classes live in globals.css (.btn,
- * .btn--*). Primary has no hover change; outline variants fill with ink from
- * the centre on hover.
+ * Allbirds' button system (SITE_SPEC §5, colours G.2.2): pill, Inter 500
+ * uppercase, classes in globals.css (.btn, .btn-primary…). `secondary` is the
+ * dark main CTA; `primary` is the light (white) one.
  */
-export type Variant = "primary" | "light" | "dark" | "highlight" | "link" | "micro" | "action" | "icon"
-export type Size = "default" | "atc" | "checkout" | "large" | "hero" | "small"
+export type Variant = "primary" | "secondary" | "outline-black" | "outline-white" | "icon-black" | "icon-white" | "link"
+export type Size = "default" | "small" | "large" | "atc"
 
-const variantClass: Record<Variant, string> = {
-  primary: "btn--primary",
-  light: "btn--light",
-  dark: "btn--dark",
-  highlight: "btn--highlight",
-  link: "btn--link",
-  micro: "btn--micro",
-  action: "btn--action",
-  icon: "btn--w-icon",
-}
-
-const sizeClass: Record<Size, string> = {
-  default: "",
-  atc: "btn--atc",
-  checkout: "btn--checkout",
-  large: "btn--large",
-  hero: "btn--hero",
-  small: "btn--small",
-}
+const sizeClass: Record<Size, string> = { default: "", small: "btn-small", large: "btn-large", atc: "btn-atc w-full" }
 
 export function buttonClass({
-  variant = "primary",
+  variant = "secondary",
   size = "default",
   block = false,
   className = "",
 }: { variant?: Variant; size?: Size; block?: boolean; className?: string } = {}) {
-  return ["btn", variantClass[variant], sizeClass[size], block ? "w-full" : "", className].filter(Boolean).join(" ")
+  if (variant === "link") return ["link text-sm", className].filter(Boolean).join(" ")
+  return ["btn", `btn-${variant}`, sizeClass[size], block ? "w-full" : "", className].filter(Boolean).join(" ")
 }
 
 type ButtonProps = ComponentProps<"button"> & {
@@ -45,11 +29,9 @@ type ButtonProps = ComponentProps<"button"> & {
   loading?: boolean
   /** Label for first-party `cta_click` autocapture (data-track). */
   track?: string
-  icon?: ReactNode
 }
 
-export function Button({ variant, size, block, loading, track, icon, className, children, disabled, ...rest }: ButtonProps) {
-  const dark = variant === "primary" || variant === "icon" || variant === undefined
+export function Button({ variant, size, block, loading, track, className, children, disabled, ...rest }: ButtonProps) {
   return (
     <button
       {...rest}
@@ -58,16 +40,7 @@ export function Button({ variant, size, block, loading, track, icon, className, 
       aria-busy={loading || undefined}
       className={buttonClass({ variant, size, block, className })}
     >
-      {loading ? (
-        <span className="inline-flex items-center justify-center" aria-label="Loading">
-          <Spinner light={dark} />
-        </span>
-      ) : (
-        <span className="inline-flex items-center gap-3">
-          {icon}
-          {children}
-        </span>
-      )}
+      {loading ? <CircleNotch size={16} className="animate-[spin_1s_linear_infinite]" aria-label="Loading" /> : children}
     </button>
   )
 }
@@ -79,7 +52,6 @@ export function ButtonLink({
   block,
   className,
   track,
-  icon,
   children,
   ...rest
 }: Omit<ComponentProps<typeof Link>, "className"> & {
@@ -89,26 +61,11 @@ export function ButtonLink({
   block?: boolean
   className?: string
   track?: string
-  icon?: ReactNode
   children: ReactNode
 }) {
   return (
     <Link href={href} data-track={track} className={buttonClass({ variant, size, block, className })} {...rest}>
-      <span className="inline-flex items-center gap-3">
-        {icon}
-        {children}
-      </span>
+      {children}
     </Link>
-  )
-}
-
-/** 14px spinner, 2px border (SITE_SPEC §5 `loading`). */
-export function Spinner({ light = true }: { light?: boolean }) {
-  return (
-    <span
-      aria-hidden
-      className={`inline-block h-[14px] w-[14px] rounded-full border-2 ${light ? "border-white border-t-transparent" : "border-black border-t-transparent"}`}
-      style={{ animation: "btn-spin .7s linear infinite" }}
-    />
   )
 }

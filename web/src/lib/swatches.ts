@@ -1,33 +1,22 @@
 /**
- * Dot colours for colour names on product cards (SITE_SPEC §6.2, §7). The PDP
- * uses image swatches instead, so these only need to be close. Two-tone names
- * written "Crown / Mesh" render as a split dot. Unknown names fall back to a
- * neutral grey.
+ * Rope Cap colourways (SITE_SPEC G.2.1): swatches render the crown with a band
+ * of the rope colour (G.5.6). Design values, not measured from the photos.
  */
-const SWATCH_HEX: Record<string, string> = {
-  black: "#1e1f21",
-  "washed black": "#2c2c2e",
-  navy: "#26314a",
-  bone: "#e4ddcc",
-  cream: "#ede6d6",
-  olive: "#5e6440",
-  charcoal: "#4a4a4c",
-  rust: "#a9441f",
-  stone: "#c9c1ae",
-  tobacco: "#8a5a2e",
-  forest: "#24462f",
-  sand: "#cdbb98",
-  brown: "#5a3a26",
-  white: "#f4f2ee",
+export type Colorway = { crown: string; rope: string; ropeName: string; light: boolean }
+
+export const COLORWAYS: Record<string, Colorway> = {
+  "Tour White": { crown: "#F4F2EE", rope: "#1F2A44", ropeName: "Navy", light: true },
+  "Clubhouse Navy": { crown: "#26314A", rope: "#F4F2EE", ropeName: "White", light: false },
+  Pine: { crown: "#1E3B2F", rope: "#EDE6D6", ropeName: "Cream", light: false },
+  Fescue: { crown: "#C9C1AE", rope: "#1F2A44", ropeName: "Navy", light: true },
+  Azalea: { crown: "#F4F2EE", rope: "#D8648A", ropeName: "Azalea pink", light: true },
+  Cypress: { crown: "#2E4B4A", rope: "#CDBB98", ropeName: "Sand", light: false },
+  Haar: { crown: "#A7ABA8", rope: "#EDE6D6", ropeName: "Cream", light: true },
 }
 
-const FALLBACK = "#8c867c"
+const FALLBACK: Colorway = { crown: "#8c867c", rope: "#EDE6D6", ropeName: "", light: false }
 
-const hex = (name: string) => SWATCH_HEX[name.trim().toLowerCase()] ?? FALLBACK
+export const colorway = (name: string | null | undefined): Colorway => (name && COLORWAYS[name]) || FALLBACK
 
-/** CSS background for a colour dot: solid, or a diagonal split for "A / B". */
-export function swatchBackground(name: string): string {
-  const parts = name.split("/").map((p) => p.trim()).filter(Boolean)
-  if (parts.length >= 2) return `linear-gradient(135deg, ${hex(parts[0])} 50%, ${hex(parts[1])} 50%)`
-  return hex(name)
-}
+/** Plain CSS background for a colour dot (crown only), used where a band won't fit. */
+export const swatchBackground = (name: string) => colorway(name).crown

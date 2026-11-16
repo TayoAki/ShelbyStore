@@ -1,102 +1,61 @@
 "use client"
 
-import { CaretLeft, CaretRight } from "@phosphor-icons/react"
 import Image from "next/image"
 import Link from "next/link"
-import { useRef } from "react"
 import { formatMoney } from "@/lib/format"
-import { Button } from "../ui/button"
 import { useAddToBag } from "./use-add-to-bag"
 
 export type Suggestion = {
+  key: string
   productId: string
-  handle: string
+  href: string
   title: string
   color: string | null
-  shape: string | null
   image: string | null
   price: number | null
   currency: string
-  /** The first in-stock variant for a one-size hat; null means "choose a size" on the PDP. */
+  /** The in-stock variant to add in one tap. */
   variantId: string | null
 }
 
 /**
- * "Complete Your Look" (Melin's "Complete Your Kit", SITE_SPEC §6.7): one card
- * visible with arrows, bordered #cccccc cards on the tile colour, "ADD" for
- * one-size hats.
+ * "Complete the look" (v5 §6.7, G.6.8): other core colourways as mini cards on
+ * a scroll-snap row, each with "ADD · $48".
  */
 export function Suggestions({ items }: { items: Suggestion[] }) {
-  const track = useRef<HTMLDivElement>(null)
-  const go = (dir: number) => {
-    const el = track.current
-    if (el) el.scrollBy({ left: dir * el.clientWidth, behavior: "smooth" })
-  }
+  const { add, pending } = useAddToBag({ openDrawer: false })
   if (!items.length) return null
   return (
-    <div className="relative">
-      <div ref={track} className="scrollbar-none flex snap-x snap-mandatory overflow-x-auto">
-        {items.map((s) => (
-          <div key={s.productId} className="w-full shrink-0 snap-center px-6">
-            <Card item={s} />
-          </div>
+    <section className="mt-6">
+      <h3 className="mb-3 px-5 font-mono text-xs leading-4 tracking-[.1em] uppercase">Complete the look</h3>
+      <ul className="scrollbar-hidden flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-5">
+        {items.map((item) => (
+          <li key={item.key} className="w-[calc((100%-20px)/2.4)] shrink-0 snap-start">
+            <div className="flex flex-col gap-2 rounded-2xl bg-natural-white-25 p-3">
+              <Link href={item.href} className="relative block aspect-square overflow-hidden rounded-xl bg-white">
+                {item.image && <Image src={item.image} alt="" fill sizes="160px" className="object-contain" />}
+              </Link>
+              <p className="text-xs leading-4 font-medium tracking-[.05em] uppercase">{item.color ?? item.title}</p>
+              <p className="text-xs leading-4">{formatMoney(item.price, item.currency)}</p>
+              {item.variantId ? (
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-small w-full"
+                  disabled={pending}
+                  data-track="cart_complete_look"
+                  onClick={() => add({ productId: item.productId, variantId: item.variantId!, price: item.price, currency: item.currency, source: "complete_the_look" })}
+                >
+                  ADD · {formatMoney(item.price, item.currency)}
+                </button>
+              ) : (
+                <Link href={item.href} className="btn btn-outline-black btn-small w-full" data-track="cart_complete_look">
+                  VIEW
+                </Link>
+              )}
+            </div>
+          </li>
         ))}
-      </div>
-      {items.length > 1 && (
-        <>
-          <button type="button" aria-label="Previous" onClick={() => go(-1)} className="absolute left-0 top-1/2 flex h-8 w-6 -translate-y-1/2 items-center justify-center">
-            <CaretLeft size={16} />
-          </button>
-          <button type="button" aria-label="Next" onClick={() => go(1)} className="absolute right-0 top-1/2 flex h-8 w-6 -translate-y-1/2 items-center justify-center">
-            <CaretRight size={16} />
-          </button>
-        </>
-      )}
-    </div>
-  )
-}
-
-function Card({ item }: { item: Suggestion }) {
-  const { add, pending, error } = useAddToBag({ openDrawer: true })
-  return (
-    <div className="flex flex-col gap-3 rounded-offer border border-line-offer bg-tile p-[15px]">
-      <div className="flex gap-3">
-        <Link href={`/products/${item.handle}`} className="relative h-[72px] w-[72px] shrink-0 bg-white">
-          {item.image && <Image src={item.image} alt={item.title} fill sizes="72px" className="object-contain" />}
-        </Link>
-        <div className="flex min-w-0 flex-1 flex-col">
-          <Link href={`/products/${item.handle}`} className="font-body text-[14.08px] leading-[21px] hover:underline">
-            {item.title}
-          </Link>
-          {item.color && <span className="font-body text-[12px] leading-[18px] text-muted">{item.color}</span>}
-          {item.shape && <span className="font-body text-[12px] leading-[18px]">{item.shape}</span>}
-        </div>
-        <span className="font-body text-[14px]">{formatMoney(item.price, item.currency)}</span>
-      </div>
-      <div className="flex justify-end">
-        {item.variantId ? (
-          <Button
-            size="small"
-            className="w-1/2"
-            loading={pending}
-            track="cart_complete_look"
-            onClick={() =>
-              add({ productId: item.productId, variantId: item.variantId!, price: item.price, currency: item.currency, source: "complete_the_look" })
-            }
-          >
-            Add
-          </Button>
-        ) : (
-          <Link href={`/products/${item.handle}`} data-track="cart_complete_look" className="btn btn--light btn--small w-1/2">
-            <span>Choose size</span>
-          </Link>
-        )}
-      </div>
-      {error && (
-        <p role="alert" className="font-body text-[12px] text-error">
-          {error}
-        </p>
-      )}
-    </div>
+      </ul>
+    </section>
   )
 }

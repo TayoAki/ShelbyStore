@@ -1,21 +1,17 @@
 "use client"
 
-import { Bag } from "@phosphor-icons/react"
 import { useCartDrawer } from "./drawer-context"
 import { DrawerClose, SideDrawer } from "./side-drawer"
 
-/** The slider cart's frame and header (SITE_SPEC §6.7). Body and summary come from the server. */
+/** The slider cart's frame and header (v5 §6.7, G.6.8). Body and summary come from the server. */
 export function CartDrawer({ policy, children }: { policy: string; children: React.ReactNode }) {
   const { isOpen, close } = useCartDrawer()
   return (
     <SideDrawer open={isOpen} onClose={close} label="Your bag">
-      <div className="relative shrink-0 bg-white px-4 pb-5 pt-4 text-center">
-        <DrawerClose onClose={close} className="absolute right-4 top-4" />
-        <div className="flex items-center justify-center gap-1">
-          <Bag size={24} aria-hidden />
-          <h2 className="font-heading text-[16px] leading-6">Your Bag</h2>
-        </div>
-        <p className="mt-3 font-body text-[13px] capitalize leading-[15px] tracking-[-0.1px]">{policy}</p>
+      <div className="relative flex h-11 shrink-0 items-center px-5">
+        <h2 className="text-xs leading-4 font-medium uppercase">Bag</h2>
+        <p className="m-auto text-xs leading-4 text-light-charcoal">{policy}</p>
+        <DrawerClose onClose={close} className="size-8" />
       </div>
       {children}
     </SideDrawer>

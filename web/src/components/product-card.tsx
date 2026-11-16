@@ -1,112 +1,121 @@
+"use client"
+
+import { Handbag } from "@phosphor-icons/react"
+import Image from "next/image"
 import Link from "next/link"
+import { useState } from "react"
 import { formatMoney } from "@/lib/format"
-import {
-  colorOption,
-  colorThumbs,
-  imagesFor,
-  imageUrl,
-  isLowStock,
-  isOneSize,
-  price,
-  productTypeOf,
-  sizeGroupOf,
-  variantOptions,
-} from "@/lib/product"
+import { findVariant, imagesFor, imageUrl, price } from "@/lib/product"
+import { ropeName } from "@/lib/rope"
 import type { Product, VariantStock } from "@/lib/types"
-import { CardImages } from "./card-images"
-import { QuickAdd, type QuickAddData } from "./quick-add"
-import { Badge } from "./ui/badge"
+import { useAddToBag } from "./cart/use-add-to-bag"
+import { SwatchFace } from "./swatch"
 
-/** One badge, in priority order (SITE_SPEC §6.2). */
-export type CardStatus = "limited" | "core" | "soon" | null
-
-/** Card status from the release index and the core collection. */
-export function cardStatus(product: Product, live: Record<string, unknown>, upcomingIds?: Set<string>): CardStatus {
-  if (live[product.id]) return "limited"
-  if (product.collection?.handle === "core") return "core"
-  if (upcomingIds?.has(product.id)) return "soon"
-  return null
-}
+export type CardBadge = "CORE" | "LIMITED" | "LOW STOCK" | "SOLD OUT" | `HOLE ${number}` | null
 
 /**
- * Melin's product card (SITE_SPEC §6.2): a 1:1 image on white with an 8px
- * bottom pad and 1px #e5e7eb line, an in-card carousel of the first colour,
- * hover image 2 and quick add, then title + price, colour, type and "+N Colors".
+ * Allbirds' master product card as a colourway card (SITE_SPEC §6.2, G.6.4):
+ * white rounded card, square image (hover = the colour's side shot, M8),
+ * badge, title, "Colour · Rope" line, price, crown+rope swatches that switch
+ * the card's colourway, and the quick-add row that flips in on hover (M10).
+ * `upcoming` editions show the tee sheet link instead of add to bag.
  */
 export function ProductCard({
   product,
+  color,
+  colors,
   stock,
-  status,
-  releaseId,
+  badge = null,
+  upcomingHref = null,
+  track = "quick_add",
   preload = false,
-  quickAdd = true,
-  track,
 }: {
   product: Product
+  color: string
+  colors?: string[]
   stock?: VariantStock
-  status: CardStatus
-  releaseId?: string
-  preload?: boolean
-  quickAdd?: boolean
+  badge?: CardBadge
+  upcomingHref?: string | null
   track?: string
+  preload?: boolean
 }) {
-  const colors = colorThumbs(product).map((c) => c.color)
-  const gallery = imagesFor(product, colors[0])
-  const images = gallery.length ? gallery : [imageUrl(product.thumbnail)].filter((x): x is string => !!x)
-  const p = price(product)
-  const low = isLowStock(product, stock)
-  const badge = status === "limited" ? "Limited" : status === "core" ? "Core" : low ? "Low Stock" : status === "soon" ? "Coming Soon" : null
+  const [active, setActive] = useState(color)
+  const { add, pending } = useAddToBag()
+  const gallery = imagesFor(product, active)
+  const first = gallery[0] ?? imageUrl(product.thumbnail)
+  const second = gallery[2] ?? gallery[1] ?? null
+  const variant = findVariant(product, { Color: active })
+  const n = variant && stock ? stock[variant.id] : undefined
+  const soldOut = typeof n === "number" && n <= 0
+  const p = price(product, variant)
+  const rope = ropeName(product, active)
+  const href = upcomingHref ?? `/products/${product.handle}?color=${encodeURIComponent(active)}`
+
+  const onAdd = () => {
+    if (!variant || soldOut) return
+    add({ productId: product.id, variantId: variant.id, price: p.amount, currency: p.currency, source: "quick_add" })
+  }
 
   return (
-    <div className="group relative">
-      <Link href={`/products/${product.handle}`} className="block" data-track={track}>
-        <span className="relative block border-b border-line-header bg-white pb-2">
-          <CardImages images={images} title={product.title} preload={preload} />
-          {badge && (
-            <span className="absolute left-[14.08px] top-[14.08px]">
-              <Badge>{badge}</Badge>
-            </span>
+    <article className="ab-qa-card group relative flex h-full flex-col rounded-2xl bg-white transition-all duration-300 ease-in-out max-sm:min-h-86">
+      <div className="relative z-10 aspect-square">
+        <Link href={href} className="absolute inset-0 overflow-hidden rounded-t-2xl" aria-label={`${product.title}, ${active}`}>
+          {first && <Image src={first} alt={`${product.title} in ${active}`} fill sizes="(min-width: 768px) 25vw, 50vw" className="object-cover" preload={preload} />}
+          {second && (
+            <Image src={second} alt="" fill sizes="(min-width: 768px) 25vw, 50vw" className="object-cover opacity-0 transition-opacity duration-150 ease-in-out md:group-hover:opacity-100" />
           )}
-        </span>
-        <span className="mt-[7px] flex items-baseline justify-between gap-2">
-          <span className="line-clamp-2 type-item">{product.title}</span>
-          <span className="shrink-0 font-body text-[14px] leading-[21px] tracking-[0.4px]">{formatMoney(p.amount, p.currency)}</span>
-        </span>
-        {colors[0] && <span className="block font-body text-[12px] capitalize leading-[18px] tracking-[0.4px] text-muted-card">{colors[0]}</span>}
-        <span className="block font-body text-[12px] capitalize leading-[18px] tracking-[0.4px] text-muted-card">{productTypeOf(product)}</span>
-        {colors.length > 1 && (
-          <span className="block font-body text-[12px] capitalize leading-[18px] tracking-[0.4px] text-muted-card">+{colors.length - 1} Colors</span>
+        </Link>
+        {(badge || soldOut) && (
+          <div className="pointer-events-none absolute inset-x-2.5 top-2.5 z-20 flex justify-between md:inset-x-5 md:top-5">
+            <span className="badge">{soldOut ? "SOLD OUT" : badge}</span>
+          </div>
         )}
-      </Link>
-      {quickAdd && status !== "soon" && (
-        <span className="pointer-events-none absolute inset-x-0 top-0 aspect-square">
-          <QuickAdd data={quickAddData(product, stock, releaseId)} />
-        </span>
-      )}
-    </div>
+      </div>
+      <div className="relative p-4">
+        <Link href={href} className="flex flex-col gap-1">
+          <h3 className="text-xs leading-4 font-medium tracking-[.05em] uppercase md:truncate md:text-sm md:leading-5">{product.title}</h3>
+          <p className="qa-meta min-h-[1.5em] truncate text-xs leading-4 tracking-[.05em] md:text-sm md:leading-5">
+            {active}
+            {rope ? ` · ${rope} rope` : ""}
+          </p>
+          <p className="qa-meta text-xs leading-4 font-medium tracking-[.05em]">{formatMoney(p.amount, p.currency)}</p>
+        </Link>
+        {colors && colors.length > 1 && (
+          <div className="mt-2.5 flex items-center gap-1" role="radiogroup" aria-label="Color">
+            {colors.slice(0, 5).map((c) => (
+              <button key={c} type="button" role="radio" aria-checked={c === active} aria-label={c} onClick={() => setActive(c)} onMouseEnter={() => setActive(c)} className="p-0.5">
+                <SwatchFace name={c} size={20} selected={c === active} />
+              </button>
+            ))}
+            {colors.length > 5 && <span className="text-sm leading-[14px] font-medium underline">+{colors.length - 5}</span>}
+          </div>
+        )}
+        {/* Desktop quick add (M10 flip) */}
+        <div className="ab-qa-flip absolute top-10 right-4 left-4 z-[2] hidden h-[42px] items-center gap-1.5 md:flex">
+          {upcomingHref ? (
+            <Link href={upcomingHref} className="btn btn-outline-black btn-small" data-track="notify_me">
+              JOIN THE TEE SHEET
+            </Link>
+          ) : (
+            <button type="button" className="btn btn-secondary btn-small" disabled={soldOut || pending || !variant} onClick={onAdd} data-track={track}>
+              {soldOut ? "SOLD OUT" : `ADD TO BAG · ${formatMoney(p.amount, p.currency)}`}
+            </button>
+          )}
+        </div>
+        {/* Mobile quick add row */}
+        <div className="mt-2 flex items-center justify-between md:hidden">
+          <span className="text-xs leading-4 text-light-charcoal">One size</span>
+          {upcomingHref ? (
+            <Link href={upcomingHref} className="text-xs leading-4 font-medium uppercase underline">
+              Tee sheet
+            </Link>
+          ) : (
+            <button type="button" onClick={onAdd} disabled={soldOut || pending || !variant} className="flex items-center gap-1 text-xs leading-4 font-medium uppercase disabled:opacity-40" data-track={track}>
+              <Handbag size={16} /> Add
+            </button>
+          )}
+        </div>
+      </div>
+    </article>
   )
-}
-
-/** First in-stock variant per size (sized) or overall (one size), in colour order. */
-export function quickAddData(product: Product, stock: VariantStock | undefined, releaseId?: string): QuickAddData {
-  const p = price(product)
-  const colorTitle = colorOption(product)
-  const colors = colorThumbs(product).map((c) => c.color)
-  const inStock = (id: string) => !stock || stock[id] === null || (stock[id] ?? 0) > 0
-  const ordered = [...(product.variants ?? [])].sort(
-    (a, b) => colors.indexOf(colorTitle ? (variantOptions(a)[colorTitle] ?? "") : "") - colors.indexOf(colorTitle ? (variantOptions(b)[colorTitle] ?? "") : "")
-  )
-  const base = { productId: product.id, price: p.amount, currency: p.currency, releaseId }
-  if (isOneSize(product)) {
-    return { ...base, oneSize: ordered.find((v) => inStock(v.id))?.id ?? null, sizes: null }
-  }
-  const group = sizeGroupOf(product)!
-  return {
-    ...base,
-    oneSize: null,
-    sizes: group.values.map((label) => ({
-      label,
-      variantId: ordered.find((v) => variantOptions(v)[group.title] === label && inStock(v.id))?.id ?? null,
-    })),
-  }
 }

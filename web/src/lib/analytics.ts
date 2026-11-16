@@ -222,7 +222,9 @@ export function pageTypeFor(pathname: string): string {
   if (pathname === "/quiz") return "quiz"
   if (pathname.startsWith("/stories/")) return "story"
   if (pathname === "/shop") return "collection"
-  if (pathname.startsWith("/drops")) return "drops"
+  // The Card keeps the "drops" value for continuity (SITE_SPEC G.6.0).
+  if (pathname.startsWith("/card") || pathname.startsWith("/drops")) return "drops"
+  if (pathname === "/custom") return "custom"
   if (pathname === "/fit-guide") return "fit_guide"
   if (pathname === "/cart") return "cart"
   if (pathname.startsWith("/checkout")) return "checkout"
