@@ -1,79 +1,81 @@
-import {
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  View,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
-  type StyleProp,
-  type ViewStyle,
-} from "react-native"
-import { SafeAreaView, type Edge } from "react-native-safe-area-context"
+import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native"
+import Animated, { type AnimatedRef } from "react-native-reanimated"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 
-import { colors, MAX_CONTENT_WIDTH } from "@/constants/theme"
+import { colors, layout, MAX_CONTENT_WIDTH } from "@/constants/theme"
+import { RevealScrollView } from "@/lib/motion"
+
+import { Ticker } from "./announcement-bar"
+import { AppHeader, useHeaderInset } from "./app-header"
 
 /**
- * Standard page: white, an optional fixed header above the scroll (the app
- * header), a centred column on wide screens and optional pull-to-refresh.
+ * A v5 page: the natural-white background, an optional ticker (Home) and the
+ * floating header pill, and a scroll view that drives the reveal motion.
+ * `under="pill"` starts content under the pill; `under="ticker"` lets a hero
+ * sit 10pt under the ticker so the pill floats over the photo.
  */
 export function Screen({
   children,
-  edges = [],
-  header,
+  header = true,
+  ticker = false,
+  under = "pill",
+  scroll = true,
   refreshing,
   onRefresh,
   onScrollY,
-  scroll = true,
-  background = colors.background,
-  contentStyle,
-  footer,
   overlay,
+  footer,
   scrollRef,
+  contentStyle,
+  background = colors.page,
+  back = false,
 }: {
   children: React.ReactNode
-  edges?: Edge[]
-  header?: React.ReactNode
+  header?: boolean
+  ticker?: boolean
+  under?: "pill" | "ticker" | "safe"
+  scroll?: boolean
   refreshing?: boolean
   onRefresh?: () => void
   onScrollY?: (y: number) => void
-  scroll?: boolean
-  background?: string
-  contentStyle?: StyleProp<ViewStyle>
-  footer?: React.ReactNode
-  /** Rendered over the scroll area (e.g. the sticky buy bar). */
   overlay?: React.ReactNode
-  scrollRef?: React.Ref<React.ComponentRef<typeof ScrollView>>
+  footer?: React.ReactNode
+  scrollRef?: AnimatedRef<Animated.ScrollView>
+  contentStyle?: StyleProp<ViewStyle>
+  background?: string
+  /** Stack screens show a back chevron in the pill. */
+  back?: boolean
 }) {
-  const body = <View style={[styles.column, contentStyle]}>{children}</View>
+  const insets = useSafeAreaInsets()
+  const pillInset = useHeaderInset(ticker)
+  const top =
+    under === "pill" && header ? pillInset - (ticker ? layout.ticker + insets.top : 0) : under === "ticker" ? 10 : insets.top + 10
+  const body = <View style={[styles.column, { paddingTop: top }, contentStyle]}>{children}</View>
   return (
-    <SafeAreaView edges={edges} style={[styles.root, { backgroundColor: background }]}>
-      {header}
+    <View style={[styles.root, { backgroundColor: background }]}>
+      {ticker ? (
+        <View style={{ paddingTop: insets.top, backgroundColor: colors.black }}>
+          <Ticker />
+        </View>
+      ) : null}
       <View style={styles.flex}>
         {scroll ? (
-          <ScrollView
-            ref={scrollRef}
-            contentContainerStyle={styles.scrollContent}
-            keyboardShouldPersistTaps="handled"
-            scrollEventThrottle={32}
-            onScroll={
-              onScrollY
-                ? (e: NativeSyntheticEvent<NativeScrollEvent>) => onScrollY(e.nativeEvent.contentOffset.y)
-                : undefined
-            }
-            refreshControl={
-              onRefresh ? (
-                <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={colors.textMuted} />
-              ) : undefined
-            }>
+          <RevealScrollView
+            scrollRef={scrollRef}
+            onScrollY={onScrollY}
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            contentContainerStyle={styles.scrollContent}>
             {body}
-          </ScrollView>
+          </RevealScrollView>
         ) : (
           body
         )}
         {overlay}
       </View>
       {footer}
-    </SafeAreaView>
+      {header ? <AppHeader belowTicker={ticker} back={back} /> : null}
+    </View>
   )
 }
 

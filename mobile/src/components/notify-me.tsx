@@ -1,10 +1,10 @@
 import Ionicons from "@expo/vector-icons/Ionicons"
 import { useState } from "react"
-import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from "react-native"
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Switch, TextInput, View } from "react-native"
 
-import { colors, fonts, radius, type } from "@/constants/theme"
+import { colors, fonts, golf, radius, type } from "@/constants/theme"
 import { useReminderList } from "@/hooks/use-reminders"
-import { track } from "@/lib/analytics"
+import { track, trackTap } from "@/lib/analytics"
 import { errorMessage } from "@/lib/medusa"
 import { getPushTokenSilently } from "@/lib/push"
 import { createReminder } from "@/lib/releases"
@@ -15,30 +15,38 @@ import { Text } from "./text"
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 /**
- * "Notify me" for an upcoming drop (APP_SPEC §5.1 item 11, §5.9): a 39pt email
- * input joined to a black button. Sends the email, plus an Expo push token
- * when the device can provide one.
+ * The tee sheet (APP_SPEC G.3): the waitlist for a hole. A pill input with a
+ * white JOIN button, plus an opt-in for a push at the real release time (the
+ * same moment the web goes live; no app-only drops or early access).
  */
-export function NotifyMe({
+export function TeeSheet({
   releaseId,
-  buttonLabel = "Notify me",
+  hole,
+  name,
   inverse = false,
+  showEyebrow = true,
 }: {
   releaseId: string
-  buttonLabel?: string
+  hole: number
+  name: string
+  /** On a dark or golf-green band. */
   inverse?: boolean
+  showEyebrow?: boolean
 }) {
   const { customer } = useAuth()
   const reminders = useReminderList()
   const [email, setEmail] = useState(customer?.email ?? "")
+  const [push, setPush] = useState(Platform.OS !== "web")
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   if (reminders.has(releaseId)) {
     return (
-      <View style={styles.done}>
-        <Ionicons name="checkmark-circle" size={16} color={colors.inStock} />
-        <Text style={[styles.doneText, inverse && styles.inverse]}>You&apos;re on the list. We&apos;ll tell you the moment it drops.</Text>
+      <View style={styles.done} accessibilityLiveRegion="polite">
+        <Ionicons name="checkmark-circle-outline" size={16} color={inverse ? colors.white : golf.green} />
+        <Text variant="meta" tone={inverse ? "inverse" : "default"} style={styles.flexShrink}>
+          You&apos;re on the tee sheet for Hole {hole}. We&apos;ll email you when it goes live.
+        </Text>
       </View>
     )
   }
@@ -52,10 +60,11 @@ export function NotifyMe({
     setError(null)
     setSubmitting(true)
     try {
-      const pushToken = await getPushTokenSilently()
+      const pushToken = push ? await getPushTokenSilently() : null
       await createReminder(releaseId, { email: trimmed, push_token: pushToken ?? undefined })
       await reminders.add(releaseId)
-      track("notify_me_submitted", { release_id: releaseId })
+      trackTap("notify_me", { release_id: releaseId, hole })
+      track("notify_me_submitted", { release_id: releaseId, hole, push: !!pushToken })
     } catch (e) {
       setError(errorMessage(e))
     } finally {
@@ -65,70 +74,91 @@ export function NotifyMe({
 
   return (
     <View style={styles.wrap}>
-      <View style={styles.row}>
+      {showEyebrow ? (
+        <Text variant="eyebrow" tone={inverse ? "inverse" : "default"}>
+          Join the tee sheet
+        </Text>
+      ) : null}
+      <View style={[styles.pill, inverse && styles.pillInverse]}>
         <TextInput
-          accessibilityLabel="Email for the drop alert"
+          accessibilityLabel={`Email for Hole ${hole}, ${name}`}
           value={email}
           onChangeText={setEmail}
-          placeholder="Email address"
-          placeholderTextColor={colors.textMuted}
+          placeholder={`Email for Hole ${hole}, ${name}`}
+          placeholderTextColor={colors.gray500}
           keyboardType="email-address"
           autoCapitalize="none"
           autoComplete="email"
           textContentType="emailAddress"
           returnKeyType="done"
           onSubmitEditing={submit}
-          style={[styles.input, inverse && styles.inputInverse]}
+          style={styles.input}
         />
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={buttonLabel}
+          accessibilityLabel="Join"
           onPress={submitting ? undefined : submit}
-          style={({ pressed }) => [styles.button, inverse && styles.buttonInverse, pressed && { opacity: 0.85 }]}>
-          {submitting ? (
-            <ActivityIndicator size="small" color={inverse ? colors.text : colors.textInverse} />
-          ) : (
-            <Text style={[type.button, styles.buttonLabel, inverse && { color: colors.text }]}>{buttonLabel}</Text>
-          )}
+          style={({ pressed }) => [styles.join, pressed && { backgroundColor: colors.black }]}>
+          {({ pressed }) =>
+            submitting ? (
+              <ActivityIndicator size="small" color={colors.black} />
+            ) : (
+              <Text style={[type.button, { color: pressed ? colors.white : colors.black }]}>Join</Text>
+            )
+          }
         </Pressable>
       </View>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {Platform.OS !== "web" ? (
+        <View style={styles.pushRow}>
+          <Ionicons name="notifications-outline" size={16} color={inverse ? colors.white : colors.black} />
+          <Text variant="meta" tone={inverse ? "inverse" : "default"} style={styles.flex}>
+            And send me a push at release time
+          </Text>
+          <Switch
+            value={push}
+            onValueChange={setPush}
+            trackColor={{ true: inverse ? colors.white : golf.green, false: colors.naturalWhite }}
+            thumbColor={push && inverse ? golf.green : colors.white}
+            accessibilityLabel="Send me a push at release time"
+          />
+        </View>
+      ) : null}
+      {error ? (
+        <Text variant="meta" tone={inverse ? "inverse" : "error"}>
+          {error}
+        </Text>
+      ) : null}
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: 6, alignSelf: "stretch" },
-  row: { flexDirection: "row" },
-  input: {
-    flex: 1,
-    height: 39,
+  wrap: { gap: 10, alignSelf: "stretch" },
+  pill: {
+    height: 42,
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: radius.full,
     borderWidth: 1,
-    borderRightWidth: 0,
-    borderColor: colors.primary,
-    borderTopLeftRadius: radius.button,
-    borderBottomLeftRadius: radius.button,
-    paddingHorizontal: 12,
-    paddingVertical: 0,
-    fontFamily: fonts.body,
-    fontSize: 14,
-    color: colors.text,
-    backgroundColor: colors.secondary,
+    borderColor: colors.black,
+    backgroundColor: colors.white,
+    paddingLeft: 16,
+    paddingRight: 4,
   },
-  inputInverse: { borderColor: colors.secondary },
-  button: {
-    height: 39,
+  pillInverse: { borderColor: colors.white },
+  input: { flex: 1, fontFamily: fonts.body, fontSize: 16, color: colors.black, paddingVertical: 0 },
+  join: {
+    height: 33,
     paddingHorizontal: 16,
-    backgroundColor: colors.primary,
-    borderTopRightRadius: radius.button,
-    borderBottomRightRadius: radius.button,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.black,
+    backgroundColor: colors.white,
     alignItems: "center",
     justifyContent: "center",
   },
-  buttonInverse: { backgroundColor: colors.secondary },
-  buttonLabel: { color: colors.textInverse },
-  error: { fontFamily: fonts.body, fontSize: 12, lineHeight: 18, color: colors.error },
+  pushRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  flex: { flex: 1 },
+  flexShrink: { flexShrink: 1 },
   done: { flexDirection: "row", alignItems: "center", gap: 8 },
-  doneText: { fontFamily: fonts.body, fontSize: 13, lineHeight: 19.5, color: colors.text, flexShrink: 1 },
-  inverse: { color: colors.textInverse },
 })

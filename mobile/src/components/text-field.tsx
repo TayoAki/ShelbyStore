@@ -1,50 +1,49 @@
-import { useState } from "react"
-import { StyleSheet, TextInput, View, type TextInputProps } from "react-native"
+import { StyleSheet, TextInput, View, type StyleProp, type TextInputProps, type ViewStyle } from "react-native"
 
-import { colors, fonts, radius, type } from "@/constants/theme"
+import { colors, fonts, radius } from "@/constants/theme"
 
 import { Text } from "./text"
 
-/** Checkout / account input (APP_SPEC §5.7): 48pt, 1pt #E4E4E4 (black on focus), radius 3. */
-export function TextField({ label, error, style, ...props }: TextInputProps & { label: string; error?: string }) {
-  const [focused, setFocused] = useState(false)
+/** v5 inputs: 42pt pill, 1pt #212121, white; mono label above, red error below. */
+export function TextField({
+  label,
+  error,
+  style,
+  multiline,
+  ...props
+}: TextInputProps & { label: string; error?: string | null; style?: StyleProp<ViewStyle> }) {
   return (
-    <View style={[styles.wrap, style as object]}>
-      <Text style={styles.label}>{label}</Text>
+    <View style={[styles.wrap, style]}>
+      <Text variant="label">{label}</Text>
       <TextInput
-        placeholderTextColor={colors.textMuted}
         {...props}
-        onFocus={(e) => {
-          setFocused(true)
-          props.onFocus?.(e)
-        }}
-        onBlur={(e) => {
-          setFocused(false)
-          props.onBlur?.(e)
-        }}
-        accessibilityLabel={props.accessibilityLabel ?? label}
-        style={[styles.input, focused && styles.focused, error ? styles.inputError : null]}
+        multiline={multiline}
+        accessibilityLabel={label}
+        placeholderTextColor={colors.gray500}
+        style={[styles.input, multiline && styles.multiline, !!error && { borderColor: colors.red }]}
       />
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? (
+        <Text variant="meta" tone="error">
+          {error}
+        </Text>
+      ) : null}
     </View>
   )
 }
 
 const styles = StyleSheet.create({
   wrap: { gap: 6 },
-  label: { fontFamily: fonts.body, fontSize: 13, lineHeight: 19.5, color: colors.text },
   input: {
-    ...type.system,
-    height: 48,
+    height: 42,
+    borderRadius: radius.full,
     borderWidth: 1,
-    borderColor: colors.line,
-    borderRadius: radius.button,
-    backgroundColor: colors.secondary,
-    paddingHorizontal: 14,
+    borderColor: colors.black,
+    backgroundColor: colors.white,
+    paddingHorizontal: 16,
     paddingVertical: 0,
-    color: colors.text,
+    fontFamily: fonts.body,
+    fontSize: 16,
+    color: colors.black,
   },
-  focused: { borderColor: colors.primary },
-  inputError: { borderColor: colors.error },
-  error: { fontFamily: fonts.body, fontSize: 12, lineHeight: 18, color: colors.error },
+  multiline: { height: 110, borderRadius: radius.xl, paddingTop: 12, textAlignVertical: "top" },
 })

@@ -1,18 +1,17 @@
 /**
- * Customer-facing policy lines (the same facts as web/src/lib/policy.ts).
+ * Customer-facing policy lines (the same facts as web/src/lib/policy.ts, G.7.3).
  *
- * CONFIRM BEFORE LAUNCH: these must match what the business actually offers.
- * Shipping prices mirror the seeded Medusa shipping options; the 30-day returns
- * window mirrors the release module's default returns_window_days.
+ * CONFIRM BEFORE LAUNCH: these must match what the business offers. The $85
+ * threshold mirrors the Medusa shipping-price rule; the charged price is
+ * always Medusa's (APP_SPEC G.6 item 5).
  */
 export const POLICY = {
-  shippingShort: "Standard Shipping $6",
-  returnsShort: "30-Day Returns",
-  bagLine: "Standard Shipping $6 · 30-Day Returns",
-  trustLine: "Standard shipping $6 - 30-day returns - secure checkout",
+  announcement: "Free shipping on $85+ · 30-day returns",
+  shipping: "Free shipping on $85+ · Standard $6 · Express $15",
+  returns: "30-day returns",
   dispatch: "Ships in 1–2 business days",
-  returnsDetail: "Send it back within 30 days of delivery.",
-  limitedRun: "Limited run. Restocked only if it sells through.",
-  stockDetail: "The count you see is what we have on the shelf.",
-  sizedRange: "Measure around your head just above the ears.",
+  limitedRun: "Numbered edition. We don't remake numbered colors.",
+  oneSize: "fits 21.5–23.75 in (55–60 cm)",
+  freeShippingThreshold: 85,
+  trustLine: "Free shipping on $85+ · 30-day returns · secure checkout",
 }

@@ -10,7 +10,9 @@ import { Screen } from "@/components/screen"
 import { ErrorState, LoadingState } from "@/components/state-views"
 import { Text } from "@/components/text"
 import { TextField } from "@/components/text-field"
-import { colors, fonts } from "@/constants/theme"
+import { colors, radius } from "@/constants/theme"
+import { trackTap } from "@/lib/analytics"
+import { openWeb } from "@/lib/links"
 import { formatMoney, formatShortDate } from "@/lib/format"
 import { errorMessage, sdk } from "@/lib/medusa"
 import { useAuth } from "@/providers/auth-provider"
@@ -18,11 +20,27 @@ import { useAuth } from "@/providers/auth-provider"
 export default function AccountScreen() {
   const { customer, isLoading } = useAuth()
   return (
-    <Screen edges={["top"]}>
+    <Screen>
       <View style={styles.header}>
-        <Text style={styles.title}>Account</Text>
+        <Text variant="section" accessibilityRole="header">
+          Account
+        </Text>
       </View>
       {isLoading ? <LoadingState /> : customer ? <SignedIn /> : <AuthForms />}
+      <View style={[styles.body, { marginTop: 10 }]}>
+        <View style={styles.card}>
+          <Text variant="label">Help</Text>
+          <AccountLink
+            label="Custom orders for your club"
+            onPress={() => {
+              trackTap("nav_custom")
+              router.push("/custom")
+            }}
+          />
+          <AccountLink label="Fit guide" onPress={() => openWeb("/fit-guide")} />
+          <AccountLink label="Shipping & returns" onPress={() => openWeb("/help/shipping-returns")} />
+        </View>
+      </View>
     </Screen>
   )
 }
@@ -48,20 +66,20 @@ function SignedIn() {
         <Text variant="eyebrow" tone="muted">
           Signed in
         </Text>
-        <Text style={styles.name}>
+        <Text variant="cardTitle">
           {[customer?.first_name, customer?.last_name].filter(Boolean).join(" ") || customer?.email}
         </Text>
-        <Text variant="bodySm" tone="muted">
+        <Text variant="body" tone="muted">
           {customer?.email}
         </Text>
       </View>
 
-      <View style={styles.block}>
-        <Text style={styles.blockTitle}>Orders</Text>
+      <View style={styles.card}>
+        <Text variant="label">Orders</Text>
         {orders.isLoading ? <LoadingState /> : null}
         {orders.error ? <ErrorState error={orders.error} onRetry={() => orders.refetch()} /> : null}
         {orders.data && !orders.data.length ? (
-          <Text variant="bodySm" tone="muted">
+          <Text variant="body" tone="muted">
             No orders yet. When you buy something, it shows up here.
           </Text>
         ) : null}
@@ -72,19 +90,19 @@ function SignedIn() {
             onPress={() => router.push(`/order/${order.id}`)}
             style={({ pressed }) => [styles.orderRow, pressed && { opacity: 0.8 }]}>
             <View style={styles.flex}>
-              <Text style={styles.orderNo}>Order #{order.display_id}</Text>
-              <Text style={styles.orderMeta}>
+              <Text variant="cardTitle">Order #{order.display_id}</Text>
+              <Text variant="meta" tone="muted">
                 {formatShortDate(order.created_at as unknown as string)} · {order.items?.length ?? 0} item
                 {(order.items?.length ?? 0) === 1 ? "" : "s"} · {humanStatus(order.fulfillment_status)}
               </Text>
             </View>
-            <Text variant="bodySm">{formatMoney(order.total, order.currency_code)}</Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.text} />
+            <Text variant="priceSm">{formatMoney(order.total, order.currency_code)}</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.black} />
           </Pressable>
         ))}
       </View>
 
-      <Button title="Sign out" variant="light" onPress={() => logout()} />
+      <Button title="Sign out" variant="outlineBlack" onPress={() => logout()} />
     </View>
   )
 }
@@ -160,10 +178,10 @@ function AuthForms() {
         }}
       />
 
-      <Text variant="bodySm" tone="muted">
+      <Text variant="body" tone="muted">
         {mode === "login"
           ? "Track orders and check out faster."
-          : "Save your details, see your orders, and get first word on drops."}
+          : "Save your details, see your orders, and join the tee sheet faster."}
       </Text>
 
       <View style={styles.form}>
@@ -205,11 +223,11 @@ function AuthForms() {
           textContentType={mode === "login" ? "password" : "newPassword"}
           onSubmitEditing={submit}
         />
-        {error ? <Text variant="micro" tone="error">{error}</Text> : null}
+        {error ? <Text variant="meta" tone="error">{error}</Text> : null}
         <Button title={mode === "login" ? "Sign in" : "Create account"} size="atc" onPress={submit} loading={submitting} />
         <Button
           title={mode === "login" ? "Create account" : "Sign in"}
-          variant="light"
+          variant="outlineBlack"
           onPress={() => {
             setMode(mode === "login" ? "register" : "login")
             setError(null)
@@ -220,36 +238,31 @@ function AuthForms() {
   )
 }
 
+function AccountLink({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable accessibilityRole="link" onPress={onPress} style={({ pressed }) => [styles.linkRow, pressed && { opacity: 0.7 }]}>
+      <Text variant="menuItem" style={styles.flex}>
+        {label}
+      </Text>
+      <Ionicons name="chevron-forward" size={16} color={colors.black} />
+    </Pressable>
+  )
+}
+
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 16 },
-  title: { fontFamily: fonts.heading, fontSize: 26, lineHeight: 39, textTransform: "uppercase", color: colors.text },
-  body: { paddingHorizontal: 16, gap: 24 },
-  card: { padding: 16, gap: 4, backgroundColor: colors.tile },
-  name: { fontFamily: fonts.heading, fontSize: 16, lineHeight: 24, color: colors.text },
-  block: { gap: 4 },
-  blockTitle: {
-    fontFamily: fonts.heading,
-    fontSize: 14,
-    lineHeight: 21,
-    letterSpacing: 1.3,
-    textTransform: "uppercase",
-    color: colors.text,
-    marginBottom: 8,
-  },
+  header: { paddingHorizontal: 20, paddingBottom: 12 },
+  body: { paddingHorizontal: 10, gap: 10 },
+  card: { padding: 20, gap: 10, backgroundColor: colors.white, borderRadius: radius.xxl },
   orderRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
     paddingVertical: 14,
-    paddingHorizontal: 16,
-    marginHorizontal: -16,
-    backgroundColor: colors.secondary,
     borderBottomWidth: 1,
-    borderBottomColor: colors.line,
+    borderBottomColor: colors.page,
   },
-  orderNo: { fontFamily: fonts.heading, fontSize: 14, lineHeight: 21, color: colors.text },
-  orderMeta: { fontFamily: fonts.body, fontSize: 12, lineHeight: 18, color: colors.textMuted },
+  linkRow: { flexDirection: "row", alignItems: "center", height: 48, borderBottomWidth: 1, borderBottomColor: colors.page },
   flex: { flex: 1 },
-  form: { gap: 16 },
+  form: { gap: 16, backgroundColor: colors.white, borderRadius: radius.xxl, padding: 20 },
   row: { flexDirection: "row", gap: 12 },
 })

@@ -1,5 +1,7 @@
 import type { HttpTypes } from "@medusajs/types"
 
+import { colourways as COLOURWAYS } from "@/constants/theme"
+
 import { LOW_STOCK_THRESHOLD, STOREFRONT_URL } from "./config"
 
 export type Product = HttpTypes.StoreProduct
@@ -255,7 +257,7 @@ export function productMeta(product: Product): { promise: string | null; fitNote
 export function detailsOf(product: Product): [string, string][] {
   const v = metaOf(product).details
   if (!v || typeof v !== "object" || Array.isArray(v)) return []
-  const ORDER = ["Crown", "Knit", "Brim", "Closure", "Fabric", "Origin", "Care"]
+  const ORDER = ["Crown", "Panels", "Rope", "Brim", "Closure", "Fabric", "Sweatband", "Origin", "Care"]
   const at = (k: string) => (ORDER.indexOf(k) === -1 ? ORDER.length : ORDER.indexOf(k))
   return Object.entries(v as Meta)
     .filter((e): e is [string, string] => typeof e[1] === "string" && !!e[1].trim())
@@ -296,42 +298,50 @@ export function oneSizeRange(product: Product): string {
   return `${m[1]}–${m[2]} in (${Math.round(a * CM_PER_IN)}–${Math.round(b * CM_PER_IN)} cm)`
 }
 
-/** First category: the hat's shape (Caps, Truckers, …). */
-export function shapeOf(product: Product): { id: string; name: string; handle: string } | null {
-  const c = (product as Product & { categories?: { id: string; name?: string | null; handle?: string | null }[] | null })
-    .categories?.[0]
-  return c?.name && c.handle ? { id: c.id, name: c.name, handle: c.handle } : null
+// --- Editions, rope and colourways (v6) --------------------------------------------
+
+export type Edition = { hole: number; size: number | null; numberedInside: boolean }
+
+/** metadata.edition: { hole, size, numbered_inside } (web G.8). Hole 1 is the core cap. */
+export function editionOf(product: Product | null | undefined): Edition | null {
+  const v = metaOf(product).edition as { hole?: unknown; size?: unknown; numbered_inside?: unknown } | undefined
+  if (!v || typeof v !== "object" || typeof v.hole !== "number") return null
+  return { hole: v.hole, size: typeof v.size === "number" ? v.size : null, numberedInside: v.numbered_inside === true }
 }
 
-const SINGULAR: Record<string, string> = {
-  caps: "Cap",
-  truckers: "Trucker",
-  beanies: "Beanie",
-  "bucket-hats": "Bucket Hat",
+/** A numbered limited edition (Hole 2 and later). */
+export function isEdition(product: Product | null | undefined): boolean {
+  const e = editionOf(product)
+  return !!e && e.hole >= 2
 }
 
-/**
- * The product type line on cards and the PDP (APP_SPEC §5.3), built from the
- * fit profile, the closure and the shape: "Unstructured Strapback Cap".
- */
-export function productTypeOf(product: Product): string {
-  const shape = shapeOf(product)
-  const noun = shape ? SINGULAR[shape.handle] ?? shape.name.replace(/s$/, "") : "Hat"
-  if (shape?.handle === "beanies") return "Knit Beanie"
-  const closure = (detailsOf(product).find(([k]) => k === "Closure")?.[1] ?? "").toLowerCase()
-  const close = /snap/.test(closure)
-    ? "Snapback"
-    : /strap|buckle/.test(closure)
-      ? "Strapback"
-      : /stretch|sized|fitted/.test(closure)
-        ? "Fitted"
-        : null
-  const structure = fitProfileOf(product)?.structure ?? null
-  if (!isOneSize(product) && !close) return `Sized ${noun}`
-  return [structure, close, noun].filter(Boolean).join(" ")
+/** "11–11.5" from metadata.crown_cm. */
+export function crownCmOf(product: Product): string | null {
+  return str(metaOf(product).crown_cm)
 }
 
-// --- The two-pack offer ----------------------------------------------------------------
+/** Rope colour name for a colourway: metadata.rope, else the design table. */
+export function ropeNameFor(product: Product | null | undefined, colourway: string | null | undefined): string | null {
+  if (!colourway) return null
+  const rope = metaOf(product).rope as Record<string, unknown> | undefined
+  const own = rope && typeof rope === "object" ? str(rope[colourway]) : null
+  return own ?? COLOURWAYS[colourway]?.ropeName ?? null
+}
+
+/** The colourway of an edition (its single colour value), or the selected colour. */
+export function colourOfVariant(product: Product, variant: Variant | undefined): string | null {
+  const id = colorOptionOf(product)?.id
+  if (!variant || !id) return null
+  return variantOptionMap(variant)[id] ?? null
+}
+
+/** "Tour White" → "White", "Clubhouse Navy" → "Navy" for compact line meta ("Navy + Pine"). */
+export function shortColour(name: string): string {
+  const map: Record<string, string> = { "Tour White": "White", "Clubhouse Navy": "Navy" }
+  return map[name] ?? name
+}
+
+// --- Bundles: The Pair and The Foursome ----------------------------------------------
 
 export function isOffer(product: Product | null | undefined): boolean {
   return metaOf(product).offer === true
@@ -341,20 +351,55 @@ export function offerSingleHandle(product: Product): string | null {
   return str(metaOf(product).single_handle)
 }
 
-/** The offer built on `handle` (the Everyday Cap → its two-pack), if any. */
-export function offerFor(products: Product[], handle: string | null | undefined): Product | null {
-  if (!handle) return null
-  return products.find((p) => isOffer(p) && offerSingleHandle(p) === handle) ?? null
+/** Caps in a bundle: the-pair 2, the-foursome 4 (metadata.caps when present). */
+export function capsIn(product: Product): number {
+  const caps = metaOf(product).caps
+  if (typeof caps === "number" && caps > 0) return caps
+  return /foursome|four/i.test(product.handle ?? "") ? 4 : 2
 }
 
-/** Live anchor for the offer: twice the single's price. Hidden when there's no saving. */
-export function offerSaving(offer: Product, single: Product | null): { anchor: number; saving: number; price: number } | null {
+/** Bundles built on `handle` (the Rope Cap → The Pair, The Foursome). */
+export function offersFor(products: Product[], handle: string | null | undefined): Product[] {
+  if (!handle) return []
+  return products.filter((p) => isOffer(p) && offerSingleHandle(p) === handle).sort((a, b) => capsIn(a) - capsIn(b))
+}
+
+export function offerFor(products: Product[], handle: string | null | undefined): Product | null {
+  return offersFor(products, handle)[0] ?? null
+}
+
+/**
+ * Live anchor for a bundle: caps × the single's price. Hidden when there's no
+ * saving (web G.6.5).
+ */
+export function offerSaving(
+  offer: Product,
+  single: Product | null
+): { anchor: number; saving: number; price: number; perCap: number; caps: number } | null {
   const price = productPrice(offer)?.amount
   const singlePrice = single ? productPrice(single)?.amount : undefined
   if (price === undefined || singlePrice === undefined) return null
-  const anchor = singlePrice * 2
+  const caps = capsIn(offer)
+  const anchor = singlePrice * caps
   const saving = anchor - price
-  return saving > 0 ? { anchor, saving, price } : null
+  return saving > 0 ? { anchor, saving, price, perCap: Math.round((price / caps) * 100) / 100, caps } : null
+}
+
+/**
+ * Line meta for the bag and order (web G.6.8): Pair "Navy + Pine", Foursome
+ * "4 × Pine" or "One of each", singles "Pine / One Size".
+ */
+export function lineMeta(product: Product | undefined, line: { variant_title?: string | null; variant_id?: string | null }): string {
+  const variant = product?.variants?.find((v) => v.id === line.variant_id)
+  if (product && variant && isOffer(product)) {
+    const values = (variant.options ?? []).map((o) => o.value).filter(Boolean)
+    if (capsIn(product) === 4) {
+      const v = values[0] ?? line.variant_title ?? ""
+      return /each/i.test(v) ? "One of each" : v.replace(/x/i, "×")
+    }
+    return values.map(shortColour).join(" + ")
+  }
+  return line.variant_title ?? ""
 }
 
 /**

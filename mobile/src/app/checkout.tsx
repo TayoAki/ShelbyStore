@@ -10,12 +10,12 @@ import { Screen } from "@/components/screen"
 import { EmptyState } from "@/components/state-views"
 import { Text } from "@/components/text"
 import { TextField } from "@/components/text-field"
-import { colors, fonts, radius } from "@/constants/theme"
+import { colors, radius } from "@/constants/theme"
 import { useCatalog } from "@/hooks/use-products"
 import { useTrackOnce } from "@/lib/analytics"
 import { formatMoney } from "@/lib/format"
 import { errorMessage, sdk } from "@/lib/medusa"
-import { lineImage } from "@/lib/product"
+import { lineImage, lineMeta } from "@/lib/product"
 import { useAuth } from "@/providers/auth-provider"
 import { useCart, type Cart } from "@/providers/cart-provider"
 
@@ -84,8 +84,8 @@ export default function CheckoutScreen() {
 
   if (!cart || !cart.items?.length) {
     return (
-      <Screen>
-        <EmptyState icon="bag-outline" title="Your Bag Is Empty" actionTitle="Shop the Everyday Cap" onAction={() => router.replace("/products/everyday-cap")} />
+      <Screen header={false} under="safe">
+        <EmptyState title="Your bag is empty." actionTitle="Shop the Rope Cap" onAction={() => router.replace("/products/rope-cap")} />
       </Screen>
     )
   }
@@ -175,7 +175,7 @@ export default function CheckoutScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <Screen edges={["bottom"]}>
+      <Screen header={false} under="safe" contentStyle={{ paddingTop: 10 }}>
         <View style={styles.body}>
           <Summary cart={cart} />
 
@@ -255,7 +255,7 @@ export default function CheckoutScreen() {
               keyboardType="phone-pad"
               autoComplete="tel"
             />
-            <Text variant="micro" tone="muted">
+            <Text variant="meta" tone="muted">
               We currently ship within the United States.
             </Text>
             <Button title="Continue to delivery" size="atc" onPress={saveDetails} loading={busy} />
@@ -282,12 +282,12 @@ export default function CheckoutScreen() {
                   <View style={styles.flex}>
                     <Text style={styles.optionName}>{option.name}</Text>
                     {option.type?.description ? (
-                      <Text variant="micro" tone="muted">
+                      <Text variant="meta" tone="muted">
                         {option.type.description}
                       </Text>
                     ) : null}
                   </View>
-                  <Text variant="bodySm">{formatMoney(option.amount, currency)}</Text>
+                  <Text variant="priceSm">{option.amount === 0 ? "Free" : formatMoney(option.amount, currency)}</Text>
                 </Pressable>
               )
             })}
@@ -302,14 +302,14 @@ export default function CheckoutScreen() {
           <Section index={3} title="Payment" active={step === "payment"} done={false}>
             <View style={styles.notice}>
               <Text style={styles.optionName}>Test payment</Text>
-              <Text variant="micro" tone="muted" style={styles.noticeCopy}>
+              <Text variant="meta" tone="muted" style={styles.noticeCopy}>
                 This build uses Medusa&apos;s built-in test provider: your order is recorded, and no card is charged.
                 Card payments (e.g. Stripe) get switched on before launch.
               </Text>
             </View>
             <Button
               title={`Place order · ${formatMoney(cart.total, currency)}`}
-              size="checkout"
+              size="atc"
               onPress={placeOrder}
               loading={busy}
             />
@@ -342,14 +342,14 @@ function Section({
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Text style={[styles.step, !(active || done) && styles.stepIdle]}>
-          {index}. {title}
+        <Text variant="eyebrow" tone={active || done ? "default" : "muted"}>
+          {index} · {title}
         </Text>
-        {done && onEdit ? <Button title="Edit" variant="micro" onPress={onEdit} /> : null}
+        {done && onEdit ? <Button title="Edit" variant="link" onPress={onEdit} /> : null}
       </View>
       {active ? <View style={styles.sectionBody}>{children}</View> : null}
       {!active && done && summary ? (
-        <Text variant="micro" tone="muted" numberOfLines={2}>
+        <Text variant="meta" tone="muted" numberOfLines={2}>
           {summary}
         </Text>
       ) : null}
@@ -378,27 +378,25 @@ function Summary({ cart }: { cart: Cart }) {
               </View>
             </View>
             <View style={styles.flex}>
-              <Text variant="bodySm" numberOfLines={1}>
+              <Text variant="cardTitle" numberOfLines={1}>
                 {item.product_title ?? item.title}
               </Text>
-              {item.variant_title ? (
-                <Text variant="micro" tone="muted" numberOfLines={1}>
-                  {item.variant_title}
-                </Text>
-              ) : null}
+              <Text variant="meta" tone="muted" numberOfLines={1}>
+                {lineMeta(catalog.data?.find((p) => p.id === item.product_id), item)}
+              </Text>
             </View>
-            <Text variant="bodySm">{formatMoney(item.total, currency)}</Text>
+            <Text variant="priceSm">{formatMoney(item.total, currency)}</Text>
           </View>
         )
       })}
       <View style={styles.divider} />
       {rows.map(([label, value]) => (
         <View key={label} style={styles.summaryRow}>
-          <Text variant="bodySm" tone="muted">
+          <Text variant="body" tone="muted">
             {label}
           </Text>
-          <Text variant="bodySm" tone="muted">
-            {value === undefined ? "—" : formatMoney(value, currency)}
+          <Text variant="body" tone="muted">
+            {value === undefined ? "—" : label === "Shipping" && value === 0 ? "Free" : formatMoney(value, currency)}
           </Text>
         </View>
       ))}
@@ -412,11 +410,11 @@ function Summary({ cart }: { cart: Cart }) {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  body: { padding: 16, gap: 16 },
+  body: { padding: 10, gap: 10 },
   row: { flexDirection: "row", gap: 12 },
-  summary: { padding: 16, gap: 10, backgroundColor: colors.tile },
+  summary: { padding: 20, gap: 10, backgroundColor: colors.white, borderRadius: radius.xxl },
   summaryLine: { flexDirection: "row", alignItems: "center", gap: 12 },
-  summaryImage: { width: 64, height: 64, borderRadius: radius.addon, backgroundColor: colors.secondary },
+  summaryImage: { width: 64, height: 64, borderRadius: radius.xl, backgroundColor: colors.naturalWhite25 },
   qty: {
     position: "absolute",
     top: -6,
@@ -424,34 +422,32 @@ const styles = StyleSheet.create({
     minWidth: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.black,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 4,
   },
-  qtyText: { fontFamily: fonts.heading, fontSize: 11, lineHeight: 13, color: colors.textInverse },
+  qtyText: { fontFamily: "Inter_500Medium", fontSize: 11, lineHeight: 13, color: colors.white },
   summaryRow: { flexDirection: "row", justifyContent: "space-between", gap: 12 },
-  divider: { height: 1, backgroundColor: colors.line, marginVertical: 4 },
-  total: { fontFamily: fonts.heading, fontSize: 18, lineHeight: 23.4, color: colors.text },
-  section: { paddingVertical: 16, gap: 16, borderBottomWidth: 1, borderBottomColor: colors.line },
+  divider: { height: 1, backgroundColor: colors.page, marginVertical: 4 },
+  total: { fontFamily: "Inter_500Medium", fontSize: 18, lineHeight: 28, color: colors.black },
+  section: { padding: 24, gap: 16, backgroundColor: colors.white, borderRadius: radius.xxl },
   sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  step: { fontFamily: fonts.heading, fontSize: 18, lineHeight: 23.4, letterSpacing: 1.3, textTransform: "uppercase", color: colors.text },
-  stepIdle: { color: colors.textMuted },
   sectionBody: { gap: 16 },
   option: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
     padding: 14,
-    borderRadius: radius.button,
+    borderRadius: radius.xl,
     borderWidth: 1,
-    borderColor: colors.line,
+    borderColor: colors.stroke,
   },
-  optionSelected: { borderColor: colors.primary },
-  optionName: { fontFamily: fonts.heading, fontSize: 14, lineHeight: 21, color: colors.text },
-  radio: { width: 18, height: 18, borderRadius: 9, borderWidth: 1, borderColor: colors.primary },
+  optionSelected: { borderColor: colors.black },
+  optionName: { fontFamily: "Inter_500Medium", fontSize: 14, lineHeight: 21, color: colors.black },
+  radio: { width: 18, height: 18, borderRadius: 9, borderWidth: 1, borderColor: colors.black },
   radioOn: { borderWidth: 6 },
-  notice: { padding: 14, gap: 4, borderRadius: radius.button, backgroundColor: colors.tile },
+  notice: { padding: 14, gap: 4, borderRadius: radius.xl, backgroundColor: colors.naturalWhite25 },
   noticeCopy: { lineHeight: 19.5 },
-  error: { fontFamily: fonts.body, fontSize: 12, lineHeight: 18, color: colors.error },
+  error: { fontFamily: "Inter_400Regular", fontSize: 12, lineHeight: 16, color: colors.red },
 })

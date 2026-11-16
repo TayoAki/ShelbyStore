@@ -1,34 +1,42 @@
 import Ionicons from "@expo/vector-icons/Ionicons"
-import { useEffect } from "react"
-import { ActivityIndicator, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from "react-native"
+import { ActivityIndicator, Pressable, StyleSheet, type StyleProp, type ViewStyle } from "react-native"
 import Animated, { interpolateColor, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated"
 
-import { colors, fonts, radius, type } from "@/constants/theme"
+import { colors, dur, ease, golf, motion, radius, type } from "@/constants/theme"
 
 import { Text } from "./text"
 
-export type ButtonVariant = "primary" | "light" | "highlight" | "link" | "micro" | "action"
-export type ButtonSize = "default" | "atc" | "checkout" | "large" | "hero" | "small"
+export type ButtonVariant = "primary" | "secondary" | "outlineBlack" | "outlineWhite" | "icon" | "link"
+export type ButtonSize = "small" | "default" | "large" | "atc"
 
 type IconName = React.ComponentProps<typeof Ionicons>["name"]
 
-const AnimatedView = Animated.createAnimatedComponent(View)
+/** [fill, border, label] at rest and pressed (APP_SPEC v5 §3; M11). */
+const PALETTE: Record<Exclude<ButtonVariant, "link" | "icon">, { rest: [string, string, string]; pressed: [string, string, string] }> = {
+  primary: { rest: [colors.white, colors.white, colors.black], pressed: [colors.black, colors.black, colors.white] },
+  secondary: { rest: [colors.black, colors.black, colors.white], pressed: [colors.muted, colors.muted, colors.white] },
+  outlineBlack: { rest: ["rgba(33,33,33,0)", colors.black, colors.black], pressed: [colors.black, colors.black, colors.white] },
+  outlineWhite: { rest: ["rgba(255,255,255,0)", colors.white, colors.white], pressed: [colors.white, colors.white, colors.black] },
+}
+
+const HEIGHT: Record<ButtonSize, number> = { small: 33, default: 33, large: 42, atc: 49 }
+const PAD: Record<ButtonSize, number> = { small: 12, default: 16, large: 14, atc: 16 }
 
 /**
- * Melin's button system (APP_SPEC §3): 39pt boxes with a 3pt radius and an
- * UPPERCASE 14pt label tracked 1.3. `light` and `highlight` fill on press
- * (the native stand-in for Melin's ink-fill hover).
+ * Allbirds' pill buttons (radius 9999): colours change on press over 200ms
+ * sine.in-out. `link` is golf green and underlined (G.2.2).
  */
 export function Button({
   title,
   onPress,
-  variant = "primary",
+  variant = "secondary",
   size = "default",
   loading = false,
   disabled = false,
   icon,
   style,
   accessibilityLabel,
+  inverse = false,
 }: {
   title: string
   onPress?: () => void
@@ -39,8 +47,23 @@ export function Button({
   icon?: IconName
   style?: StyleProp<ViewStyle>
   accessibilityLabel?: string
+  /** Links on a dark or golf-green band render white. */
+  inverse?: boolean
 }) {
   const inactive = disabled || loading
+  const pressed = useSharedValue(0)
+  const kind = variant === "link" || variant === "icon" ? "outlineBlack" : variant
+  const pal = PALETTE[kind]
+  const animated = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(pressed.value, [0, 1], [pal.rest[0], pal.pressed[0]]),
+    borderColor: interpolateColor(pressed.value, [0, 1], [pal.rest[1], pal.pressed[1]]),
+  }))
+  const labelStyle = useAnimatedStyle(() => ({
+    color: interpolateColor(pressed.value, [0, 1], [pal.rest[2], pal.pressed[2]]),
+  }))
+  const press = (to: number) => {
+    pressed.set(withTiming(to, { duration: dur.button, easing: ease.sineInOut, reduceMotion: motion.reduceMotion }))
+  }
   const common = {
     accessibilityRole: "button" as const,
     accessibilityLabel: accessibilityLabel ?? title,
@@ -48,124 +71,88 @@ export function Button({
     onPress: inactive ? undefined : onPress,
   }
 
-  if (variant === "link" || variant === "micro") {
+  if (variant === "link") {
     return (
-      <Pressable {...common} hitSlop={10} style={({ pressed }) => [styles.bare, pressed && { opacity: 0.6 }, style]}>
-        <Text variant={variant === "link" ? "link" : "micro"} style={variant === "micro" ? styles.micro : undefined}>
+      <Pressable {...common} hitSlop={10} style={({ pressed: p }) => [styles.bare, p && { opacity: 0.6 }, style]}>
+        <Text variant="meta" style={[styles.link, { color: inverse ? colors.white : golf.green }]}>
           {title}
         </Text>
       </Pressable>
     )
   }
 
-  if (variant === "action") {
+  if (variant === "icon") {
     return (
-      <Pressable {...common} style={({ pressed }) => [styles.action, pressed && { backgroundColor: colors.tile }, style]}>
-        {icon ? <Ionicons name={icon} size={14} color={colors.text} /> : null}
-        <Text variant="micro" style={styles.actionLabel}>
-          {title}
-        </Text>
+      <Pressable
+        {...common}
+        style={({ pressed: p }) => [
+          styles.icon,
+          { backgroundColor: p ? colors.black : "transparent", borderColor: inverse ? colors.white : colors.black },
+          inactive && { opacity: 0.5 },
+          style,
+        ]}>
+        {({ pressed: p }) =>
+          icon ? <Ionicons name={icon} size={16} color={p ? colors.white : inverse ? colors.white : colors.black} /> : null
+        }
       </Pressable>
     )
   }
 
-  return <BoxButton {...{ title, variant, size, loading, inactive, style }} common={common} />
-}
-
-function BoxButton({
-  title,
-  variant,
-  size,
-  loading,
-  inactive,
-  style,
-  common,
-}: {
-  title: string
-  variant: "primary" | "light" | "highlight"
-  size: ButtonSize
-  loading: boolean
-  inactive: boolean
-  style?: StyleProp<ViewStyle>
-  common: object
-}) {
-  const fill = useSharedValue(0)
-  const ink = variant === "highlight" ? colors.secondary : colors.primary
-  const rest = variant === "primary" ? colors.primary : "rgba(0,0,0,0)"
-  const restLabel = variant === "primary" ? colors.textInverse : variant === "highlight" ? colors.textInverse : colors.text
-  const pressedLabel = variant === "highlight" ? colors.text : colors.textInverse
-
-  useEffect(() => {
-    if (inactive) fill.set(0)
-  }, [inactive, fill])
-
-  const animated = useAnimatedStyle(() =>
-    variant === "primary"
-      ? { opacity: 1 - fill.get() * 0.15 }
-      : { backgroundColor: interpolateColor(fill.get(), [0, 1], [rest, ink]) }
-  )
-  const label = useAnimatedStyle(() =>
-    variant === "primary" ? {} : { color: interpolateColor(fill.get(), [0, 1], [restLabel, pressedLabel]) }
-  )
-
-  const box = sizeBox[size]
+  const disabledLook = disabled && !loading
   return (
     <Pressable
       {...common}
-      onPressIn={() => fill.set(withTiming(1, { duration: variant === "primary" ? 100 : 250 }))}
-      onPressOut={() => fill.set(withTiming(0, { duration: 250 }))}
-      style={[inactive && styles.disabled, style]}>
-      <AnimatedView
+      onPressIn={() => !inactive && press(1)}
+      onPressOut={() => press(0)}
+      style={[size === "atc" && styles.block, style]}>
+      <Animated.View
         style={[
           styles.box,
-          box,
-          { borderColor: variant === "primary" ? colors.primary : ink, backgroundColor: rest },
+          { height: HEIGHT[size], paddingHorizontal: PAD[size] },
           animated,
+          disabledLook && styles.disabled,
         ]}>
         {loading ? (
-          <ActivityIndicator size="small" color={restLabel} />
+          <ActivityIndicator size="small" color={pal.rest[2]} />
         ) : (
-          <Animated.Text
-            numberOfLines={1}
-            style={[type.button, size === "hero" || size === "small" ? styles.labelSmall : null, { color: restLabel }, label]}>
-            {title}
-          </Animated.Text>
+          <>
+            {icon ? <Ionicons name={icon} size={16} color={disabledLook ? colors.gray400 : pal.rest[2]} /> : null}
+            <Animated.Text
+              numberOfLines={1}
+              style={[
+                size === "large" ? type.buttonLarge : type.button,
+                size === "small" && { fontSize: 11 },
+                labelStyle,
+                disabledLook && { color: colors.gray400 },
+              ]}>
+              {title}
+            </Animated.Text>
+          </>
         )}
-      </AnimatedView>
+      </Animated.View>
     </Pressable>
   )
 }
 
-const sizeBox: Record<ButtonSize, ViewStyle> = {
-  default: { height: 39, paddingHorizontal: 18 },
-  large: { height: 39, paddingHorizontal: 18 },
-  atc: { height: 52, paddingHorizontal: 18 },
-  checkout: { height: 52, paddingHorizontal: 18, borderRadius: radius.none },
-  hero: { height: 28, paddingHorizontal: 12, borderWidth: 1.5 },
-  small: { height: 30, paddingHorizontal: 12 },
-}
-
 const styles = StyleSheet.create({
+  bare: { alignSelf: "flex-start" },
+  link: { textDecorationLine: "underline" },
+  block: { alignSelf: "stretch" },
   box: {
+    borderRadius: radius.full,
     borderWidth: 1,
-    borderRadius: radius.button,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+  },
+  disabled: { backgroundColor: colors.gray200, borderColor: colors.gray300 },
+  icon: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.full,
+    borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
   },
-  labelSmall: { fontSize: 11, lineHeight: 16.5, letterSpacing: 1.6 },
-  disabled: { opacity: 0.2 },
-  bare: { alignSelf: "flex-start" },
-  micro: { textDecorationLine: "underline", textTransform: "capitalize" },
-  action: {
-    height: 36,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.primary,
-    paddingHorizontal: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    alignSelf: "flex-start",
-  },
-  actionLabel: { fontFamily: fonts.body },
 })

@@ -1,517 +1,502 @@
 import { Image } from "expo-image"
 import { router } from "expo-router"
-import { useState } from "react"
-import { FlatList, Platform, Pressable, StyleSheet, useWindowDimensions, View } from "react-native"
+import { useEffect, useState } from "react"
+import { FlatList, Pressable, StyleSheet, useWindowDimensions, View } from "react-native"
+import Animated, {
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withDelay,
+  withTiming,
+} from "react-native-reanimated"
 
-import { AnnouncementBar } from "@/components/announcement-bar"
-import { AppHeader } from "@/components/app-header"
+import { BundleThumb } from "@/components/bundle-rows"
 import { Button } from "@/components/button"
-import { NotifyMe } from "@/components/notify-me"
-import { productHref } from "@/components/product-card"
+import { CredibilityStrip } from "@/components/credibility-strip"
+import { HoleBand } from "@/components/hole-band"
+import { TeeSheet } from "@/components/notify-me"
+import { PillWindow } from "@/components/pill-window"
+import { coreCounts } from "@/components/product-card"
+import { MaterialRing } from "@/components/ring"
 import { Screen } from "@/components/screen"
-import { ErrorState, LoadingState } from "@/components/state-views"
-import { StatusDot } from "@/components/stock-line"
+import { ErrorState, Skeleton } from "@/components/state-views"
+import { StockLine } from "@/components/stock-line"
 import { Swatch } from "@/components/swatch"
 import { Text } from "@/components/text"
-import { colors, fonts, layout, MAX_CONTENT_WIDTH, radius, type } from "@/constants/theme"
-import { useCatalog, useContentSeries, useShapes } from "@/hooks/use-products"
-import { useReleases } from "@/hooks/use-releases"
-import type { ContentSeries } from "@/lib/catalog"
-import { formatDropDate, formatMoney } from "@/lib/format"
-import { cutout, openWeb } from "@/lib/links"
-import {
-  cardImages,
-  colorCounts,
-  colorOptionOf,
-  colorThumbs,
-  hatImage,
-  imageUrl,
-  leadImageFor,
-  productPrice,
-  type Product,
-} from "@/lib/product"
-import { colorTile } from "@/lib/swatches"
-import type { StoreRelease } from "@/lib/types"
+import { Veil } from "@/components/veil"
+import { VALUE_TILES, ValueTile } from "@/components/value-tile"
+import { colors, CORE_COLOURWAYS, ease, golf, layout, motion, radius, shadow } from "@/constants/theme"
+import { holeDay, useHoles } from "@/hooks/use-holes"
+import { useNow } from "@/hooks/use-now"
+import { useCatalog, useContentSeries } from "@/hooks/use-products"
+import { trackTap } from "@/lib/analytics"
+import { formatMoney } from "@/lib/format"
+import { openWeb } from "@/lib/links"
+import { Reveal, useMountProgress } from "@/lib/motion"
+import { capsIn, detailsOf, hatImage, imagesFor, offersFor, productPrice, type Product } from "@/lib/product"
 
-const CONDENSE_AT = 121
+const TILE_BG: Record<string, string> = {
+  "Tour White": golf.sage,
+  "Clubhouse Navy": golf.tint,
+  Pine: golf.sage,
+  Fescue: golf.tint,
+}
 
-/** Home (APP_SPEC §5.1): the web home at phone size, in the same order, with live data. */
+/** Home (APP_SPEC G.5): web G.6.2's order with live data. */
 export default function HomeScreen() {
-  const { width: windowWidth } = useWindowDimensions()
-  const W = Math.min(windowWidth, MAX_CONTENT_WIDTH)
-  const [condensed, setCondensed] = useState(false)
   const catalog = useCatalog()
-  const releases = useReleases()
-  const shapes = useShapes()
-  const series = useContentSeries()
-
-  const core = catalog.data?.find((p) => p.handle === "everyday-cap") ?? catalog.data?.find((p) => p.collection?.handle === "core")
-  const live = releases.data?.live ?? []
-  const upcoming = releases.data?.upcoming ?? []
-  const featured = live[0] ?? upcoming[0] ?? null
+  const { next, liveEditions, holes } = useHoles()
+  const core = catalog.data?.find((p) => p.handle === "rope-cap")
+  const offers = offersFor(catalog.data ?? [], "rope-cap")
+  const bandHole = liveEditions[0] ?? next
 
   return (
-    <Screen
-      edges={["top"]}
-      header={
-        <>
-          <AnnouncementBar liveDrop={live[0]?.title} />
-          <AppHeader condensed={condensed} />
-        </>
-      }
-      onScrollY={(y) => setCondensed(y > CONDENSE_AT)}
-      refreshing={catalog.isRefetching || releases.isRefetching}
-      onRefresh={() => {
-        catalog.refetch()
-        releases.refetch()
-        series.refetch()
-      }}>
-      {catalog.isLoading ? <LoadingState /> : null}
-      {catalog.error ? <ErrorState error={catalog.error} onRetry={() => catalog.refetch()} /> : null}
-
-      <Hero W={W} core={core} />
-      <BrowseByStyle W={W} shapes={shapes.data} core={core} />
-      {featured ? <DropBanner W={W} release={featured} live={featured.phase === "live"} /> : null}
-      <FindYourFit />
-      {core ? <ShopByColor core={core} /> : null}
+    <Screen ticker under="ticker" refreshing={catalog.isRefetching} onRefresh={() => catalog.refetch()}>
+      <Hero core={core} pair={offers.find((o) => capsIn(o) === 2) ?? null} upcoming={next ? { n: next.number, at: next.releaseAt } : null} />
+      {catalog.error && !catalog.data ? <ErrorState error={catalog.error} onRetry={() => catalog.refetch()} /> : null}
+      {core ? <PickAColor core={core} /> : <Skeleton style={styles.skeleton} />}
+      {bandHole ? <HoleBand hole={bandHole} orbit label="home" /> : null}
+      {core ? <TheBuild core={core} /> : null}
+      {core ? <OneTwoFour core={core} offers={offers} /> : null}
       {core ? <InStockToday core={core} /> : null}
-      {series.data?.[0] ? <CrushTest series={series.data[0]} /> : null}
-      <AboutShelby W={W} />
-      <Stories series={series.data?.[0] ?? null} />
-      {upcoming[0] ? <JoinTheList release={upcoming[0]} /> : null}
+      <CrownTest />
+      <PillWindow
+        image={hatImage("rope-brim.jpg")}
+        quote="We make one rope cap. We kept the crown lower than most, washed the cotton until it felt broken in, and put a rope on it worth looking at. Each season gets a new numbered color.">
+        <Button
+          title="Why the Rope Cap"
+          onPress={() => {
+            trackTap("home_reasons")
+            openWeb("/reasons/rope-cap")
+          }}
+        />
+      </PillWindow>
+      <CredibilityStrip />
+      <Stories />
+      <View style={styles.tiles}>
+        {VALUE_TILES.map((t) => (
+          <ValueTile key={t.eyebrow} eyebrow={t.eyebrow} body={t.body} />
+        ))}
+      </View>
+      <FooterCard hole={next ?? holes.find((h) => h.status === "upcoming") ?? null} />
     </Screen>
   )
 }
 
-/** 1. Hero: live text over the lifestyle photo, product and price in the first screen. */
-function Hero({ W, core }: { W: number; core?: Product }) {
+/** M3: the container fades in, then the copy 300ms later. */
+function Hero({ core, pair, upcoming }: { core: Product | undefined; pair: Product | null; upcoming: { n: number; at: string | null } | null }) {
+  const { width, height } = useWindowDimensions()
+  const container = useMountProgress(800)
+  const copy = useMountProgress(800, 300)
+  const cStyle = useAnimatedStyle(() => ({ opacity: container.value }))
+  const tStyle = useAnimatedStyle(() => ({ opacity: copy.value }))
   const price = core ? productPrice(core) : null
-  const colorsCount = core ? colorOptionOf(core)?.values.length ?? 0 : 0
+  const pairPrice = pair ? productPrice(pair) : null
+  const now = useNow(60_000)
+  const soon = upcoming?.at && new Date(upcoming.at).getTime() - now < 60 * 86400_000
+  const eyebrow = `The Rope Cap · Hole 1 · Out now${soon ? ` · Hole ${upcoming!.n} ${holeDay(upcoming!.at)}` : ""}`
+  const h = Math.max(480, height - 132 - layout.ticker)
   return (
-    <View style={{ width: W, height: (521 * W) / 390 }}>
-      <Image
-        source={hatImage("lifestyle-hero-mobile.jpg")}
-        style={StyleSheet.absoluteFill}
-        contentFit="cover"
-        contentPosition={{ top: "70%" }}
-        priority="high"
-        accessibilityLabel="A man in the Everyday Cap on a coastal road"
-      />
-      <View style={styles.heroText}>
-        <Text style={type.hero} accessibilityRole="header">
-          {"ONE CAP.\nEVERY COLOR.\nALWAYS IN STOCK."}
+    <Animated.View style={[styles.hero, { width: Math.min(width, 720) - 20, height: h }, cStyle]}>
+      <Image source={hatImage("rope-lifestyle-hero-mobile.jpg")} style={StyleSheet.absoluteFill} contentFit="cover" contentPosition={{ top: "35%" }} />
+      <Veil alpha={0.6} />
+      <Animated.View style={[styles.heroCopy, tStyle]}>
+        <Text variant="heroEyebrow" tone="inverse">
+          {eyebrow}
         </Text>
-        {core && price ? (
-          <Text variant="bodySm" style={styles.heroLine}>
-            {core.title} · {formatMoney(price.amount, price.currency)} · {colorsCount} colors
+        <Text variant="hero" tone="inverse" accessibilityRole="header">
+          One rope cap. Made properly.
+        </Text>
+        <Text variant="kicker" tone="inverse">
+          Mid crown. Washed cotton. A rope worth looking at.
+        </Text>
+        {price ? (
+          <Text variant="body" tone="inverse">
+            The Rope Cap · {formatMoney(price.amount, price.currency)} · {CORE_COLOURWAYS.length} colors
           </Text>
         ) : null}
-        <Button
-          title="Shop now"
-          variant="light"
-          size="hero"
-          onPress={() => router.push(productHref(core?.handle ?? "everyday-cap") as never)}
-          style={styles.heroButton}
-        />
+        <View style={styles.heroButtons}>
+          <Button
+            title="Shop the Rope Cap"
+            variant="primary"
+            size="small"
+            style={styles.flex}
+            onPress={() => {
+              trackTap("hero_shop_core")
+              router.push("/products/rope-cap")
+            }}
+          />
+          {pair && pairPrice ? (
+            <Button
+              title={`The Pair · ${formatMoney(pairPrice.amount, pairPrice.currency)}`}
+              variant="primary"
+              size="small"
+              style={styles.flex}
+              onPress={() => {
+                trackTap("hero_shop_pair")
+                router.push(`/offer/${pair.handle}` as never)
+              }}
+            />
+          ) : null}
+        </View>
+      </Animated.View>
+    </Animated.View>
+  )
+}
+
+/** Section header with the v5 tab title and its 2pt underline (M15). */
+function TabTitle({ title, right }: { title: string; right?: React.ReactNode }) {
+  return (
+    <View style={styles.tabTitleRow}>
+      <View>
+        <Text variant="tab">{title}</Text>
+        <View style={styles.tabUnderline} />
       </View>
+      {right}
     </View>
   )
 }
 
-/** 2. Browse By Style: a 2-column grid of shape tiles plus SHOP ALL. */
-function BrowseByStyle({
-  W,
-  shapes,
-  core,
-}: {
-  W: number
-  shapes: { name: string; handle: string; products: Product[] }[]
-  core?: Product
-}) {
-  const tile = (W - 16) / 2
-  const height = (tile * 207) / 187
-  const allImage = core ? leadImageFor(core, colorThumbs(core)[1]?.color ?? colorThumbs(core)[0]?.color ?? "") : null
-  const tiles = [
-    ...shapes.map((s) => ({ key: s.handle, label: s.name, image: cardImages(s.products[0])[0] ?? null, href: `/shop?shape=${s.handle}` })),
-    { key: "all", label: "Shop All", image: allImage, href: "/shop" },
-  ]
-  if (!shapes.length) return null
+/** Pick a color: the centred-slide carousel; the centred tile morphs radius 20 → 250 (M5). */
+function PickAColor({ core }: { core: Product }) {
+  const { width } = useWindowDimensions()
+  const itemW = Math.round(Math.min(width, 720) / 1.4)
+  const [centred, setCentred] = useState(0)
+  const [onViewable] = useState(() => ({ viewableItems }: { viewableItems: { index?: number | null; isViewable: boolean }[] }) => {
+    const mid = viewableItems.find((v) => v.isViewable)
+    if (mid?.index != null) setCentred(mid.index)
+  })
   return (
-    <View>
-      <Text style={[type.section, styles.sectionHeading, { marginLeft: 21 }]}>Browse By Style</Text>
-      <View style={styles.tileGrid}>
-        {tiles.map((t) => (
-          <Pressable
-            key={t.key}
-            accessibilityRole="link"
-            accessibilityLabel={t.label}
-            onPress={() => router.push(t.href as never)}
-            style={[styles.styleTile, { width: tile, height }]}>
-            {/* The blend sits on the wrapper so it multiplies against the tile (RN-web
-                gives every View its own stacking context). */}
-            <View style={[styles.cutoutBox, { width: tile - 42, height: tile - 42 }, cutout]}>
-              {t.image ? <Image source={t.image} style={{ width: tile - 42, height: tile - 42 }} contentFit="contain" /> : null}
-            </View>
-            <Text style={styles.tileLabel}>{t.label}</Text>
-          </Pressable>
-        ))}
-      </View>
-    </View>
-  )
-}
-
-/** A lifestyle image for the drop banner; product shots on white fall back to the corduroy lifestyle. */
-function bannerImage(release: StoreRelease): string {
-  const src = imageUrl(release.hero_image)
-  return src && /lifestyle|story/.test(src) ? src : hatImage("lifestyle-corduroy.jpg")
-}
-
-/** 3. Drop banner: the live (or next) release over a lifestyle photo. */
-function DropBanner({ W, release, live }: { W: number; release: StoreRelease; live: boolean }) {
-  return (
-    <View style={{ width: W, height: (520 * W) / 390 }}>
-      <Image source={bannerImage(release)} style={StyleSheet.absoluteFill} contentFit="cover" contentPosition={{ top: "35%" }} />
-      <View style={styles.scrim} />
-      <View style={styles.bannerText}>
-        <Text style={styles.bannerEyebrow}>
-          {live ? "Limited release · Live now" : `Next drop · ${formatDropDate(release.release_at)}`}
-        </Text>
-        <Text style={[type.campaign, styles.white, styles.center]}>{release.title}</Text>
-        <Button
-          title={live ? "Shop the drop" : "Get notified"}
-          variant="highlight"
-          onPress={() => router.push(`/drops/${release.handle}` as never)}
-          style={styles.bannerButton}
-        />
-      </View>
-    </View>
-  )
-}
-
-/** 4. Find Your Fit: the quiz lives on the web. */
-function FindYourFit() {
-  return (
-    <View style={styles.fit}>
-      <Image source={hatImage("everyday-cap-black-3.jpg")} style={[styles.fitImage, cutout]} contentFit="contain" />
-      <Text style={[type.promo, styles.center]}>Find Your Fit</Text>
-      <Text variant="bodySm" style={[styles.center, styles.fitCopy]}>
-        Four questions about how you wear a hat. We&apos;ll match you to one style, a color that&apos;s in stock and, for
-        sized hats, a size.
-      </Text>
-      <Button title="Take the quiz" variant="light" onPress={() => openWeb("/quiz")} style={styles.fitButton} />
-    </View>
-  )
-}
-
-/** 5. Shop By Color: the core cap's colours on tonal tiles. */
-function ShopByColor({ core }: { core: Product }) {
-  const thumbs = colorThumbs(core)
-  return (
-    <View>
-      <Text style={[type.section, styles.sectionHeading, { marginLeft: 28 }]}>Shop By Color</Text>
+    <Reveal style={styles.section} threshold={1}>
+      <TabTitle
+        title="Pick a color"
+        right={
+          <Button
+            title="Not sure? Take the 30-second quiz"
+            variant="link"
+            onPress={() => {
+              trackTap("home_quiz")
+              openWeb("/quiz")
+            }}
+          />
+        }
+      />
       <FlatList
-        data={thumbs}
-        keyExtractor={(t) => t.color}
+        data={[...CORE_COLOURWAYS]}
         horizontal
+        keyExtractor={(c) => c}
         showsHorizontalScrollIndicator={false}
-        snapToInterval={347}
+        snapToInterval={itemW + 10}
         decelerationRate="fast"
-        contentContainerStyle={styles.colorRow}
-        renderItem={({ item }) => {
-          const tile = colorTile(item.color)
-          return (
-            <Pressable
-              accessibilityRole="link"
-              accessibilityLabel={`${core.title} in ${item.color}`}
-              onPress={() => router.push(productHref(core.handle ?? core.id, { color: item.color }) as never)}
-              style={[styles.colorTile, { backgroundColor: tile.background }]}>
-              <Text style={[styles.colorLabel, { color: tile.label }]}>{item.color}</Text>
-              {item.image ? (
-                <View style={[styles.colorPhotoWrap, cutout]}>
-                  <Image source={item.image} style={styles.colorPhoto} contentFit="contain" />
-                </View>
-              ) : null}
-            </Pressable>
-          )
+        contentContainerStyle={{ paddingHorizontal: (Math.min(width, 720) - itemW) / 2, gap: 10 }}
+        onViewableItemsChanged={onViewable}
+        viewabilityConfig={{ itemVisiblePercentThreshold: 60 }}
+        renderItem={({ item, index }) => <ColorTile core={core} colour={item} width={itemW} centred={index === centred} index={index} />}
+      />
+    </Reveal>
+  )
+}
+
+function ColorTile({ core, colour, width, centred, index }: { core: Product; colour: string; width: number; centred: boolean; index: number }) {
+  const reduce = useReducedMotion()
+  const p = useSharedValue(centred ? 1 : 0)
+  const title = useSharedValue(reduce ? 1 : 0)
+  useEffect(() => {
+    p.value = withTiming(centred ? 1 : 0, { duration: reduce ? 0 : 600, easing: ease.power3InOut, reduceMotion: motion.reduceMotion })
+  }, [centred, p, reduce])
+  useEffect(() => {
+    title.value = withDelay(index * 150, withTiming(1, { duration: 800, easing: ease.sineOut, reduceMotion: motion.reduceMotion }))
+  }, [index, title])
+  const tile = useAnimatedStyle(() => ({ borderRadius: 20 + (width / 2 - 20) * p.value }))
+  const cta = useAnimatedStyle(() => ({ opacity: 0.35 + 0.65 * p.value }))
+  const titleStyle = useAnimatedStyle(() => ({ opacity: title.value }))
+  const image = imagesFor(core, colour)[0]
+  const hover = imagesFor(core, colour)[2]
+  const go = () => {
+    trackTap("shop_by_color", { color: colour })
+    router.push({ pathname: "/products/[handle]", params: { handle: "rope-cap", color: colour } })
+  }
+  return (
+    <Pressable accessibilityRole="link" accessibilityLabel={`Shop ${colour}`} onPress={go}>
+      <Animated.View style={[styles.colorTile, { width, height: width / 0.77, backgroundColor: TILE_BG[colour] }, tile]}>
+        <View style={[styles.disc, shadow.float, { width: width * 0.72, height: width * 0.72, borderRadius: width * 0.36 }]}>
+          <Image source={centred && hover ? hover : image} style={styles.discImage} contentFit="contain" transition={300} />
+        </View>
+        <Animated.View style={[styles.tileText, titleStyle]}>
+          <Text variant="tile">{colour}</Text>
+          <Animated.View style={[styles.flexStretch, cta]}>
+            <Button title={`Shop ${colour}`} variant="outlineBlack" onPress={go} />
+          </Animated.View>
+        </Animated.View>
+      </Animated.View>
+    </Pressable>
+  )
+}
+
+/** The build: the material ring on the clubhouse photo, with the rope macro at its centre. */
+function TheBuild({ core }: { core: Product }) {
+  const d = Object.fromEntries(detailsOf(core))
+  const callouts = [
+    { title: "Crown", body: d.Crown },
+    { title: "Rope", body: d.Rope },
+    { title: "Brim", body: d.Brim },
+    { title: "Closure", body: d.Closure },
+  ].filter((c): c is { title: string; body: string } => !!c.body)
+  return (
+    <MaterialRing background={hatImage("rope-clubhouse.jpg")} centre={hatImage("rope-cap-tour-white-5.jpg")} callouts={callouts} title="What it's made of">
+      <Button
+        title="See the scorecard"
+        variant="primary"
+        onPress={() => {
+          trackTap("home_scorecard")
+          router.push({ pathname: "/products/[handle]", params: { handle: "rope-cap", section: "scorecard" } })
         }}
       />
-    </View>
+    </MaterialRing>
   )
 }
 
-/** 6. In Stock Today: live sellable counts for the core cap. */
-function InStockToday({ core }: { core: Product }) {
-  const counts = colorCounts(core)
+/** One, two or four: three promo tiles with live prices and per-cap prices. */
+function OneTwoFour({ core, offers }: { core: Product; offers: Product[] }) {
+  const { width } = useWindowDimensions()
+  const tileW = Math.round(Math.min(width, 720) * 0.8)
+  const single = productPrice(core)
+  const tiles = [
+    {
+      key: "one",
+      title: "The Rope Cap",
+      price: single ? formatMoney(single.amount, single.currency) : "",
+      cta: "Shop one",
+      bg: golf.sage,
+      art: <Image source={hatImage("rope-cap-tour-white-1.jpg")} style={styles.discImage} contentFit="contain" />,
+      go: () => {
+        trackTap("core_product")
+        router.push("/products/rope-cap")
+      },
+    },
+    ...offers.map((o) => {
+      const caps = capsIn(o)
+      const pr = productPrice(o)
+      const four = caps >= 4
+      return {
+        key: o.id,
+        title: four ? "The Foursome" : "The Pair",
+        price: pr ? `${formatMoney(pr.amount, pr.currency)} · ${formatMoney(pr.amount / caps)} a cap` : "",
+        cta: four ? "Shop the Foursome" : "Shop the Pair",
+        bg: four ? golf.sage : golf.tint,
+        art: <BundleThumb caps={caps} size={Math.round(tileW * 0.5)} />,
+        go: () => {
+          trackTap(four ? "home_foursome" : "home_pair")
+          router.push(`/offer/${o.handle}` as never)
+        },
+      }
+    }),
+  ]
   return (
-    <View style={styles.stockBand}>
-      <Text style={styles.stockTitle}>In Stock Today</Text>
-      <Text variant="micro" tone="muted" style={styles.center}>
-        Live sellable stock for the Everyday Cap. Updated every visit.
-      </Text>
-      <View style={styles.stockGrid}>
-        {counts.map((c) => (
-          <Pressable
-            key={c.color}
-            accessibilityRole="link"
-            onPress={() => router.push(productHref(core.handle ?? core.id, { color: c.color }) as never)}
-            style={styles.stockItem}>
-            <Swatch name={c.color} />
-            <Text style={styles.stockColor}>{c.color}</Text>
-            <View style={styles.stockLine}>
-              <StatusDot state={c.state} />
-              <Text variant="bodySm">
-                {c.state === "sold_out"
-                  ? "Restocking"
-                  : c.state === "low"
-                    ? `Only ${c.quantity} left`
-                    : c.quantity === null
-                      ? "In stock"
-                      : `${c.quantity} in stock`}
-              </Text>
+    <Reveal style={styles.section}>
+      <TabTitle title="One, two or four" />
+      <FlatList
+        data={tiles}
+        horizontal
+        keyExtractor={(t) => t.key}
+        showsHorizontalScrollIndicator={false}
+        snapToInterval={tileW + 10}
+        decelerationRate="fast"
+        contentContainerStyle={{ paddingHorizontal: 10, gap: 10 }}
+        renderItem={({ item }) => (
+          <Pressable accessibilityRole="link" accessibilityLabel={`${item.title}, ${item.price}`} onPress={item.go}>
+            <View style={[styles.promo, { width: tileW, height: tileW / 0.7, backgroundColor: item.bg }]}>
+              <View style={[styles.promoArt, shadow.float]}>{item.art}</View>
+              <Text variant="tile">{item.title}</Text>
+              <Text variant="label">{item.price}</Text>
+              <Button title={item.cta} variant="outlineBlack" onPress={item.go} />
             </View>
           </Pressable>
-        ))}
-      </View>
-    </View>
+        )}
+      />
+    </Reveal>
   )
 }
 
-const EPISODE_IMAGES = ["story-crush.jpg", "everyday-cap-black-3.jpg", "story-crush.jpg", "everyday-cap-bone-1.jpg"]
-
-/** 7. From The Crush Test: the content series' published episodes. */
-function CrushTest({ series }: { series: ContentSeries }) {
-  const episodes = [...series.episodes]
-    .map((e) => ({ ...e, n: Number(/(\d+)$/.exec(e.asset_key)?.[1] ?? 0) }))
-    .sort((a, b) => a.n - b.n)
-  if (!episodes.length) return null
+function InStockToday({ core }: { core: Product }) {
+  const counts = coreCounts(core)
+  if (!counts.length) return null
   return (
-    <View style={styles.series}>
-      <Text style={[type.section, styles.sectionHeading, { marginLeft: 16 }]}>From {series.title}</Text>
+    <Reveal style={styles.section}>
+      <TabTitle title="In stock today" />
+      <View style={styles.grid}>
+        {counts.map((c) => (
+          <View key={c.color} style={styles.stockTile}>
+            <Swatch name={c.color} />
+            <Text variant="cardTitle">{c.color}</Text>
+            <StockLine state={c.state} quantity={c.quantity} />
+            {c.quantity != null && c.state === "in_stock" ? (
+              <Text variant="label" tone="muted">
+                {c.quantity} in stock
+              </Text>
+            ) : null}
+          </View>
+        ))}
+      </View>
+    </Reveal>
+  )
+}
+
+const EPISODE_IMAGES = ["rope-brim.jpg", "rope-cap-tour-white-3.jpg", "rope-brim.jpg", "rope-cap-pine-3.jpg"]
+
+/** From The Crown Test: the active series' episodes; captions rise in (M29). */
+function CrownTest() {
+  const series = useContentSeries()
+  const s = series.data?.find((x) => x.handle === "crown-test") ?? series.data?.[0]
+  const [played, setPlayed] = useState(false)
+  if (!s || !s.episodes.length) return null
+  return (
+    <Reveal style={styles.section} onReveal={() => setPlayed(true)}>
+      <TabTitle title={`From ${s.title}`} />
       <FlatList
-        data={episodes}
-        keyExtractor={(e) => e.asset_key}
+        data={s.episodes}
         horizontal
+        keyExtractor={(e) => e.asset_key}
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.seriesRow}
-        renderItem={({ item, index }) => {
-          const file = EPISODE_IMAGES[index % EPISODE_IMAGES.length]
-          const photo = file.startsWith("story")
-          return (
-            <View style={styles.episode}>
-              <Text style={type.subline} numberOfLines={2}>
+        contentContainerStyle={{ paddingHorizontal: 10, gap: 10 }}
+        renderItem={({ item, index }) => (
+          <Pressable
+            accessibilityRole="link"
+            onPress={() => {
+              trackTap("story_episode", { asset: item.asset_key })
+              openWeb(`/stories/${s.handle}`)
+            }}
+            style={styles.episode}>
+            <Image source={hatImage(EPISODE_IMAGES[index % EPISODE_IMAGES.length])} style={styles.episodeImage} contentFit={index % 2 ? "contain" : "cover"} />
+            <Caption played={played}>
+              <Text variant="eyebrow" tone="muted">
+                Episode {index + 1} · {s.channel === "tiktok" ? "TikTok" : (s.channel ?? "Video")}
+              </Text>
+              <Text variant="cardTitle" numberOfLines={2}>
                 {item.title}
               </Text>
-              <Text variant="micro" tone="muted" style={styles.episodeMeta}>
-                Episode {item.n} · TikTok
-              </Text>
-              <Image
-                source={hatImage(file)}
-                style={styles.episodeImage}
-                contentFit={photo ? "cover" : "contain"}
-              />
               {item.subject ? (
-                <Text variant="bodySm" numberOfLines={3} style={styles.episodeSubject}>
+                <Text variant="caption" tone="charcoal" numberOfLines={2}>
                   {item.subject}
                 </Text>
               ) : null}
-              <Button title="See the test" variant="link" onPress={() => openWeb(`/stories/${series.handle}`)} />
-            </View>
-          )
-        }}
+            </Caption>
+          </Pressable>
+        )}
       />
-    </View>
+    </Reveal>
   )
 }
 
-/** 8. About Shelby. */
-function AboutShelby({ W }: { W: number }) {
-  return (
-    <View style={{ width: W, height: (521 * W) / 390 }}>
-      <Image source={hatImage("lifestyle-bucket.jpg")} style={StyleSheet.absoluteFill} contentFit="cover" />
-      <View style={styles.aboutScrim} />
-      <View style={styles.aboutText}>
-        <Text style={styles.aboutTitle}>About Shelby</Text>
-        <Text style={[type.body, styles.white]}>
-          We make one cap we never let run out, and a few small drops a year. We show you the stock count, and we fold
-          every cap into a back pocket before we sign it off.
-        </Text>
-        <Button
-          title="Why the Everyday Cap"
-          variant="highlight"
-          onPress={() => openWeb("/reasons/everyday-cap")}
-          style={styles.aboutButton}
-        />
-      </View>
-    </View>
-  )
+function Caption({ played, children }: { played: boolean; children: React.ReactNode }) {
+  const reduce = useReducedMotion()
+  const p = useSharedValue(reduce ? 1 : 0)
+  useEffect(() => {
+    if (!played) return
+    p.value = withDelay(400, withTiming(1, { duration: 800, easing: ease.power3Out, reduceMotion: motion.reduceMotion }))
+  }, [p, played])
+  const style = useAnimatedStyle(() => ({ opacity: p.value, transform: [{ translateY: 20 * (1 - p.value) }] }))
+  return <Animated.View style={[styles.caption, style]}>{children}</Animated.View>
 }
 
-/** 9. Stories: the crush-test story and the fit guide (web pages). */
-function Stories({ series }: { series: ContentSeries | null }) {
-  const posts = [
-    ...(series
-      ? [
-          {
-            key: "story",
-            meta: `Story | ${series.title}`,
-            title: series.title,
-            excerpt: series.stance ?? "",
-            image: "story-crush.jpg",
-            contain: false,
-            path: `/stories/${series.handle}`,
-          },
-        ]
-      : []),
-    {
-      key: "fit",
-      meta: "Guide | Fit",
-      title: "Fit Guide",
-      excerpt: "Crown height, structure and the one-size range, hat by hat.",
-      image: "everyday-cap-black-3.jpg",
-      contain: true,
-      path: "/fit-guide",
-    },
+function Stories() {
+  const rows = [
+    { key: "crown", title: "The Crown Test", excerpt: "A ruler on the crown of a tall rope cap and on ours.", image: "rope-brim.jpg", path: "/stories/crown-test", label: "home_story" },
+    { key: "fit", title: "Fit Guide", excerpt: "One size. The strap fits 21.5–23.75 in.", image: "rope-cap-tour-white-3.jpg", path: "/fit-guide", label: "fit_guide" },
   ]
   return (
-    <View style={styles.stories}>
-      <Text style={[type.section, styles.sectionHeading, { marginLeft: 28 }]}>Stories</Text>
-      {posts.map((p) => (
-        <Pressable key={p.key} accessibilityRole="link" onPress={() => openWeb(p.path)} style={styles.storyRow}>
-          <View style={[styles.storyImageWrap, p.contain && { backgroundColor: colors.tile }]}>
-            <Image source={hatImage(p.image)} style={[styles.storyImage, p.contain && cutout]} contentFit={p.contain ? "contain" : "cover"} />
-          </View>
-          <View style={styles.storyText}>
-            <Text variant="eyebrow" tone="muted" numberOfLines={1}>
-              {p.meta}
+    <Reveal style={styles.section}>
+      <Text variant="section" style={styles.centerText}>
+        Stories
+      </Text>
+      <View style={styles.storyRow}>
+        {rows.map((r) => (
+          <Pressable
+            key={r.key}
+            accessibilityRole="link"
+            style={styles.story}
+            onPress={() => {
+              trackTap(r.label)
+              openWeb(r.path)
+            }}>
+            <Image source={hatImage(r.image)} style={styles.storyImage} contentFit={r.key === "fit" ? "contain" : "cover"} />
+            <Text variant="body" style={styles.storyTitle}>
+              {r.title}
             </Text>
-            <Text style={type.item} numberOfLines={1}>
-              {p.title}
+            <Text variant="meta" tone="muted" numberOfLines={2}>
+              {r.excerpt}
             </Text>
-            <Text variant="bodySm" numberOfLines={2}>
-              {p.excerpt}
-            </Text>
-            <Button title="Read more" variant="light" onPress={() => openWeb(p.path)} style={styles.readMore} />
-          </View>
-        </Pressable>
-      ))}
-    </View>
+          </Pressable>
+        ))}
+      </View>
+    </Reveal>
   )
 }
 
-/** 11. Join The Shelby List: drop alerts for the next upcoming release. */
-function JoinTheList({ release }: { release: StoreRelease }) {
+/** The dark footer card: the tee sheet for the next hole, plus links. */
+function FooterCard({ hole }: { hole: ReturnType<typeof useHoles>["next"] }) {
   return (
-    <View style={styles.join}>
-      <Text style={[type.section, styles.upper, styles.center]}>Join The Shelby List</Text>
-      <Text style={[type.body, styles.center, styles.joinCopy]}>Get an email the moment a drop goes live. Nothing else.</Text>
-      <NotifyMe releaseId={release.id} buttonLabel="Sign up" />
+    <View style={styles.footer}>
+      {hole?.release ? (
+        <TeeSheet releaseId={hole.release.id} hole={hole.number} name={hole.name} inverse />
+      ) : (
+        <Text variant="eyebrow" tone="inverse">
+          Shelby makes one rope cap, properly.
+        </Text>
+      )}
+      <View style={styles.footerLinks}>
+        <Button title="Custom orders" variant="link" inverse onPress={() => (trackTap("footer_custom"), router.push("/custom"))} />
+        <Button title="Fit guide" variant="link" inverse onPress={() => openWeb("/fit-guide")} />
+        <Button title="Shipping & returns" variant="link" inverse onPress={() => openWeb("/help/shipping-returns")} />
+      </View>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  center: { textAlign: "center" },
-  white: { color: colors.textInverse },
-  upper: { textTransform: "uppercase" },
-  sectionHeading: { marginTop: 28, marginBottom: 16, color: colors.text },
-  heroText: { position: "absolute", left: 20, top: 64, right: 20 },
-  heroLine: { marginTop: 16 },
-  heroButton: { marginTop: 16, alignSelf: "flex-start" },
-  tileGrid: { flexDirection: "row", flexWrap: "wrap", gap: 16, marginBottom: 28 },
-  styleTile: { backgroundColor: colors.tile, borderRadius: radius.tile, alignItems: "center", paddingTop: 21 },
-  // Native draws the white-backed photo on a white square; web multiplies it into the tile.
-  cutoutBox: { backgroundColor: Platform.OS === "web" ? "transparent" : colors.secondary, borderRadius: 1 },
-  tileLabel: {
-    fontFamily: fonts.heading,
-    fontSize: 13,
-    lineHeight: 19.5,
-    letterSpacing: 0.4,
-    textTransform: "uppercase",
-    color: colors.text,
-    marginTop: 12,
-    textAlign: "center",
-  },
-  scrim: { position: "absolute", left: 0, right: 0, bottom: 0, height: "45%", backgroundColor: "rgba(0,0,0,0.35)" },
-  bannerText: { position: "absolute", left: 16, right: 16, bottom: 32, alignItems: "center", gap: 12 },
-  bannerEyebrow: {
-    fontFamily: fonts.body,
-    fontSize: 14,
-    lineHeight: 21,
-    letterSpacing: 4,
-    textTransform: "uppercase",
-    color: colors.textInverse,
-    textAlign: "center",
-  },
-  bannerButton: { marginTop: 8 },
-  fit: { backgroundColor: colors.tile, alignItems: "center", paddingTop: 40, paddingBottom: 32, paddingHorizontal: 24 },
-  fitImage: { width: 300, height: 300, marginBottom: 16 },
-  fitCopy: { marginTop: 8, maxWidth: 340 },
-  fitButton: { marginTop: 24, width: 162 },
-  colorRow: { paddingHorizontal: 28, gap: 14, paddingBottom: 28 },
-  colorTile: { width: 333, height: 444, alignItems: "center" },
-  colorLabel: {
+  flex: { flex: 1 },
+  flexStretch: { alignSelf: "stretch" },
+  skeleton: { height: 320, marginHorizontal: 10, marginVertical: 20, borderRadius: radius.tile },
+  hero: { marginHorizontal: 10, borderRadius: radius.tile, overflow: "hidden", justifyContent: "flex-end" },
+  heroCopy: { padding: 20, paddingTop: 80, gap: 10 },
+  heroButtons: { flexDirection: "row", gap: 8, marginTop: 6 },
+  section: { marginTop: 40, gap: 16 },
+  tabTitleRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", paddingHorizontal: 20, gap: 12 },
+  tabUnderline: { height: 2, backgroundColor: golf.green, marginTop: 2 },
+  colorTile: { overflow: "hidden", alignItems: "center" },
+  disc: { position: "absolute", top: "10%", backgroundColor: colors.white, overflow: "hidden" },
+  discImage: { width: "86%", height: "86%", margin: "7%" },
+  tileText: { position: "absolute", bottom: 24, left: 20, right: 20, alignItems: "center", gap: 12 },
+  promo: { borderRadius: radius.xxxl, padding: 20, alignItems: "center", justifyContent: "flex-end", gap: 10, overflow: "hidden" },
+  promoArt: {
     position: "absolute",
-    top: "12%",
-    fontFamily: fonts.heading,
-    fontSize: 16,
-    lineHeight: 24,
-    letterSpacing: 4.8,
-    textTransform: "uppercase",
-  },
-  colorPhotoWrap: {
-    position: "absolute",
-    bottom: "10%",
-    width: "80%",
+    top: "8%",
+    width: "64%",
     aspectRatio: 1,
-    backgroundColor: Platform.OS === "web" ? "transparent" : colors.secondary,
+    borderRadius: radius.xxxl,
+    backgroundColor: colors.white,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
   },
-  colorPhoto: { width: "100%", height: "100%" },
-  stockBand: { backgroundColor: colors.tile, paddingVertical: 40, paddingHorizontal: 16, alignItems: "center" },
-  stockTitle: {
-    fontFamily: fonts.heading,
-    fontSize: 26,
-    lineHeight: 39,
-    letterSpacing: 2,
-    textTransform: "uppercase",
-    color: colors.text,
-    textAlign: "center",
-    marginBottom: 12,
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: 10, paddingHorizontal: 10 },
+  stockTile: {
+    width: "48.5%",
+    backgroundColor: colors.white,
+    borderRadius: radius.xxl,
+    padding: 20,
+    gap: 8,
+    alignItems: "flex-start",
   },
-  stockGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", rowGap: 24, marginTop: 24, width: "100%" },
-  stockItem: { width: "50%", alignItems: "center" },
-  stockColor: {
-    fontFamily: fonts.heading,
-    fontSize: 16,
-    lineHeight: 24,
-    letterSpacing: 1.3,
-    textTransform: "uppercase",
-    color: colors.text,
-    marginTop: 12,
-  },
-  stockLine: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 6 },
-  series: { paddingBottom: 28 },
-  seriesRow: { paddingHorizontal: 16, gap: 16 },
-  episode: { width: 233, minHeight: 466 },
-  episodeMeta: { marginTop: 2, marginBottom: 12 },
-  episodeImage: { width: 233, height: 233, backgroundColor: colors.secondary },
-  episodeSubject: { marginTop: 12, marginBottom: 12 },
-  aboutScrim: { position: "absolute", left: 0, top: 0, bottom: 0, width: "70%", backgroundColor: "rgba(0,0,0,0.45)" },
-  aboutText: { position: "absolute", left: 20, right: 40, top: 0, bottom: 0, justifyContent: "center", gap: 16 },
-  aboutTitle: {
-    fontFamily: fonts.heading,
-    fontSize: 26,
-    lineHeight: 34,
-    letterSpacing: 2,
-    textTransform: "uppercase",
-    color: colors.textInverse,
-  },
-  aboutButton: { alignSelf: "flex-start", marginTop: 8 },
-  stories: { paddingBottom: 12 },
-  storyRow: { flexDirection: "row", gap: 16, paddingHorizontal: 28, marginBottom: 16 },
-  storyImageWrap: { width: 133, height: 133, overflow: "hidden" },
-  storyImage: { width: 133, height: 133 },
-  storyText: { flex: 1, gap: 4 },
-  readMore: { alignSelf: "flex-start", marginTop: 8, width: 136 },
-  join: { paddingVertical: layout.section, paddingHorizontal: 16, alignItems: "center", gap: 10 },
-  joinCopy: { marginBottom: 22 },
+  episode: { width: 233, gap: 8 },
+  episodeImage: { width: 233, aspectRatio: 0.8, borderRadius: radius.xxl, backgroundColor: colors.white },
+  caption: { gap: 4 },
+  centerText: { textAlign: "center" },
+  storyRow: { flexDirection: "row", gap: 10, paddingHorizontal: 10 },
+  story: { flex: 1, gap: 6 },
+  storyImage: { width: "100%", aspectRatio: 1.25, borderRadius: radius.xxl, backgroundColor: colors.white },
+  storyTitle: { fontSize: 18, lineHeight: 28 },
+  tiles: { gap: 10, marginHorizontal: 10, marginTop: 40 },
+  footer: { backgroundColor: colors.black, borderRadius: radius.xxl, margin: 10, marginTop: 20, padding: 24, gap: 20 },
+  footerLinks: { flexDirection: "row", flexWrap: "wrap", gap: 16 },
 })

@@ -1,64 +1,44 @@
 import Ionicons from "@expo/vector-icons/Ionicons"
 import { useEffect, useState } from "react"
-import { Pressable, StyleSheet, TextInput, View, type StyleProp, type ViewStyle } from "react-native"
+import { StyleSheet, TextInput, View, type StyleProp, type ViewStyle } from "react-native"
 
 import { colors, fonts, radius } from "@/constants/theme"
 
-import { Text } from "./text"
+const PLACEHOLDERS = ["Search", 'Search "navy"', 'Search "pine"', 'Search "pair"', 'Search "azalea"']
 
-const PLACEHOLDERS = ["Search", 'Search "cap"', 'Search "beanie"', 'Search "trucker"', 'Search "olive"']
-
-function useRotatingPlaceholder() {
+/** v5 search pill: 42pt, white, 1pt #212121, an 18pt icon and a placeholder that rotates every 2s. */
+export function SearchPill({
+  value,
+  onChangeText,
+  onSubmit,
+  autoFocus,
+  style,
+}: {
+  value: string
+  onChangeText: (text: string) => void
+  onSubmit?: () => void
+  autoFocus?: boolean
+  style?: StyleProp<ViewStyle>
+}) {
   const [i, setI] = useState(0)
   useEffect(() => {
     const id = setInterval(() => setI((n) => (n + 1) % PLACEHOLDERS.length), 2000)
     return () => clearInterval(id)
   }, [])
-  return PLACEHOLDERS[i]
-}
-
-/**
- * Melin's search pill (APP_SPEC §3): 36pt, #F8F8F9, a 14pt search icon and a
- * placeholder that rotates every 2s. With `onPress` it is a button (Home opens
- * Shop); with `onChangeText` it filters in place (Shop).
- */
-export function SearchPill({
-  value,
-  onChangeText,
-  onPress,
-  style,
-}: {
-  value?: string
-  onChangeText?: (text: string) => void
-  onPress?: () => void
-  style?: StyleProp<ViewStyle>
-}) {
-  const placeholder = useRotatingPlaceholder()
-  const icon = <Ionicons name="search" size={14} color={colors.text} style={styles.icon} />
-
-  if (onPress || !onChangeText) {
-    return (
-      <Pressable accessibilityRole="search" accessibilityLabel="Search hats" onPress={onPress} style={[styles.pill, style]}>
-        {icon}
-        <Text style={styles.placeholder} numberOfLines={1}>
-          {placeholder}
-        </Text>
-      </Pressable>
-    )
-  }
-
   return (
     <View style={[styles.pill, style]}>
-      {icon}
+      <Ionicons name="search-outline" size={18} color={colors.black} style={styles.icon} />
       <TextInput
-        accessibilityLabel="Search hats"
+        accessibilityLabel="Search the Rope Cap"
         value={value}
         onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor={colors.textMuted}
+        onSubmitEditing={onSubmit}
+        placeholder={PLACEHOLDERS[i]}
+        placeholderTextColor={colors.gray500}
         returnKeyType="search"
         autoCorrect={false}
         autoCapitalize="none"
+        autoFocus={autoFocus}
         style={styles.input}
       />
     </View>
@@ -67,14 +47,13 @@ export function SearchPill({
 
 const styles = StyleSheet.create({
   pill: {
-    height: 36,
-    borderRadius: radius.pill,
-    backgroundColor: colors.band,
-    paddingLeft: 32,
-    paddingRight: 12,
+    height: 42,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.black,
+    backgroundColor: colors.white,
     justifyContent: "center",
   },
-  icon: { position: "absolute", left: 10, top: 11 },
-  placeholder: { fontFamily: fonts.system, fontSize: 16, lineHeight: 20, color: colors.textMuted },
-  input: { fontFamily: fonts.system, fontSize: 16, color: colors.text, height: 36, paddingVertical: 0 },
+  icon: { position: "absolute", left: 14 },
+  input: { paddingLeft: 40, paddingRight: 16, fontFamily: fonts.body, fontSize: 16, color: colors.black, height: 40 },
 })

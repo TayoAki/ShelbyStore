@@ -1,4 +1,3 @@
-import Ionicons from "@expo/vector-icons/Ionicons"
 import { useQuery } from "@tanstack/react-query"
 import { Image } from "expo-image"
 import { router, useLocalSearchParams } from "expo-router"
@@ -8,13 +7,17 @@ import { Button } from "@/components/button"
 import { Screen } from "@/components/screen"
 import { ErrorState, LoadingState } from "@/components/state-views"
 import { Text } from "@/components/text"
-import { colors, fonts, radius } from "@/constants/theme"
+import { colors, radius } from "@/constants/theme"
 import { useCatalog } from "@/hooks/use-products"
 import { formatMoney } from "@/lib/format"
 import { sdk } from "@/lib/medusa"
-import { lineImage } from "@/lib/product"
+import { editionOf, lineImage, lineMeta } from "@/lib/product"
 
-/** Order confirmation (APP_SPEC §5.7). */
+/**
+ * Order confirmation (APP_SPEC v5 §5.1, G.5): a white radius-24 card. Edition
+ * lines whose product prints numbers inside say so; a specific number is
+ * never shown (G.1.5).
+ */
 export default function OrderScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const { data: order, isLoading, error, refetch } = useQuery({
@@ -22,23 +25,22 @@ export default function OrderScreen() {
     queryFn: async () => (await sdk.store.order.retrieve(id!)).order,
     enabled: !!id,
   })
-
   const catalog = useCatalog()
-  const done = <Button title="Keep shopping" variant="light" onPress={() => router.replace("/")} />
+  const done = <Button title="Keep shopping" onPress={() => router.replace("/")} />
 
   if (isLoading) {
     return (
-      <Screen>
+      <Screen header={false} under="safe">
         <LoadingState />
       </Screen>
     )
   }
   if (error || !order) {
     return (
-      <Screen>
-        <View style={styles.body}>
-          <Text style={styles.thanks}>Thank You</Text>
-          <Text variant="bodySm" tone="muted">
+      <Screen header={false} under="safe">
+        <View style={styles.card}>
+          <Text variant="eyebrow">Order confirmed</Text>
+          <Text variant="body" tone="muted">
             Your order is in. We couldn&apos;t load the details just now; you&apos;ll get a confirmation email.
           </Text>
           <ErrorState error={error} onRetry={() => refetch()} />
@@ -50,49 +52,52 @@ export default function OrderScreen() {
 
   const currency = order.currency_code
   const a = order.shipping_address
+  const first = a?.first_name ?? ""
   return (
-    <Screen edges={["bottom"]}>
-      <View style={styles.body}>
-        <View style={styles.hero}>
-          <Ionicons name="checkmark-circle" size={48} color={colors.inStock} />
-          <Text style={styles.thanks}>Thank You</Text>
-          <Text variant="eyebrow" tone="muted">
-            Order #{order.display_id}
-          </Text>
-          <Text variant="bodySm" style={styles.center}>
-            We&apos;ve sent a confirmation to {order.email}. We&apos;ll email again when it ships.
-          </Text>
-        </View>
+    <Screen header={false} under="safe">
+      <View style={styles.card}>
+        <Text variant="eyebrow">Order confirmed · #{order.display_id}</Text>
+        <Text variant="section">Thanks{first ? `, ${first}` : ""}.</Text>
+        <Text variant="body" tone="muted">
+          We&apos;ve sent a confirmation to {order.email}. We&apos;ll email again when it ships.
+        </Text>
 
-        <View style={styles.block}>
+        <View style={styles.lines}>
           {(order.items ?? []).map((item) => {
             const image = lineImage(catalog.data, item)
+            const product = catalog.data?.find((p) => p.id === item.product_id)
+            const edition = editionOf(product)
             return (
               <View key={item.id} style={styles.line}>
                 {image ? <Image source={image} style={styles.thumb} contentFit="contain" /> : <View style={styles.thumb} />}
                 <View style={styles.flex}>
-                  <Text style={styles.lineTitle} numberOfLines={2}>
+                  <Text variant="cardTitle" numberOfLines={2}>
                     {item.product_title ?? item.title}
                   </Text>
-                  <Text variant="micro" tone="muted">
-                    {[item.variant_title, `Qty ${item.quantity}`].filter(Boolean).join(" · ")}
+                  <Text variant="meta" tone="muted">
+                    {[lineMeta(product, item), `Qty ${item.quantity}`].filter(Boolean).join(" · ")}
                   </Text>
+                  {edition && edition.hole >= 2 && edition.numberedInside ? (
+                    <Text variant="meta" tone="muted">
+                      Your edition number is printed inside the cap.
+                    </Text>
+                  ) : null}
                 </View>
-                <Text variant="bodySm">{formatMoney(item.total, currency)}</Text>
+                <Text variant="priceSm">{formatMoney(item.total, currency)}</Text>
               </View>
             )
           })}
-          <View style={styles.divider} />
-          <Row label="Subtotal" value={formatMoney(order.item_subtotal, currency)} />
-          <Row label="Shipping" value={formatMoney(order.shipping_total, currency)} />
-          <Row label="Tax" value={formatMoney(order.tax_total, currency)} />
-          <Row label="Total" value={formatMoney(order.total, currency)} strong />
         </View>
+        <View style={styles.divider} />
+        <Row label="Subtotal" value={formatMoney(order.item_subtotal, currency)} />
+        <Row label="Shipping" value={order.shipping_total === 0 ? "Free" : formatMoney(order.shipping_total, currency)} />
+        <Row label="Tax" value={formatMoney(order.tax_total, currency)} />
+        <Row label="Total" value={formatMoney(order.total, currency)} strong />
 
         {a ? (
-          <View style={styles.block}>
-            <Text style={styles.label}>Shipping To</Text>
-            <Text variant="bodySm">
+          <View style={styles.address}>
+            <Text variant="label">Shipping to</Text>
+            <Text variant="body">
               {[a.first_name, a.last_name].filter(Boolean).join(" ")}
               {"\n"}
               {[a.address_1, a.address_2].filter(Boolean).join(", ")}
@@ -101,7 +106,6 @@ export default function OrderScreen() {
             </Text>
           </View>
         ) : null}
-
         {done}
       </View>
     </Screen>
@@ -111,10 +115,10 @@ export default function OrderScreen() {
 function Row({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
     <View style={styles.row}>
-      <Text style={strong ? styles.total : undefined} variant="bodySm" tone={strong ? "default" : "muted"}>
+      <Text variant={strong ? "cardTitle" : "body"} tone={strong ? "default" : "muted"}>
         {label}
       </Text>
-      <Text style={strong ? styles.total : undefined} variant="bodySm" tone={strong ? "default" : "muted"}>
+      <Text variant={strong ? "price" : "body"} tone={strong ? "default" : "muted"}>
         {value}
       </Text>
     </View>
@@ -122,17 +126,12 @@ function Row({ label, value, strong }: { label: string; value: string; strong?: 
 }
 
 const styles = StyleSheet.create({
-  body: { padding: 16, gap: 24 },
-  hero: { alignItems: "center", gap: 8, paddingTop: 16 },
-  center: { textAlign: "center" },
-  thanks: { fontFamily: fonts.heading, fontSize: 26, lineHeight: 39, textTransform: "uppercase", color: colors.text },
-  block: { padding: 16, gap: 12, backgroundColor: colors.tile },
+  card: { margin: 10, backgroundColor: colors.white, borderRadius: radius.xxxl, padding: 24, gap: 14 },
+  lines: { gap: 12, marginTop: 8 },
   line: { flexDirection: "row", gap: 12, alignItems: "center" },
-  thumb: { width: 64, height: 64, borderRadius: radius.addon, backgroundColor: colors.secondary },
-  lineTitle: { fontFamily: fonts.subheading, fontSize: 14.08, lineHeight: 21, color: colors.text },
+  thumb: { width: 64, height: 64, borderRadius: radius.xl, backgroundColor: colors.naturalWhite25 },
   flex: { flex: 1, gap: 2 },
-  divider: { height: 1, backgroundColor: colors.line },
-  row: { flexDirection: "row", justifyContent: "space-between" },
-  total: { fontFamily: fonts.heading, fontSize: 18, lineHeight: 23.4 },
-  label: { fontFamily: fonts.heading, fontSize: 12, lineHeight: 18, letterSpacing: 1.3, textTransform: "uppercase", color: colors.text },
+  divider: { height: 1, backgroundColor: colors.page },
+  row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  address: { gap: 6, marginTop: 8 },
 })

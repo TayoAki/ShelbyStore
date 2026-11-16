@@ -1,23 +1,56 @@
 import { StyleSheet, View } from "react-native"
 
-import { colors, fonts, radius } from "@/constants/theme"
+import { colors, golf } from "@/constants/theme"
 
 import { Text } from "./text"
 
-/**
- * A 3-step fit scale (APP_SPEC §3): UPPERCASE label, a 6pt #EDEDED track with
- * a black third at the active step, and the step names under it.
- */
-export function FitScale({ label, steps, active }: { label: string; steps: string[]; active: number }) {
+/** A 3-step scale (APP_SPEC v5 §3; G.2.2 golf-green active segment). */
+export function FitScale({
+  label,
+  value,
+  steps,
+  active,
+  large = false,
+  inverse = false,
+}: {
+  label: string
+  value: string
+  steps: [string, string, string]
+  active: number
+  large?: boolean
+  /** On a golf-green band: white active segment and labels. */
+  inverse?: boolean
+}) {
   return (
-    <View accessibilityLabel={`${label}: ${steps[active] ?? ""}`}>
-      <Text style={styles.label}>{label}</Text>
+    <View style={styles.wrap} accessibilityLabel={`${label}: ${value}`}>
+      <View style={styles.head}>
+        <Text variant="label" tone={inverse ? "inverse" : "default"}>
+          {label}
+        </Text>
+        <Text variant="meta" tone={inverse ? "tint" : "muted"}>
+          {value}
+        </Text>
+      </View>
       <View style={styles.track}>
-        <View style={[styles.fill, { left: `${(active / steps.length) * 100}%`, width: `${100 / steps.length}%` }]} />
+        {steps.map((s, i) => (
+          <View
+            key={s}
+            style={[
+              styles.segment,
+              { height: large ? 12 : 7, borderRadius: large ? 6 : 4 },
+              { backgroundColor: inverse ? "rgba(255,255,255,.25)" : colors.naturalWhite },
+              i === active && { backgroundColor: inverse ? colors.white : golf.green },
+            ]}
+          />
+        ))}
       </View>
       <View style={styles.steps}>
         {steps.map((s, i) => (
-          <Text key={s} style={[styles.step, i === active && styles.stepOn]}>
+          <Text
+            key={s}
+            variant="badge"
+            tone={inverse ? (i === active ? "inverse" : "tint") : i === active ? "default" : "muted"}
+            style={styles.step}>
             {s}
           </Text>
         ))}
@@ -27,18 +60,10 @@ export function FitScale({ label, steps, active }: { label: string; steps: strin
 }
 
 const styles = StyleSheet.create({
-  label: {
-    fontFamily: fonts.body,
-    fontSize: 13,
-    lineHeight: 19.5,
-    letterSpacing: 0.65,
-    textTransform: "uppercase",
-    color: colors.text,
-    marginBottom: 8,
-  },
-  track: { height: 6, borderRadius: radius.pill, backgroundColor: colors.mega, overflow: "hidden" },
-  fill: { position: "absolute", top: 0, bottom: 0, borderRadius: radius.pill, backgroundColor: colors.primary },
-  steps: { flexDirection: "row", justifyContent: "space-between", marginTop: 4 },
-  step: { fontFamily: fonts.system, fontSize: 14, lineHeight: 20, textTransform: "uppercase", color: colors.textSteps },
-  stepOn: { color: colors.text },
+  wrap: { gap: 8 },
+  head: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" },
+  track: { flexDirection: "row", gap: 4 },
+  segment: { flex: 1 },
+  steps: { flexDirection: "row", justifyContent: "space-between" },
+  step: { flex: 1, textAlign: "center" },
 })

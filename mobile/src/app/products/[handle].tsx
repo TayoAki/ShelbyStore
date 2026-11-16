@@ -1,563 +1,529 @@
-import { useQueryClient } from "@tanstack/react-query"
 import { Image } from "expo-image"
-import { router, Stack, useLocalSearchParams } from "expo-router"
-import { useEffect, useRef, useState } from "react"
-import { FlatList, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from "react-native"
+import { Redirect, router, useLocalSearchParams } from "expo-router"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { FlatList, StyleSheet, useWindowDimensions, View } from "react-native"
+import Animated, { runOnUI, scrollTo, useAnimatedRef, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 
-import { Accordion } from "@/components/accordion"
-import { Badge } from "@/components/badge"
+import { useHeaderInset } from "@/components/app-header"
+import { BundleRows } from "@/components/bundle-rows"
 import { Button } from "@/components/button"
+import { EditionBadge } from "@/components/edition-badge"
 import { FitScale } from "@/components/fit-scale"
-import { Gallery, PairGallery } from "@/components/gallery"
-import { OfferCard } from "@/components/offer-card"
-import { PerkRow } from "@/components/perk-row"
-import { ProductCard } from "@/components/product-card"
+import { Gallery } from "@/components/gallery"
+import { Badge } from "@/components/badge"
+import { TeeSheet } from "@/components/notify-me"
+import { ColourwayCard, EditionCard } from "@/components/product-card"
+import { MaterialRing } from "@/components/ring"
+import { RopeRule } from "@/components/rope-rule"
+import { productScoreRows, Scorecard } from "@/components/scorecard"
 import { Screen } from "@/components/screen"
-import { SizeButton, SizeRow } from "@/components/size-button"
-import { SizeGuide } from "@/components/size-guide"
-import { EmptyState, ErrorState, LoadingState } from "@/components/state-views"
+import { SegmentedControl } from "@/components/segmented-control"
+import { ErrorState, LoadingState } from "@/components/state-views"
 import { StockLine } from "@/components/stock-line"
-import { Swatch, SwatchGrid } from "@/components/swatch"
+import { Swatch } from "@/components/swatch"
 import { Text } from "@/components/text"
-import { colors, fonts, layout, MAX_CONTENT_WIDTH, shadow, type } from "@/constants/theme"
-import { useCatalog, useProduct } from "@/hooks/use-products"
+import { colors, CORE_COLOURWAYS, ease, golf, motion, radius, shadow } from "@/constants/theme"
+import { holeDate, holeDay, unitsLeft, useHoles } from "@/hooks/use-holes"
+import { useProduct } from "@/hooks/use-products"
+import { useQuickAdd } from "@/hooks/use-quick-add"
 import { useRecentlyViewed } from "@/hooks/use-recently-viewed"
-import { useLiveReleaseIndex } from "@/hooks/use-releases"
-import { track, useTrackOnce } from "@/lib/analytics"
-import { listable } from "@/lib/catalog"
+import { trackTap, useTrackOnce } from "@/lib/analytics"
 import { formatMoney } from "@/lib/format"
+import { holeByProduct } from "@/lib/holes"
 import { openWeb } from "@/lib/links"
-import { errorMessage } from "@/lib/medusa"
+import { Reveal } from "@/lib/motion"
 import { POLICY } from "@/lib/policy"
 import {
+  colorCounts,
   colorOptionOf,
+  crownCmOf,
   defaultSelection,
   detailsOf,
+  editionOf,
   findVariant,
   fitProfileOf,
+  hatImage,
   imagesFor,
-  isLowStock,
   isOffer,
-  isOneSize,
-  leadImageFor,
-  offerFor,
-  offerSaving,
-  offerSingleHandle,
-  oneSizeRange,
   productMeta,
-  productOptions,
   productPrice,
-  productTypeOf,
-  shapeOf,
-  sizeChartOf,
-  valueStock,
+  ropeNameFor,
   variantPrice,
   variantStock,
   type Product,
 } from "@/lib/product"
-import { useAddedSheet } from "@/providers/added-sheet-provider"
-import { useCart } from "@/providers/cart-provider"
 
-const CROWN = ["Low", "Mid", "Tall"]
-const STRUCTURE = ["Unstructured", "Semi", "Structured"]
+type Group = "all" | "core" | "limited"
 
-/** Product (APP_SPEC §5.4): the web PDP at phone size, 21.5pt gutter. */
+/**
+ * The Rope Cap PDP and each edition's PDP (APP_SPEC G.5 Product): web G.6.3
+ * in v5's native buy card, with the scorecard band as this screen's golf band.
+ */
 export default function ProductScreen() {
-  const params = useLocalSearchParams<{ handle: string; release?: string; color?: string }>()
-  const { data: product, isLoading, error, refetch, isRefetching } = useProduct(params.handle)
-  const catalog = useCatalog()
-  const liveIndex = useLiveReleaseIndex()
-  const { record } = useRecentlyViewed()
+  const { handle, color, section } = useLocalSearchParams<{ handle: string; color?: string; section?: string }>()
+  const { data: product, isLoading, error, refetch } = useProduct(handle)
+  const viewed = useRecentlyViewed()
+  const { record } = viewed
 
-  useTrackOnce("product_viewed", product?.id, () => ({
-    product_id: product?.id,
-    handle: product?.handle,
-    release_id: product ? liveIndex.get(product.id) : undefined,
-  }))
   useEffect(() => {
     if (product?.handle && !isOffer(product)) void record(product.handle)
   }, [product?.handle, product, record])
 
   if (isLoading) {
     return (
-      <Screen>
+      <Screen back>
         <LoadingState />
       </Screen>
     )
   }
-  if (error) {
-    return (
-      <Screen>
-        <ErrorState error={error} onRetry={() => refetch()} />
-      </Screen>
-    )
-  }
+  if (product && isOffer(product)) return <Redirect href={{ pathname: "/offer/[handle]", params: { handle: product.handle! } }} />
   if (!product) {
+    // Editions are drafts until their hole goes live: send the shopper to the hole.
+    const hole = handle ? holeByProduct(handle) : null
+    if (hole?.releaseHandle && !error) return <Redirect href={{ pathname: "/card/[handle]", params: { handle: hole.releaseHandle } }} />
+    if (handle && /^(everyday-cap|trucker|ribbed-beanie|performance-cap|corduroy-cap|bucket-hat|waxed-field-cap|everyday-two-pack)$/.test(handle)) {
+      return <Redirect href="/products/rope-cap" />
+    }
     return (
-      <Screen>
-        <EmptyState
-          title="Not Available Right Now"
-          body="This hat may be part of a drop that hasn't gone live yet, or it has sold through."
-          actionTitle="See drops"
-          onAction={() => router.replace("/drops")}
-        />
+      <Screen back>
+        <ErrorState error={error ?? new Error("We couldn't find that cap.")} onRetry={() => refetch()} />
       </Screen>
     )
   }
-
-  const releaseId = liveIndex.get(product.id) ?? (typeof params.release === "string" ? params.release : undefined)
-  return (
-    <ProductView
-      key={product.id}
-      product={product}
-      catalog={catalog.data ?? []}
-      releaseId={releaseId}
-      initialColor={typeof params.color === "string" ? params.color : null}
-      refreshing={isRefetching}
-      onRefresh={() => refetch()}
-    />
-  )
+  return <ProductView product={product} initialColor={color ?? null} openScorecard={section === "scorecard"} />
 }
 
-function ProductView({
-  product,
-  catalog,
-  releaseId,
-  initialColor,
-  refreshing,
-  onRefresh,
-}: {
-  product: Product
-  catalog: Product[]
-  releaseId?: string
-  initialColor: string | null
-  refreshing: boolean
-  onRefresh: () => void
-}) {
-  const { width: windowWidth } = useWindowDimensions()
-  const W = Math.min(windowWidth, MAX_CONTENT_WIDTH)
-  const { addItem } = useCart()
-  const sheet = useAddedSheet()
-  const queryClient = useQueryClient()
-  const scroll = useRef<React.ComponentRef<typeof ScrollView>>(null)
-  const offer = isOffer(product)
-  const single = useProduct(offer ? offerSingleHandle(product) ?? undefined : undefined).data ?? null
-
-  const [selected, setSelected] = useState<Record<string, string>>(() => defaultSelection(product, initialColor))
-  const [adding, setAdding] = useState(false)
-  const [added, setAdded] = useState(false)
-  const [addError, setAddError] = useState<string | null>(null)
-  const [guideOpen, setGuideOpen] = useState(false)
-  const [atcBottom, setAtcBottom] = useState(Number.POSITIVE_INFINITY)
-  const [sticky, setSticky] = useState(false)
-  const [sizeY, setSizeY] = useState(0)
-  // onLayout y values are relative to the body; add its offset in the scroll content.
-  const [bodyY, setBodyY] = useState(0)
-
-  const options = productOptions(product)
-  const sizeOption = options.find((o) => o.isSize)
-  const colorOption = colorOptionOf(product)
-  const oneSize = isOneSize(product)
-  const variant = findVariant(product, selected)
+function ProductView({ product, initialColor, openScorecard }: { product: Product; initialColor: string | null; openScorecard: boolean }) {
+  const { width } = useWindowDimensions()
+  const insets = useSafeAreaInsets()
+  const pillInset = useHeaderInset()
+  const quick = useQuickAdd()
+  const { holes } = useHoles()
+  const colorOpt = colorOptionOf(product)
+  const edition = editionOf(product)
+  const isEditionPdp = !!edition && edition.hole >= 2
+  // The core PDP opens on Tour White unless a colour was asked for (?color=).
+  const preferred = initialColor ?? CORE_COLOURWAYS.find((c) => colorOpt?.values.includes(c)) ?? null
+  const [selection, setSelection] = useState<Record<string, string>>(() => defaultSelection(product, preferred))
+  const [group, setGroup] = useState<Group>(isEditionPdp ? "limited" : "all")
+  const colour = colorOpt ? selection[colorOpt.id] ?? null : null
+  const variant = findVariant(product, selection)
   const stock = variant ? variantStock(variant) : null
-  const price = variant ? variantPrice(variant) : null
-  const fallbackPrice = productPrice(product)
-  const shownPrice = price ?? fallbackPrice
-  const { fitNotes } = productMeta(product)
-  const color = colorOption ? selected[colorOption.id] ?? null : null
-  const needsSize = !!sizeOption && !oneSize && !selected[sizeOption.id]
+  const price = (variant && variantPrice(variant)) ?? productPrice(product)
+  const meta = productMeta(product)
   const fit = fitProfileOf(product)
-  const details = detailsOf(product)
-  const shape = shapeOf(product)
-  const twoPack = offerFor(catalog, product.handle)
-  const saving = offer ? offerSaving(product, single) : null
-  const badge = releaseId ? "Limited" : product.collection?.handle === "core" ? "Core" : isLowStock(product) ? "Low Stock" : null
-  const care = details.find(([k]) => k === "Care")?.[1] ?? null
-  const pickedLabels = options
-    .filter((o) => !o.isSize)
-    .map((o) => selected[o.id])
-    .filter(Boolean)
-    .join(" + ")
+  const crownCm = crownCmOf(product)
+  const rope = ropeNameFor(product, colour)
+  const hole = isEditionPdp ? holes.find((h) => h.number === edition!.hole) ?? null : null
+  const left = isEditionPdp ? unitsLeft(product) : null
+  const scrollRef = useAnimatedRef<Animated.ScrollView>()
+  const [scorecardY, setScorecardY] = useState(0)
+  const scrolled = useRef(false)
+  const [cta, setCta] = useState({ buyY: 0, y: 0, h: 0 })
+  const [sticky, setSticky] = useState(false)
+  const stickyO = useSharedValue(0)
+  const stickyStyle = useAnimatedStyle(() => ({ opacity: stickyO.value }))
 
-  const pick = (optionId: string, value: string) => {
-    setAdded(false)
-    setSelected((s) => ({ ...s, [optionId]: value }))
-    if (colorOption && optionId === colorOption.id) router.setParams({ color: value })
+  useTrackOnce("product_viewed", product.id, () => ({ product_id: product.id, handle: product.handle, hole: edition?.hole }))
+
+  // A new ?color= (search, tiles, deep links) selects that colour.
+  const [seenColor, setSeenColor] = useState(initialColor)
+  if (initialColor !== seenColor) {
+    setSeenColor(initialColor)
+    if (initialColor && colorOpt && colorOpt.values.includes(initialColor)) {
+      setSelection((s) => ({ ...s, [colorOpt.id]: initialColor }))
+    }
   }
 
-  const add = async () => {
-    if (needsSize) {
-      scroll.current?.scrollTo({ y: Math.max(0, bodyY + sizeY - 80), animated: true })
+  useEffect(() => {
+    if (!openScorecard || !scorecardY || scrolled.current) return
+    const y = scorecardY - 80
+    const t = setTimeout(() => {
+      scrolled.current = true
+      runOnUI(() => {
+        "worklet"
+        scrollTo(scrollRef, 0, y, true)
+      })()
+    }, 400)
+    return () => clearTimeout(t)
+  }, [openScorecard, scorecardY, scrollRef])
+
+  useEffect(() => {
+    stickyO.set(withTiming(sticky ? 1 : 0, { duration: 150, easing: ease.tailwind, reduceMotion: motion.reduceMotion }))
+  }, [sticky, stickyO])
+
+  const images = useMemo(() => imagesFor(product, colour), [colour, product])
+  const coreColours = [...CORE_COLOURWAYS]
+  const limitedHoles = holes.filter((h) => h.number >= 2 && h.colourway && (h.status === "live" || h.status === "upcoming"))
+
+  const selectCore = (c: string) => {
+    if (isEditionPdp) {
+      router.push({ pathname: "/products/[handle]", params: { handle: "rope-cap", color: c } })
       return
     }
-    if (!variant || stock?.state === "sold_out") return
-    setAdding(true)
-    setAddError(null)
-    try {
-      await addItem(variant.id, 1, { releaseId })
-      track("add_to_cart", {
-        product_id: product.id,
-        variant_id: variant.id,
-        quantity: 1,
-        price: price?.amount,
-        currency: price?.currency?.toUpperCase(),
-        release_id: releaseId,
-        source: "app_pdp",
-      })
-      setAdded(true)
-      sheet.show({
-        title: product.title,
-        detail: [pickedLabels, sizeOption ? selected[sizeOption.id] : null].filter(Boolean).join(" / "),
-        price: price ? formatMoney(price.amount, price.currency) : null,
-        image: offer && single ? leadImageFor(single, Object.values(selected)[0] ?? "") : imagesFor(product, color)[0],
-      })
-      queryClient.invalidateQueries({ queryKey: ["product", product.handle] })
-      queryClient.invalidateQueries({ queryKey: ["products"] })
-    } catch (e) {
-      setAddError(errorMessage(e))
-    } finally {
-      setAdding(false)
-    }
+    if (!colorOpt) return
+    setSelection((s) => ({ ...s, [colorOpt.id]: c }))
+    router.setParams({ color: c })
   }
 
-  const soldOut = stock?.state === "sold_out"
-  const ctaTitle = needsSize
-    ? "Select a size"
-    : soldOut
-      ? "Sold out"
-      : offer
-        ? `Add the pair - ${shownPrice ? formatMoney(shownPrice.amount, shownPrice.currency) : ""}`
-        : added
-          ? "Added"
-          : stock?.state === "low"
-            ? "Add to cart - low inventory"
-            : "Add to cart"
+  const add = () => {
+    if (!variant) return
+    trackTap("add_to_cart")
+    void quick.addVariant(product, variant, "app_pdp", { detail: `${colour ?? ""} / One Size` })
+  }
 
-  const gallery = imagesFor(product, color)
-  const pairs = offer
-    ? options.filter((o) => !o.isSize).map((o) => (single ? leadImageFor(single, selected[o.id] ?? "") : null))
-    : []
-  const alsoLike = listable(catalog)
-    .filter((p) => p.id !== product.id)
-    .sort((a, b) => Number(shapeOf(a)?.handle === shape?.handle) - Number(shapeOf(b)?.handle === shape?.handle))
-    .slice(0, 6)
+  const upcomingEdition = isEditionPdp && hole?.status === "upcoming"
+  const ctaLabel = stock?.state === "sold_out" ? "Sold out" : `Add to bag – ${price ? formatMoney(price.amount, price.currency) : ""}`
+  const subline = isEditionPdp
+    ? `Hole ${edition!.hole} · Limited edition · ${hole?.status === "upcoming" ? "Releases" : "Released"} ${holeDate(hole?.dateIso).split(" · ")[0]}`
+    : "One size · Core color"
+  const details = Object.fromEntries(detailsOf(product))
+  const slide = Math.min(width, 720) - 20
 
   return (
     <Screen
-      edges={["bottom"]}
-      scrollRef={scroll}
-      refreshing={refreshing}
-      onRefresh={onRefresh}
-      onScrollY={(y) => setSticky(y > bodyY + atcBottom)}
+      back
+      scrollRef={scrollRef}
+      onScrollY={(y) => {
+        const bottom = cta.buyY + cta.y + cta.h
+        setSticky(bottom > 0 && y + pillInset > bottom)
+      }}
       overlay={
-        sticky ? (
-          <StickyBar
-            image={offer ? pairs[0] ?? null : gallery[0] ?? null}
-            price={shownPrice ? formatMoney(shownPrice.amount, shownPrice.currency) : ""}
-            detail={pickedLabels}
-            title={needsSize ? "Select a size" : soldOut ? "Sold out" : "Add to cart"}
-            disabled={soldOut}
-            loading={adding}
-            onPress={add}
-          />
-        ) : null
-      }>
-      <Stack.Screen options={{ title: "" }} />
-      {offer ? (
-        <PairGallery first={pairs[0] ?? null} second={pairs[1] ?? null} width={W} />
-      ) : (
-        <Gallery images={gallery} pageWidth={W} imageSize={W - 43} alt={product.title} badge={badge} resetKey={color} />
-      )}
-
-      <View style={styles.body} onLayout={(e) => setBodyY(e.nativeEvent.layout.y)}>
-        <View style={styles.titleRow}>
-          <Text style={styles.title} accessibilityRole="header">
+        <Animated.View
+          pointerEvents={sticky ? "auto" : "none"}
+          style={[styles.sticky, shadow.xl, { paddingBottom: 20 + insets.bottom }, stickyStyle]}>
+          <Text variant="body" style={styles.centerText} numberOfLines={1}>
             {product.title}
+            {colour && !isEditionPdp ? `, ${colour}` : ""} · {price ? formatMoney(price.amount, price.currency) : ""}
           </Text>
-          {shownPrice ? (
-            <Text style={styles.price}>
-              {!price && fallbackPrice?.varies ? "From " : ""}
-              {formatMoney(shownPrice.amount, shownPrice.currency)}
-            </Text>
-          ) : null}
-        </View>
-        {offer && saving ? (
-          <View style={styles.savingRow}>
-            <Badge label={`Save ${formatMoney(saving.saving, shownPrice?.currency)}`} small />
-            <Text style={styles.strike}>{formatMoney(saving.anchor, shownPrice?.currency)}</Text>
-          </View>
-        ) : (
-          <Text style={styles.type}>{productTypeOf(product)}</Text>
-        )}
-
-        <View style={styles.crumbs}>
-          <Crumb label="Shop All" onPress={() => router.navigate("/shop")} />
-          {shape ? (
-            <>
-              <Text style={styles.crumb}> &gt; </Text>
-              <Crumb label={shape.name} onPress={() => router.navigate(`/shop?shape=${shape.handle}` as never)} />
-            </>
-          ) : null}
-          <Text style={styles.crumb}> &gt; </Text>
-          <Text style={[styles.crumb, styles.crumbCurrent]} numberOfLines={1}>
-            {product.title}
-          </Text>
-        </View>
-
-        {options
-          .filter((o) => !o.isSize)
-          .map((o) => (
-            <View key={o.id} style={styles.colorBlock}>
-              <Text style={styles.label}>
-                {offer ? o.title.replace(/\b\w/g, (c) => c.toUpperCase()) : "Color"}: {selected[o.id] ?? "Pick one"}
-              </Text>
-              <SwatchGrid>
-                {o.values.map((v) => (
-                  <Swatch
-                    key={v}
-                    name={v}
-                    selected={selected[o.id] === v}
-                    soldOut={valueStock(product, o.id, v, selected).state === "sold_out"}
-                    onPress={() => pick(o.id, v)}
-                  />
-                ))}
-              </SwatchGrid>
-            </View>
-          ))}
-
-        {!offer ? (
-          <View style={styles.sizeBlock} onLayout={(e) => setSizeY(e.nativeEvent.layout.y)}>
-            <View style={styles.labelRow}>
-              <Text style={styles.label}>Choose your Size</Text>
-              <Button title="Size Guide" variant="micro" onPress={() => setGuideOpen(true)} />
-            </View>
-            {oneSize ? (
-              <>
-                <SizeRow>
-                  <SizeButton label="One Size" selected />
-                </SizeRow>
-                <Text style={styles.range}>Fits {oneSizeRange(product)}</Text>
-              </>
-            ) : sizeOption ? (
-              <SizeRow>
-                {sizeOption.values.map((v) => {
-                  const s = valueStock(product, sizeOption.id, v, selected)
-                  return (
-                    <SizeButton
-                      key={v}
-                      label={v}
-                      selected={selected[sizeOption.id] === v}
-                      soldOut={s.state === "sold_out"}
-                      left={s.state === "low" ? s.quantity : null}
-                      onPress={() => pick(sizeOption.id, v)}
-                    />
-                  )
-                })}
-              </SizeRow>
-            ) : null}
-          </View>
-        ) : null}
-
-        {twoPack && !offer ? <OfferCard offer={twoPack} single={product} /> : null}
-
-        <View
-          style={styles.atc}
-          onLayout={(e) => setAtcBottom(e.nativeEvent.layout.y + e.nativeEvent.layout.height)}>
-          <Button
-            title={ctaTitle}
-            size="atc"
-            onPress={add}
-            loading={adding}
-            disabled={soldOut || (!variant && !needsSize)}
-          />
-          {addError ? <Text style={styles.error}>{addError}</Text> : null}
-        </View>
-
-        {variant?.sku ? <Text style={styles.sku}>SKU: {variant.sku}</Text> : null}
-        {stock ? (
-          <View style={styles.stock}>
-            <StockLine
-              state={stock.state}
-              quantity={stock.quantity}
-              where={[color, sizeOption ? selected[sizeOption.id] : null].filter(Boolean).join(" / ")}
-            />
-          </View>
-        ) : null}
-        {releaseId ? (
-          <Text variant="micro" tone="muted" style={styles.limited}>
-            {POLICY.limitedRun}
-          </Text>
-        ) : null}
-
-        <View style={styles.perks}>
-          <PerkRow icon="car-outline" title={POLICY.shippingShort} detail={`${POLICY.dispatch}. Express $15.`} />
-          <PerkRow icon="return-down-back-outline" title={POLICY.returnsShort} detail={POLICY.returnsDetail} />
-          <PerkRow
-            icon="resize-outline"
-            title={oneSize ? "One Size, Adjustable" : "Sized S/M & L/XL"}
-            detail={oneSize ? `Fits ${oneSizeRange(product)}.` : POLICY.sizedRange}
-          />
-          <PerkRow icon="cube-outline" title="Live Stock Counts" detail={POLICY.stockDetail} />
-          {care ? <PerkRow icon="water-outline" title="Product Care" detail={care} /> : null}
-        </View>
-
-        {product.description ? <Text style={[type.system, styles.description]}>{product.description}</Text> : null}
-
-        {fit ? (
-          <View style={styles.fit}>
-            <Text style={type.promo}>Fit Guide</Text>
-            <FitScale label="Crown height" steps={CROWN} active={CROWN.indexOf(fit.crown)} />
-            <FitScale
-              label="Structure"
-              steps={STRUCTURE}
-              active={["Unstructured", "Semi-structured", "Structured"].indexOf(fit.structure)}
-            />
+          {upcomingEdition ? null : (
             <Button
-              title="Read the fit guide"
-              variant="micro"
-              onPress={() => openWeb(`/fit-guide#${offer ? offerSingleHandle(product) : product.handle}`)}
+              title={ctaLabel}
+              size="atc"
+              disabled={!variant || stock?.state === "sold_out"}
+              loading={quick.pending !== null}
+              onPress={() => {
+                trackTap("sticky_add_to_cart")
+                add()
+              }}
             />
-          </View>
-        ) : null}
-
-        <View style={styles.accordions}>
-          {details.length ? (
-            <Accordion title="Details" first initiallyOpen>
-              <View style={styles.details}>
-                {details.map(([k, v]) => (
-                  <View key={k}>
-                    <Text style={styles.detailLabel}>{k}</Text>
-                    <Text style={styles.detailValue}>{v}</Text>
-                  </View>
-                ))}
-              </View>
-            </Accordion>
-          ) : null}
-          <Accordion title="Shipping & Returns" first={!details.length}>
-            <Text variant="bodySm">
-              {POLICY.shippingShort} · Express $15. {POLICY.dispatch}. {POLICY.returnsShort}: {POLICY.returnsDetail}
-            </Text>
-          </Accordion>
+          )}
+        </Animated.View>
+      }>
+      <Text variant="meta" tone="muted" style={styles.crumb}>
+        Home / The Rope Cap{isEditionPdp ? ` / ${hole?.name ?? product.title}` : ""}
+      </Text>
+      <View style={styles.galleryWrap}>
+        <Gallery images={images} title={`${product.title}${colour ? `, ${colour}` : ""}`} colourKey={colour} />
+        <View style={styles.galleryBadge} pointerEvents="none">
+          {isEditionPdp ? <EditionBadge hole={edition!.hole} size={edition!.size} /> : <Badge label="Core" white />}
         </View>
       </View>
 
-      {alsoLike.length ? (
-        <View style={styles.alsoLike}>
-          <Text style={[type.section, styles.alsoTitle]}>You May Also Like</Text>
-          <FlatList
-            data={alsoLike}
-            keyExtractor={(p) => p.id}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.alsoRow}
-            renderItem={({ item }) => <ProductCard product={item} width={171} carousel={false} />}
+      <View
+        style={styles.buyCard}
+        onLayout={(e) => {
+          const y = e.nativeEvent.layout.y
+          setCta((c) => (c.buyY === y ? c : { ...c, buyY: y }))
+        }}>
+        <Text variant="pdpTitle" accessibilityRole="header">
+          {product.title}
+        </Text>
+        <Text variant="subline" tone="muted">
+          {subline}
+        </Text>
+        <View style={styles.priceRow}>
+          {price ? <Text variant="price">{formatMoney(price.amount, price.currency)}</Text> : null}
+          <View style={styles.pricePill}>
+            <Text variant="pricePill">+ Any two ship free</Text>
+          </View>
+        </View>
+        <RopeRule colourway={colour} />
+
+        <View style={styles.block}>
+          <View style={styles.colorLabel}>
+            <Text variant="label">Color:</Text>
+            <Text variant="meta">{colour}</Text>
+            <Text variant="meta" tone="muted">
+              {isEditionPdp ? `(Hole ${edition!.hole}${edition!.size ? `, edition of ${edition!.size}` : ""})` : "(Core)"}
+            </Text>
+          </View>
+          {rope ? (
+            <Text variant="meta" tone="muted">
+              {rope} rope
+            </Text>
+          ) : null}
+          {limitedHoles.length ? (
+            <SegmentedControl
+              options={[
+                { value: "all", label: "All" },
+                { value: "core", label: "Core" },
+                { value: "limited", label: "Limited" },
+              ]}
+              value={group}
+              onChange={(g: Group) => {
+                trackTap("color_pill", { group: g })
+                setGroup(g)
+              }}
+            />
+          ) : null}
+          <View style={styles.swatches}>
+            {group !== "limited"
+              ? coreColours.map((c) => (
+                  <Swatch
+                    key={c}
+                    name={c}
+                    selected={!isEditionPdp && c === colour}
+                    soldOut={!isEditionPdp && colorCounts(product).find((x) => x.color === c)?.state === "sold_out"}
+                    onPress={() => selectCore(c)}
+                  />
+                ))
+              : null}
+            {group !== "core"
+              ? limitedHoles.map((h) => (
+                  <Swatch
+                    key={h.number}
+                    name={h.colourway!}
+                    selected={isEditionPdp && h.number === edition!.hole}
+                    caption={h.status === "upcoming" ? holeDay(h.releaseAt ?? h.dateIso) : null}
+                    accessibilityHint={h.status === "upcoming" ? "Opens the hole on The Card" : "Opens the edition"}
+                    onPress={() => {
+                      trackTap("pdp_edition_link", { hole: h.number })
+                      if (h.status === "live" && h.product?.handle) router.push(`/products/${h.product.handle}`)
+                      else if (h.handle) router.push(`/card/${h.handle}`)
+                    }}
+                  />
+                ))
+              : null}
+          </View>
+        </View>
+
+        <View style={styles.oneSize}>
+          <Text variant="body">
+            <Text variant="body" style={{ fontFamily: "Inter_500Medium" }}>
+              One size
+            </Text>{" "}
+            · {POLICY.oneSize}
+          </Text>
+          <Button
+            title="Fit guide"
+            variant="link"
+            onPress={() => {
+              trackTap("fit_guide")
+              openWeb("/fit-guide")
+            }}
           />
         </View>
+
+        {fit ? (
+          <View style={styles.block}>
+            <FitScale
+              label="Crown height"
+              value={`${fit.crown}${crownCm ? ` · about ${crownCm} cm` : ""}`}
+              steps={["Low", "Mid", "Tall"]}
+              active={["Low", "Mid", "Tall"].indexOf(fit.crown)}
+            />
+            <FitScale
+              label="Structure"
+              value={fit.structure}
+              steps={["Unstructured", "Semi", "Structured"]}
+              active={["Unstructured", "Semi-structured", "Structured"].indexOf(fit.structure)}
+            />
+          </View>
+        ) : null}
+
+        <View
+          onLayout={(e) => {
+            const { y, height } = e.nativeEvent.layout
+            setCta((c) => (c.y === y && c.h === height ? c : { ...c, y, h: height }))
+          }}
+          style={styles.block}>
+          {upcomingEdition && hole?.release ? (
+            <TeeSheet releaseId={hole.release.id} hole={hole.number} name={hole.name} />
+          ) : (
+            <Button
+              title={ctaLabel}
+              size="atc"
+              disabled={!variant || stock?.state === "sold_out"}
+              loading={quick.pending !== null}
+              onPress={add}
+            />
+          )}
+          <Text variant="meta" tone="muted" style={styles.centerText}>
+            {POLICY.shipping}
+          </Text>
+          {stock ? <StockLine state={stock.state} quantity={stock.quantity} /> : null}
+          {isEditionPdp ? (
+            <>
+              {edition!.size ? (
+                <Text variant="edition" tone="midnight">
+                  Edition of {edition!.size}
+                  {left != null ? ` · ${left} left` : ""}
+                </Text>
+              ) : null}
+              <Text variant="meta" tone="muted">
+                {POLICY.limitedRun}
+              </Text>
+            </>
+          ) : null}
+        </View>
+
+        {!isEditionPdp ? <BundleRows /> : null}
+
+        <Button
+          title="Not sure which color? Take the 30-second quiz"
+          variant="link"
+          onPress={() => {
+            trackTap("pdp_quiz")
+            openWeb("/quiz")
+          }}
+        />
+      </View>
+
+      <View style={styles.scoreBand} onLayout={(e) => setScorecardY(e.nativeEvent.layout.y)}>
+        <Reveal threshold={openScorecard ? 50 : 0.85}>
+          <ScorecardBand product={product} colour={colour} edition={isEditionPdp ? { size: edition!.size, left } : null} slide={slide} />
+        </Reveal>
+      </View>
+
+      <Reveal style={styles.details}>
+        <Text variant="label">The details</Text>
+        {product.description ? (
+          <Text variant="bodyLong" tone="charcoal">
+            {product.description}
+          </Text>
+        ) : null}
+        {meta.fitNotes ? (
+          <Text variant="bodyLong" tone="charcoal">
+            {meta.fitNotes}
+          </Text>
+        ) : null}
+        <Text variant="label" style={{ marginTop: 12 }}>
+          Care & returns
+        </Text>
+        <Text variant="bodyLong" tone="charcoal">
+          {[details.Care, `${POLICY.returns}.`, POLICY.dispatch + "."].filter(Boolean).join(" ")}
+        </Text>
+      </Reveal>
+
+      {Object.keys(details).length >= 4 ? (
+        <MaterialRing
+          background={hatImage("rope-clubhouse.jpg")}
+          centre={images[0] ?? null}
+          callouts={[
+            { title: "Crown", body: details.Crown ?? "" },
+            { title: "Rope", body: details.Rope ?? "" },
+            { title: "Brim", body: details.Brim ?? "" },
+            { title: "Closure", body: details.Closure ?? "" },
+          ].filter((c) => !!c.body)}
+        />
       ) : null}
 
-      <SizeGuide visible={guideOpen} onClose={() => setGuideOpen(false)} chart={sizeChartOf(product)} notes={fitNotes} />
+      <AlsoLike product={product} colour={colour} />
     </Screen>
   )
 }
 
-function Crumb({ label, onPress }: { label: string; onPress: () => void }) {
-  return (
-    <Pressable accessibilityRole="link" onPress={onPress} hitSlop={6}>
-      <Text style={styles.crumb}>{label}</Text>
-    </Pressable>
-  )
-}
-
-/** Sticky buy bar (APP_SPEC §5.4 item 15): appears once the CTA scrolls under the header. */
-function StickyBar({
-  image,
-  price,
-  detail,
-  title,
-  disabled,
-  loading,
-  onPress,
+function ScorecardBand({
+  product,
+  colour,
+  edition,
+  slide,
 }: {
-  image: string | null
-  price: string
-  detail: string
-  title: string
-  disabled?: boolean
-  loading?: boolean
-  onPress: () => void
+  product: Product
+  colour: string | null
+  edition: { size: number | null; left: number | null } | null
+  slide: number
 }) {
+  const side = imagesFor(product, colour)[2] ?? imagesFor(product, colour)[0]
   return (
-    <View style={[styles.sticky, shadow.sticky]}>
-      {image ? <Image source={image} style={styles.stickyImage} contentFit="contain" /> : null}
-      <View style={styles.stickyText}>
-        <Text style={styles.stickyPrice}>{price}</Text>
-        <Text style={styles.stickyDetail} numberOfLines={1}>
-          {detail}
-        </Text>
-      </View>
-      <Button title={title} onPress={onPress} disabled={disabled} loading={loading} />
+    <View style={styles.band}>
+      <Text variant="eyebrow" tone="tint">
+        The scorecard
+      </Text>
+      <Text variant="section" tone="inverse">
+        Every spec, on one card.
+      </Text>
+      <Text variant="kicker" tone="tint">
+        Ruled like the card in your back pocket.
+      </Text>
+      {side ? (
+        <View style={[styles.sidePhoto, { height: (slide - 40) * 0.7 }]}>
+          <Image source={side} style={styles.fill} contentFit="contain" />
+        </View>
+      ) : null}
+      <Scorecard title={product.title ?? "The Rope Cap"} rows={productScoreRows(product, colour, edition)} />
     </View>
   )
 }
 
+function AlsoLike({ product, colour }: { product: Product; colour: string | null }) {
+  const { width } = useWindowDimensions()
+  const { holes } = useHoles()
+  const core = product.handle === "rope-cap" ? product : null
+  const cardW = Math.round(Math.min(width, 720) / 1.3)
+  const items: { key: string; node: React.ReactNode }[] = []
+  if (core) {
+    for (const c of CORE_COLOURWAYS) {
+      if (c === colour) continue
+      items.push({ key: c, node: <ColourwayCard product={core} colourway={c} style={{ width: cardW }} /> })
+    }
+  }
+  for (const h of holes) {
+    if (h.number < 2 || h.status !== "live" || h.product?.id === product.id) continue
+    items.push({ key: `h${h.number}`, node: <EditionCard hole={h} style={{ width: cardW }} /> })
+  }
+  if (!items.length) return null
+  return (
+    <Reveal style={styles.also}>
+      <Text variant="tab" style={styles.alsoTitle}>
+        You may also like
+      </Text>
+      <FlatList
+        data={items}
+        horizontal
+        keyExtractor={(i) => i.key}
+        showsHorizontalScrollIndicator={false}
+        snapToInterval={cardW + 10}
+        decelerationRate="fast"
+        contentContainerStyle={{ paddingHorizontal: 10, gap: 10 }}
+        renderItem={({ item }) => <View onTouchStart={() => trackTap("pdp_also_like")}>{item.node}</View>}
+      />
+    </Reveal>
+  )
+}
+
 const styles = StyleSheet.create({
-  body: { paddingHorizontal: layout.pdpGutter, paddingTop: 16 },
-  titleRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 10 },
-  title: { flex: 1, fontFamily: fonts.body, fontSize: 20, lineHeight: 25, textTransform: "uppercase", color: colors.text },
-  price: { fontFamily: fonts.body, fontSize: 18, lineHeight: 25, color: colors.text },
-  type: { fontFamily: fonts.body, fontSize: 15, lineHeight: 19.5, color: colors.textMuted, marginTop: 2 },
-  savingRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 6 },
-  strike: {
-    fontFamily: fonts.body,
-    fontSize: 14,
-    lineHeight: 21,
-    color: colors.textMuted,
-    textDecorationLine: "line-through",
-  },
-  crumbs: { flexDirection: "row", alignItems: "center", marginTop: 16, flexWrap: "nowrap" },
-  crumb: { fontFamily: fonts.body, fontSize: 12, lineHeight: 18, color: colors.text },
-  crumbCurrent: { color: colors.textMuted, flexShrink: 1 },
-  colorBlock: { marginTop: 20 },
-  label: { fontFamily: fonts.body, fontSize: 13, lineHeight: 19.5, color: colors.text, marginBottom: 10 },
-  labelRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
-  sizeBlock: { marginTop: 24 },
-  range: { fontFamily: fonts.body, fontSize: 13, lineHeight: 19.5, color: colors.textMuted, marginTop: 8 },
-  atc: { marginTop: 20, gap: 8 },
-  error: { fontFamily: fonts.body, fontSize: 12, lineHeight: 18, color: colors.error },
-  sku: { fontFamily: fonts.body, fontSize: 13, lineHeight: 19.5, color: colors.text, marginTop: 12 },
-  stock: { marginTop: 12 },
-  limited: { marginTop: 8, lineHeight: 19.5 },
-  perks: { marginTop: 24 },
-  description: { marginTop: 16, color: colors.text },
-  fit: { marginTop: 24, paddingTop: 24, borderTopWidth: 1, borderTopColor: colors.line, gap: 20 },
-  accordions: { marginTop: 24 },
-  details: { gap: 12 },
-  detailLabel: {
-    fontFamily: fonts.heading,
-    fontSize: 12,
-    lineHeight: 18,
-    letterSpacing: 1.3,
-    textTransform: "uppercase",
-    color: colors.text,
-  },
-  detailValue: { fontFamily: fonts.body, fontSize: 13, lineHeight: 19.5, color: colors.text },
-  alsoLike: { backgroundColor: colors.band, paddingVertical: layout.section, marginTop: 32 },
-  alsoTitle: { marginLeft: 16, marginBottom: 16 },
-  alsoRow: { paddingHorizontal: 16, gap: 16 },
+  fill: { width: "100%", height: "100%" },
+  crumb: { marginHorizontal: 20, marginBottom: 12 },
+  galleryWrap: { position: "relative" },
+  galleryBadge: { position: "absolute", top: 10, left: 20 },
+  buyCard: { margin: 10, backgroundColor: colors.white, borderRadius: radius.xl, padding: 20, gap: 24 },
+  priceRow: { flexDirection: "row", alignItems: "center", gap: 10, flexWrap: "wrap" },
+  pricePill: { backgroundColor: colors.naturalWhite, borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 4 },
+  block: { gap: 12 },
+  colorLabel: { flexDirection: "row", gap: 6, alignItems: "baseline", flexWrap: "wrap" },
+  swatches: { flexDirection: "row", flexWrap: "wrap", gap: 4 },
+  oneSize: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" },
+  centerText: { textAlign: "center" },
+  scoreBand: { marginTop: 30 },
+  band: { backgroundColor: golf.green, marginHorizontal: 10, borderRadius: radius.xl, padding: 20, gap: 14 },
+  sidePhoto: { backgroundColor: colors.white, borderRadius: radius.xxl, overflow: "hidden" },
+  details: { margin: 10, marginTop: 20, backgroundColor: colors.white, borderRadius: radius.xl, padding: 20, gap: 8 },
+  also: { marginTop: 30, gap: 12 },
+  alsoTitle: { paddingHorizontal: 20 },
   sticky: {
     position: "absolute",
-    top: 0,
     left: 0,
     right: 0,
-    height: 80,
-    backgroundColor: colors.secondary,
-    paddingHorizontal: 16,
-    flexDirection: "row",
-    alignItems: "center",
+    bottom: 0,
+    backgroundColor: colors.white,
+    borderTopLeftRadius: radius.md,
+    borderTopRightRadius: radius.md,
+    paddingHorizontal: 28,
+    paddingTop: 20,
     gap: 12,
   },
-  stickyImage: { width: 56, height: 56 },
-  stickyText: { flex: 1 },
-  stickyPrice: { fontFamily: fonts.body, fontSize: 16, lineHeight: 22, color: colors.text },
-  stickyDetail: { fontFamily: fonts.body, fontSize: 12, lineHeight: 16, letterSpacing: 0.8, color: colors.textMuted },
 })
+

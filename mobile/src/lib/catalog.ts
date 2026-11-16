@@ -90,3 +90,28 @@ export async function fetchContentSeries(): Promise<ContentSeries[]> {
   const { series } = await sdk.client.fetch<{ series: ContentSeries[] }>("/store/content-series")
   return series ?? []
 }
+
+export type CustomQuoteInput = {
+  name: string
+  email: string
+  organisation: string
+  quantity: number
+  colors: Record<string, number>
+  needed_by?: string
+  artwork_url?: string
+  notes?: string
+  /** The requester confirms they may use the artwork (required, web G.6.10). */
+  rights_confirmed: true
+  /** Honeypot: stays empty for people (web G.6.10). */
+  company_website?: string
+  source?: Record<string, string>
+}
+
+/** POST /store/custom-quotes (web G.6.10), with the publishable key. */
+export async function submitCustomQuote(input: CustomQuoteInput): Promise<{ id: string } | null> {
+  const res = await sdk.client.fetch<{ ok: boolean; id?: string }>("/store/custom-quotes", {
+    method: "POST",
+    body: input,
+  })
+  return res.id ? { id: res.id } : null
+}

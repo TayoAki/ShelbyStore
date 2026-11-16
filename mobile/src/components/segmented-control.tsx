@@ -1,29 +1,29 @@
-import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from "react-native"
+import { Pressable, ScrollView, StyleSheet, View } from "react-native"
 
-import { colors, fonts, radius } from "@/constants/theme"
+import { colors, golf, radius, type } from "@/constants/theme"
 
 import { Text } from "./text"
 
 /**
- * Melin's pill segmented control (APP_SPEC §3). Default: 43pt, 1pt #EEEEEE,
- * active tab a black pill. `compact` is the drops tab switch: 28pt on #EDEDED,
- * active tab a white pill with a 1pt black border.
+ * Allbirds' pill segmented control (APP_SPEC v5 §3) with the golf-green
+ * active segment (G.2.2): white label on #1E3B2F.
  */
 export function SegmentedControl<T extends string>({
   options,
   value,
   onChange,
-  compact = false,
-  style,
+  scroll = false,
+  inverse = false,
 }: {
   options: { value: T; label: string }[]
   value: T
   onChange: (value: T) => void
-  compact?: boolean
-  style?: StyleProp<ViewStyle>
+  scroll?: boolean
+  /** On a golf-green band: white outline and labels, white active segment. */
+  inverse?: boolean
 }) {
-  return (
-    <View accessibilityRole="tablist" style={[compact ? styles.trackCompact : styles.track, style]}>
+  const row = (
+    <View style={[styles.pill, inverse && { borderColor: colors.white }]} accessibilityRole="tablist">
       {options.map((o) => {
         const active = o.value === value
         return (
@@ -32,11 +32,12 @@ export function SegmentedControl<T extends string>({
             accessibilityRole="tab"
             accessibilityState={{ selected: active }}
             onPress={() => onChange(o.value)}
-            style={[
-              compact ? styles.tabCompact : styles.tab,
-              active && (compact ? styles.activeCompact : styles.active),
-            ]}>
-            <Text style={[compact ? styles.labelCompact : styles.label, active && !compact && styles.labelOn]}>
+            style={[styles.segment, active && (inverse ? styles.activeInverse : styles.active)]}>
+            <Text
+              style={[
+                type.button,
+                { fontSize: 11, color: inverse ? (active ? golf.green : colors.white) : active ? colors.white : colors.black },
+              ]}>
               {o.label}
             </Text>
           </Pressable>
@@ -44,38 +45,31 @@ export function SegmentedControl<T extends string>({
       })}
     </View>
   )
+  if (!scroll) return row
+  return (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 0 }}>
+      {row}
+    </ScrollView>
+  )
 }
 
 const styles = StyleSheet.create({
-  track: {
-    height: 43,
+  pill: {
+    flexDirection: "row",
+    alignSelf: "flex-start",
     borderWidth: 1,
-    borderColor: colors.lineSoft,
-    borderRadius: radius.pill,
-    padding: 1,
-    flexDirection: "row",
+    borderColor: colors.black,
+    borderRadius: radius.full,
+    padding: 4,
+    gap: 4,
   },
-  tab: { flex: 1, height: 39, borderRadius: radius.pill, alignItems: "center", justifyContent: "center" },
-  active: { backgroundColor: colors.primary },
-  label: { fontFamily: fonts.body, fontSize: 13, lineHeight: 13, textTransform: "capitalize", color: colors.textTab },
-  labelOn: { color: colors.textInverse },
-  trackCompact: {
-    width: 240,
-    height: 28,
-    borderRadius: radius.pill,
-    backgroundColor: colors.mega,
-    flexDirection: "row",
-    alignSelf: "center",
-  },
-  tabCompact: {
-    flex: 1,
-    height: 28,
-    borderRadius: radius.pill,
+  segment: {
+    height: 33,
+    paddingHorizontal: 12,
+    borderRadius: radius.full,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "transparent",
   },
-  activeCompact: { backgroundColor: colors.secondary, borderColor: colors.primary },
-  labelCompact: { fontFamily: fonts.body, fontSize: 12, lineHeight: 14, textTransform: "capitalize", color: colors.text },
+  active: { backgroundColor: golf.green },
+  activeInverse: { backgroundColor: colors.white },
 })

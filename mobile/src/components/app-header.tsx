@@ -1,162 +1,269 @@
 import Ionicons from "@expo/vector-icons/Ionicons"
+import { Image } from "expo-image"
 import { router } from "expo-router"
-import { useEffect, useState } from "react"
-import { Modal, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from "react-native"
+import { useEffect, useMemo, useState } from "react"
+import { Pressable, ScrollView, StyleSheet, View } from "react-native"
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated"
-import { SafeAreaView } from "react-native-safe-area-context"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 
-import { colors, fonts, MAX_CONTENT_WIDTH } from "@/constants/theme"
+import { colors, CORE_COLOURWAYS, ease, layout, radius, shadow, type } from "@/constants/theme"
 import { useCatalog } from "@/hooks/use-products"
 import { useRecentlyViewed } from "@/hooks/use-recently-viewed"
+import { trackTap } from "@/lib/analytics"
+import { formatMoney } from "@/lib/format"
+import { capsIn, imagesFor, isOffer, productPrice, ropeNameFor, type Product } from "@/lib/product"
 import { useCart } from "@/providers/cart-provider"
 
-import { ProductCard, ProductGrid } from "./product-card"
 import { SearchPill } from "./search-pill"
+import { BottomSheet, TopSheet } from "./sheet"
 import { Text } from "./text"
 
-const ROW2 = 60
-
 /**
- * The app header (APP_SPEC §4.1): row 1 is the `shelby` wordmark with the
- * recently-viewed eye and the bag; row 2 is the search pill. When `condensed`
- * (the screen scrolled past 121pt) row 2 folds away and row 1 becomes the
- * search pill plus the bag.
+ * The floating header pill (APP_SPEC v5 §4.1): white, radius 12, 40pt, 20pt
+ * from the edges. Recently viewed at the left (hidden when empty), the
+ * wordmark centred, search and bag at the right. `belowTicker` pushes it under
+ * the 32pt ticker on Home.
  */
-export function AppHeader({
-  condensed = false,
-  search,
-  onSearch,
-}: {
-  condensed?: boolean
-  /** Shop passes its query to filter in place; elsewhere the pill opens Shop. */
-  search?: string
-  onSearch?: (text: string) => void
-}) {
+export function AppHeader({ belowTicker = false, back = false }: { belowTicker?: boolean; back?: boolean }) {
+  const insets = useSafeAreaInsets()
   const { itemCount } = useCart()
-  const { handles } = useRecentlyViewed()
-  const [viewedOpen, setViewedOpen] = useState(false)
-  const row2 = useSharedValue(condensed ? 0 : ROW2)
-  useEffect(() => {
-    row2.set(withTiming(condensed ? 0 : ROW2, { duration: 300 }))
-  }, [condensed, row2])
-  const row2Style = useAnimatedStyle(() => ({ height: row2.get(), opacity: row2.get() / ROW2 }))
-
-  const pill = onSearch ? (
-    <SearchPill value={search} onChangeText={onSearch} style={styles.flex} />
-  ) : (
-    <SearchPill onPress={() => router.navigate("/shop")} style={styles.flex} />
-  )
+  const viewed = useRecentlyViewed()
+  const [search, setSearch] = useState(false)
+  const [recent, setRecent] = useState(false)
+  const top = insets.top + layout.pillTop + (belowTicker ? layout.ticker : 0)
 
   return (
-    <View style={styles.header}>
-      <View style={styles.row1}>
-        {condensed ? (
-          pill
-        ) : (
-          <Pressable accessibilityRole="link" accessibilityLabel="Shelby home" onPress={() => router.navigate("/")}>
-            <Text style={styles.wordmark}>shelby</Text>
-          </Pressable>
-        )}
-        <View style={styles.icons}>
-          {!condensed && handles.length > 0 ? (
-            <IconButton icon="eye-outline" label="Previously viewed" count={handles.length} onPress={() => setViewedOpen(true)} />
+    <>
+      <View style={[styles.pill, shadow.sm, { top }]}>
+        <View style={styles.side}>
+          {back && router.canGoBack() ? (
+            <IconButton icon="chevron-back" label="Back" onPress={() => router.back()} />
           ) : null}
-          <IconButton icon="bag-outline" label="Bag" count={itemCount} onPress={() => router.navigate("/cart")} />
+          {viewed.handles.length ? (
+            <IconButton
+              icon="eye-outline"
+              label={`Previously viewed, ${viewed.handles.length} products`}
+              count={viewed.handles.length}
+              onPress={() => {
+                trackTap("recently_viewed")
+                setRecent(true)
+              }}
+            />
+          ) : null}
+        </View>
+        <Pressable accessibilityRole="link" accessibilityLabel="Shelby, home" onPress={() => router.navigate("/")} style={styles.wordmarkWrap}>
+          <Text style={type.wordmark}>shelby</Text>
+        </Pressable>
+        <View style={[styles.side, styles.right]}>
+          <IconButton icon="search-outline" label="Search" onPress={() => setSearch(true)} />
+          <IconButton icon="bag-handle-outline" label={`Bag, ${itemCount} items`} count={itemCount} onPress={() => router.navigate("/cart")} />
         </View>
       </View>
-      <Animated.View style={[styles.row2, row2Style]}>{condensed ? null : pill}</Animated.View>
-      <RecentlyViewedModal visible={viewedOpen} handles={handles} onClose={() => setViewedOpen(false)} />
-    </View>
+      <SearchSheet visible={search} onClose={() => setSearch(false)} />
+      <RecentSheet visible={recent} onClose={() => setRecent(false)} handles={viewed.handles} />
+    </>
   )
+}
+
+/** Screens start their content under the floating pill. */
+export function useHeaderInset(belowTicker = false) {
+  const insets = useSafeAreaInsets()
+  return insets.top + layout.contentTop + (belowTicker ? layout.ticker : 0)
 }
 
 function IconButton({
   icon,
   label,
-  count,
+  count = 0,
   onPress,
 }: {
   icon: React.ComponentProps<typeof Ionicons>["name"]
   label: string
-  count: number
+  count?: number
   onPress: () => void
 }) {
+  const o = useSharedValue(count > 0 ? 1 : 0)
+  useEffect(() => {
+    o.value = withTiming(count > 0 ? 1 : 0, { duration: 50, easing: ease.sineIn })
+  }, [count, o])
+  const badge = useAnimatedStyle(() => ({ opacity: o.value }))
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={`${label}${count ? `, ${count}` : ""}`} onPress={onPress} hitSlop={8}>
-      <Ionicons name={icon} size={24} color={colors.text} />
-      {count > 0 ? (
-        <View style={styles.count}>
-          <Text style={styles.countText}>{count > 99 ? "99" : count}</Text>
-        </View>
-      ) : null}
+    <Pressable accessibilityRole="button" accessibilityLabel={label} hitSlop={8} onPress={onPress} style={styles.icon}>
+      <Ionicons name={icon} size={24} color={colors.black} />
+      <Animated.View style={[styles.count, badge]} pointerEvents="none">
+        <Text style={[type.countBadge, { color: colors.white }]}>{count > 99 ? "99" : count}</Text>
+      </Animated.View>
     </Pressable>
   )
 }
 
-/** "Previously Viewed" (APP_SPEC §5.8): a full-screen grid of the last 12 products. */
-function RecentlyViewedModal({ visible, handles, onClose }: { visible: boolean; handles: string[]; onClose: () => void }) {
+type Entry = { key: string; title: string; meta: string; image: string | null; href: string; terms: string }
+
+/** One entry per colourway of the Rope Cap, each edition and both bundles (web G.6.1). */
+function useSearchIndex(): Entry[] {
   const catalog = useCatalog()
-  const { width } = useWindowDimensions()
-  const cardWidth = (Math.min(width, MAX_CONTENT_WIDTH) - 48) / 2
-  const products = handles
-    .map((h) => catalog.data?.find((p) => p.handle === h))
-    .filter((p): p is NonNullable<typeof p> => !!p)
+  return useMemo(() => {
+    const out: Entry[] = []
+    for (const p of catalog.data ?? []) {
+      const price = productPrice(p)
+      const money = price ? formatMoney(price.amount, price.currency) : ""
+      if (p.handle === "rope-cap") {
+        for (const c of CORE_COLOURWAYS) {
+          const rope = ropeNameFor(p, c)
+          out.push({
+            key: `${p.id}-${c}`,
+            title: `The Rope Cap · ${c}`,
+            meta: `${rope ? `${rope} rope · ` : ""}${money}`,
+            image: imagesFor(p, c)[0] ?? null,
+            href: `/products/rope-cap?color=${encodeURIComponent(c)}`,
+            terms: `rope cap ${c} ${rope ?? ""} core`.toLowerCase(),
+          })
+        }
+      } else if (isOffer(p)) {
+        out.push({
+          key: p.id,
+          title: p.title ?? "",
+          meta: `${capsIn(p)} caps · ${money}`,
+          image: imagesFor(p)[0] ?? null,
+          href: `/offer/${p.handle}`,
+          terms: `${p.title} bundle ${capsIn(p) === 4 ? "four foursome" : "two pair"}`.toLowerCase(),
+        })
+      } else {
+        out.push({
+          key: p.id,
+          title: p.title ?? "",
+          meta: `Limited edition · ${money}`,
+          image: imagesFor(p)[0] ?? null,
+          href: `/products/${p.handle}`,
+          terms: `${p.title} ${p.handle} limited edition hole`.toLowerCase(),
+        })
+      }
+    }
+    return out
+  }, [catalog.data])
+}
+
+function SearchSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const [q, setQ] = useState("")
+  const index = useSearchIndex()
+  const query = q.trim().toLowerCase()
+  const results = query ? index.filter((e) => query.split(/\s+/).every((t) => e.terms.includes(t) || e.title.toLowerCase().includes(t))) : index
+  const go = (href: string) => {
+    trackTap("search_result", { q: query })
+    onClose()
+    router.push(href as never)
+  }
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <SafeAreaView style={styles.modal} edges={["top", "bottom"]}>
-        <View style={styles.modalHead}>
-          <View>
-            <Text style={styles.modalTitle}>Previously Viewed</Text>
-            <Text variant="micro" tone="muted">
-              {products.length} Products
-            </Text>
-          </View>
-          <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} hitSlop={10}>
-            <Ionicons name="close" size={24} color={colors.text} />
-          </Pressable>
-        </View>
-        <ScrollView contentContainerStyle={styles.modalBody}>
-          <ProductGrid>
-            {products.map((p) => (
-              <ProductCard key={p.id} product={p} width={cardWidth} carousel={false} onOpen={onClose} />
+    <TopSheet visible={visible} onClose={onClose}>
+      <View style={{ gap: 12 }}>
+        <SearchPill value={q} onChangeText={setQ} autoFocus={visible} onSubmit={() => trackTap("search_submit", { q: query })} />
+        <ScrollView style={{ maxHeight: 360 }} keyboardShouldPersistTaps="handled">
+          <View style={{ gap: 8 }}>
+            {results.slice(0, 8).map((e) => (
+              <Pressable key={e.key} accessibilityRole="link" onPress={() => go(e.href)} style={styles.result}>
+                {e.image ? <Image source={e.image} style={styles.resultImage} contentFit="contain" /> : <View style={styles.resultImage} />}
+                <View style={styles.flex}>
+                  <Text variant="cardTitle" numberOfLines={1}>
+                    {e.title}
+                  </Text>
+                  <Text variant="meta" tone="muted" numberOfLines={1}>
+                    {e.meta}
+                  </Text>
+                </View>
+              </Pressable>
             ))}
-          </ProductGrid>
+            {query && !results.length ? (
+              <Text variant="body" tone="muted">
+                Nothing matches &ldquo;{q}&rdquo;. Try a color: navy, pine, fescue.
+              </Text>
+            ) : null}
+          </View>
         </ScrollView>
-      </SafeAreaView>
-    </Modal>
+        <Pressable accessibilityRole="link" onPress={() => go("/shop")}>
+          <Text variant="meta" tone="golf" style={styles.underline}>
+            View all results
+          </Text>
+        </Pressable>
+      </View>
+    </TopSheet>
+  )
+}
+
+function RecentSheet({ visible, onClose, handles }: { visible: boolean; onClose: () => void; handles: string[] }) {
+  const catalog = useCatalog()
+  const products = handles.map((h) => catalog.data?.find((p) => p.handle === h)).filter((p): p is Product => !!p)
+  return (
+    <BottomSheet visible={visible} onClose={onClose}>
+      <Text variant="cardTitle">Previously viewed ({products.length})</Text>
+      <ScrollView>
+        <View style={styles.grid}>
+          {products.map((p) => {
+            const price = productPrice(p)
+            return (
+              <Pressable
+                key={p.id}
+                accessibilityRole="link"
+                style={styles.recent}
+                onPress={() => {
+                  onClose()
+                  router.push(`/products/${p.handle}`)
+                }}>
+                <Image source={imagesFor(p)[0] ?? null} style={styles.recentImage} contentFit="contain" />
+                <Text variant="cardTitle" numberOfLines={1}>
+                  {p.title}
+                </Text>
+                {price ? <Text variant="priceSm">{formatMoney(price.amount, price.currency)}</Text> : null}
+              </Pressable>
+            )
+          })}
+        </View>
+      </ScrollView>
+    </BottomSheet>
   )
 }
 
 const styles = StyleSheet.create({
-  header: { backgroundColor: colors.secondary, borderBottomWidth: 1, borderBottomColor: colors.lineHeader },
-  row1: { height: 61, paddingHorizontal: 16, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 16 },
-  wordmark: { fontFamily: fonts.heading, fontSize: 24, lineHeight: 28, letterSpacing: -0.5, color: colors.text },
-  icons: { flexDirection: "row", alignItems: "center", gap: 16 },
-  row2: { paddingHorizontal: 16, justifyContent: "center", overflow: "hidden" },
-  flex: { flex: 1 },
-  count: {
+  pill: {
     position: "absolute",
-    top: -4,
-    right: -6,
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
-    paddingHorizontal: 3,
-    backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  countText: { fontFamily: fonts.heading, fontSize: 10, lineHeight: 12, color: colors.textInverse },
-  modal: { flex: 1, backgroundColor: colors.secondary },
-  modalHead: {
-    height: 75,
-    paddingHorizontal: 16,
+    left: layout.pillSide,
+    right: layout.pillSide,
+    height: layout.pillHeight,
+    backgroundColor: colors.white,
+    borderRadius: radius.xl,
+    paddingHorizontal: 10,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    borderBottomWidth: 1,
-    borderBottomColor: colors.line,
+    zIndex: 80,
   },
-  modalTitle: { fontFamily: fonts.heading, fontSize: 16, lineHeight: 24, color: colors.text },
-  modalBody: { paddingVertical: 16 },
+  side: { flexDirection: "row", alignItems: "center", gap: 8, minWidth: 64 },
+  right: { justifyContent: "flex-end" },
+  wordmarkWrap: { position: "absolute", left: 0, right: 0, alignItems: "center", zIndex: -1 },
+  icon: { width: 28, height: 28, alignItems: "center", justifyContent: "center" },
+  count: {
+    position: "absolute",
+    top: 0,
+    right: -4,
+    minWidth: 14,
+    height: 14,
+    borderRadius: 7,
+    paddingHorizontal: 2,
+    backgroundColor: colors.black,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  flex: { flex: 1 },
+  result: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: colors.white,
+    borderRadius: radius.lg,
+    padding: 8,
+  },
+  resultImage: { width: 56, height: 56, borderRadius: radius.lg, backgroundColor: colors.white },
+  underline: { textDecorationLine: "underline" },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  recent: { width: "48%", gap: 4 },
+  recentImage: { width: "100%", aspectRatio: 1, borderRadius: radius.xxl, backgroundColor: colors.naturalWhite25 },
 })

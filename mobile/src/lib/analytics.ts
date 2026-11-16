@@ -25,6 +25,9 @@ export type AnalyticsEvent =
   | "add_to_cart"
   | "checkout_started"
   | "notify_me_submitted"
+  | "custom_quote_submitted"
+  | "cta_click"
+  | "$experiment_exposure"
 
 type Props = Record<string, string | number | boolean | null | undefined>
 
@@ -74,8 +77,8 @@ function sessionId() {
 let context: Props = {}
 
 /** Called when ?asset= / release attribution is captured or restored. */
-export function setAnalyticsContext(next: { asset?: string; release_id?: string }) {
-  context = clean({ ...context, asset: next.asset, release_id: next.release_id })
+export function setAnalyticsContext(next: { asset?: string; release_id?: string } & Props) {
+  context = clean({ ...context, ...next })
 }
 
 export function clearAnalyticsContext() {
@@ -204,9 +207,11 @@ let currentUrl = "app://shelby/"
 export function pageTypeFor(path: string): string {
   if (path === "/" || path === "/index") return "home"
   if (path === "/shop") return "collection"
-  if (/^\/products\/[^/]*-pack$/.test(path)) return "offer"
+  if (path.startsWith("/offer/")) return "offer"
   if (path.startsWith("/products/")) return "pdp"
-  if (path.startsWith("/drops")) return "drops"
+  // The Card keeps the "drops" value for continuity (APP_SPEC G.7).
+  if (path.startsWith("/card") || path.startsWith("/drops")) return "drops"
+  if (path === "/custom") return "custom"
   if (path === "/cart") return "cart"
   if (path === "/checkout") return "checkout"
   if (path.startsWith("/order/")) return "order"
@@ -226,6 +231,14 @@ export function track(event: AnalyticsEvent, props: Props = {}) {
   const merged = clean({ ...context, page_type: pageTypeFor(currentPath), ...props })
   void enqueue(event, merged, currentPath, currentUrl)
   void sendUmami({ url: currentPath, name: event, data: merged })
+}
+
+/**
+ * A tracked tap: the native counterpart of the web's `data-track` labels
+ * (`cta_click` { label }), e.g. "ticker_item", "card_hole", "pdp_foursome".
+ */
+export function trackTap(label: string, props: Props = {}) {
+  track("cta_click", { label, ...props })
 }
 
 /** Fires `event` once per `key` (e.g. once per product id) when props become available. */

@@ -1,284 +1,183 @@
 import Ionicons from "@expo/vector-icons/Ionicons"
 import { Image } from "expo-image"
 import { router } from "expo-router"
-import { useState } from "react"
-import { FlatList, Pressable, StyleSheet, View } from "react-native"
+import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from "react-native"
+import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from "react-native-reanimated"
 
-import { colors, fonts } from "@/constants/theme"
-import { track } from "@/lib/analytics"
+import { colors, CORE_COLOURWAYS, colourwaySlug, ease, motion, radius } from "@/constants/theme"
+import { holeDay, type Hole } from "@/hooks/use-holes"
+import { useQuickAdd } from "@/hooks/use-quick-add"
+import { trackTap } from "@/lib/analytics"
 import { formatMoney } from "@/lib/format"
-import { errorMessage } from "@/lib/medusa"
-import {
-  cardImages,
-  colorOptionOf,
-  findVariant,
-  isLowStock,
-  isOneSize,
-  productPrice,
-  productTypeOf,
-  sizeOptionOf,
-  valueStock,
-  variantOptionMap,
-  variantPrice,
-  variantStock,
-  type Product,
-} from "@/lib/product"
-import { useAddedSheet } from "@/providers/added-sheet-provider"
-import { useCart } from "@/providers/cart-provider"
+import { colorCounts, hatImage, imagesFor, productPrice, ropeNameFor, type Product } from "@/lib/product"
 
-import { ImageBadge } from "./badge"
-import { Dashes } from "./dashes"
+import { Badge } from "./badge"
+import { EditionBadge } from "./edition-badge"
+import { Swatch } from "./swatch"
 import { Text } from "./text"
 
-export function productHref(handle: string, opts?: { releaseId?: string; color?: string }) {
-  const q = [
-    opts?.releaseId ? `release=${encodeURIComponent(opts.releaseId)}` : null,
-    opts?.color ? `color=${encodeURIComponent(opts.color)}` : null,
-  ].filter(Boolean)
-  return `/products/${handle}${q.length ? `?${q.join("&")}` : ""}`
-}
-
-export type CardStatus = "live" | "core" | "upcoming" | null
-
-/** One badge, in Melin's priority: Limited · Core · Low Stock · Coming Soon (APP_SPEC §5.3). */
-function badgeFor(product: Product, status: CardStatus): string | null {
-  if (status === "live") return "Limited"
-  if (status === "core" || product.collection?.handle === "core") return "Core"
-  if (isLowStock(product)) return "Low Stock"
-  if (status === "upcoming") return "Coming Soon"
-  return null
+function usePressScale() {
+  const reduce = useReducedMotion()
+  const scale = useSharedValue(1)
+  const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }))
+  const press = (to: number) => {
+    if (reduce) return
+    scale.set(withTiming(to, { duration: 150, easing: ease.tailwind, reduceMotion: motion.reduceMotion }))
+  }
+  return { style, press }
 }
 
 /**
- * Melin's product card (APP_SPEC §5.3): a white square with the first colour's
- * photos in a paging carousel, a quick-add bag button, then title and price
- * with colour, type and "+N Colors" in warm grey.
+ * A colourway card of The Rope Cap (APP_SPEC G.5 Shop): the colour is fixed,
+ * the swatch row shows the four core colours with this one selected, and
+ * ADD adds the one-size cap directly.
  */
-export function ProductCard({
+export function ColourwayCard({
   product,
-  width,
-  status = null,
-  releaseId,
-  carousel = true,
-  onOpen,
+  colourway,
+  style,
+  source = "app_quick_add",
 }: {
   product: Product
-  width: number
-  status?: CardStatus
-  releaseId?: string
-  carousel?: boolean
-  /** Called before navigating (e.g. to close a modal). */
-  onOpen?: () => void
+  colourway: string
+  style?: StyleProp<ViewStyle>
+  source?: string
 }) {
-  const images = cardImages(product)
-  const [index, setIndex] = useState(0)
+  const { style: scaleStyle, press } = usePressScale()
+  const quick = useQuickAdd()
+  const image = imagesFor(product, colourway)[0] ?? hatImage(`rope-cap-${colourwaySlug(colourway)}-1.jpg`)
   const price = productPrice(product)
-  const colors_ = colorOptionOf(product)?.values ?? []
-  const badge = badgeFor(product, status)
-  const href = productHref(product.handle ?? product.id, { releaseId })
-  const open = () => {
-    onOpen?.()
-    router.push(href as never)
+  const count = colorCounts(product).find((c) => c.color === colourway)
+  const soldOut = count?.state === "sold_out"
+  const rope = ropeNameFor(product, colourway)
+  const go = () => {
+    trackTap("core_product", { color: colourway })
+    router.push({ pathname: "/products/[handle]", params: { handle: product.handle!, color: colourway } })
   }
 
   return (
-    <View style={{ width }}>
-      <View style={styles.imageArea}>
-        {carousel && images.length > 1 ? (
-          <FlatList
-            data={images}
-            keyExtractor={(u, i) => `${u}-${i}`}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onMomentumScrollEnd={(e) => setIndex(Math.round(e.nativeEvent.contentOffset.x / width))}
-            renderItem={({ item, index: i }) => (
-              <Pressable accessibilityRole="link" accessibilityLabel={`${product.title}, image ${i + 1}`} onPress={open}>
-                <Image source={item} style={{ width, height: width }} contentFit="contain" transition={150} />
-              </Pressable>
-            )}
-          />
-        ) : (
-          <Pressable accessibilityRole="link" accessibilityLabel={product.title} onPress={open}>
-            <Image source={images[0]} style={{ width, height: width }} contentFit="contain" transition={150} />
-          </Pressable>
-        )}
-        {carousel ? <Dashes count={images.length} index={index} style={styles.dashes} /> : null}
-        {badge ? <ImageBadge label={badge} /> : null}
-        <QuickAdd product={product} releaseId={releaseId} />
-      </View>
-      <Pressable accessibilityRole="link" onPress={open} style={styles.text}>
-        <View style={styles.titleRow}>
-          <Text style={styles.title} numberOfLines={2}>
+    <Animated.View style={[styles.card, scaleStyle, style]}>
+      <Pressable accessibilityRole="link" accessibilityLabel={`The Rope Cap in ${colourway}`} onPressIn={() => press(0.98)} onPressOut={() => press(1)} onPress={go}>
+        <View>
+          <Image source={image} style={styles.image} contentFit="contain" />
+          <Badge label={soldOut ? "Sold out" : "Core"} style={styles.badge} />
+        </View>
+        <View style={styles.info}>
+          <Text variant="cardTitle" numberOfLines={1}>
             {product.title}
           </Text>
-          {price ? (
-            <Text style={styles.price}>
-              {price.varies ? "From " : ""}
-              {formatMoney(price.amount, price.currency)}
-            </Text>
-          ) : null}
-        </View>
-        {colors_[0] ? <Text style={styles.meta}>{colors_[0]}</Text> : null}
-        <Text style={styles.meta}>{productTypeOf(product)}</Text>
-        {colors_.length > 1 ? <Text style={styles.meta}>+{colors_.length - 1} Colors</Text> : null}
-      </Pressable>
-    </View>
-  )
-}
-
-/**
- * Quick add (APP_SPEC §5.3): one-size hats add the first in-stock colour;
- * sized hats open a two-button size popover under the icon.
- */
-function QuickAdd({ product, releaseId }: { product: Product; releaseId?: string }) {
-  const { addItem } = useCart()
-  const sheet = useAddedSheet()
-  const [sizes, setSizes] = useState(false)
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const color = colorOptionOf(product)
-  const size = sizeOptionOf(product)
-  const firstColor = (color?.values ?? []).find((c) =>
-    (product.variants ?? []).some((v) => variantOptionMap(v)[color!.id] === c && variantStock(v).state !== "sold_out")
-  )
-
-  const add = async (sizeValue?: string) => {
-    const selection: Record<string, string> = {}
-    if (color && firstColor) selection[color.id] = firstColor
-    if (size) selection[size.id] = sizeValue ?? size.values[0]
-    const variant = findVariant(product, selection)
-    if (!variant || variantStock(variant).state === "sold_out") return
-    setBusy(true)
-    setError(null)
-    try {
-      await addItem(variant.id, 1, { releaseId })
-      const price = variantPrice(variant)
-      track("add_to_cart", {
-        product_id: product.id,
-        variant_id: variant.id,
-        quantity: 1,
-        price: price?.amount,
-        currency: price?.currency?.toUpperCase(),
-        release_id: releaseId,
-        source: "app_quick_add",
-      })
-      setSizes(false)
-      sheet.show({
-        title: product.title,
-        detail: [firstColor, sizeValue ?? (isOneSize(product) ? "One Size" : null)].filter(Boolean).join(" / "),
-        price: price ? formatMoney(price.amount, price.currency) : null,
-        image: cardImages(product)[0],
-      })
-    } catch (e) {
-      setError(errorMessage(e))
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  if (!firstColor) return null
-  const sized = !isOneSize(product)
-
-  return (
-    <>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`Quick add ${product.title}`}
-        onPress={() => (sized ? setSizes((s) => !s) : add())}
-        disabled={busy}
-        style={styles.quick}>
-        <View style={[styles.quickCircle, busy && { opacity: 0.4 }]}>
-          <Ionicons name="bag-outline" size={16} color={colors.text} />
-          <View style={styles.plus}>
-            <Text style={styles.plusText}>+</Text>
+          <Text variant="cardMeta" tone="muted" numberOfLines={1}>
+            {colourway}
+            {rope ? ` · ${rope} rope` : ""}
+          </Text>
+          {price ? <Text variant="priceSm">{formatMoney(price.amount, price.currency)}</Text> : null}
+          <View style={styles.swatches}>
+            {CORE_COLOURWAYS.map((c) => (
+              <Swatch key={c} name={c} size={20} selected={c === colourway} />
+            ))}
           </View>
         </View>
       </Pressable>
-      {sized && sizes && size ? (
-        <View style={styles.popover}>
-          {size.values.map((v) => {
-            const out = valueStock(product, size.id, v, color ? { [color.id]: firstColor } : {}).state === "sold_out"
-            return (
-              <Pressable
-                key={v}
-                accessibilityRole="button"
-                accessibilityLabel={`Add size ${v}`}
-                disabled={out || busy}
-                onPress={() => add(v)}
-                style={[styles.popButton, out && styles.popOut]}>
-                <Text style={[styles.popLabel, out && styles.popLabelOut]}>{v}</Text>
-              </Pressable>
-            )
-          })}
-        </View>
-      ) : null}
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-    </>
+      <View style={styles.addRow}>
+        <Text variant="meta" tone="muted">
+          One size
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Add ${colourway} to bag`}
+          disabled={soldOut || quick.pending !== null}
+          hitSlop={8}
+          onPress={() => {
+            trackTap("quick_add", { color: colourway })
+            void quick.addColour(product, colourway, source)
+          }}
+          style={({ pressed }) => [styles.add, (soldOut || pressed) && { opacity: 0.5 }]}>
+          <Ionicons name="bag-handle-outline" size={16} color={colors.black} />
+          <Text variant="cardTitle">{soldOut ? "Sold out" : "Add"}</Text>
+        </Pressable>
+      </View>
+    </Animated.View>
   )
 }
 
-/** Two-column grid, 16pt gap and 16pt side padding (APP_SPEC §5.2). */
-export function ProductGrid({ children }: { children: React.ReactNode }) {
-  return <View style={styles.grid}>{children}</View>
+/** A numbered edition card (Shop's LIMITED group): live editions add; upcoming ones open the tee sheet. */
+export function EditionCard({ hole, style }: { hole: Hole; style?: StyleProp<ViewStyle> }) {
+  const { style: scaleStyle, press } = usePressScale()
+  const quick = useQuickAdd()
+  const product = hole.product
+  const colour = hole.colourway
+  const go = () => {
+    trackTap("pdp_edition_link", { hole: hole.number })
+    if (hole.status === "live" && product?.handle) router.push(`/products/${product.handle}`)
+    else if (hole.handle) router.push(`/card/${hole.handle}`)
+  }
+  return (
+    <Animated.View style={[styles.card, scaleStyle, style]}>
+      <Pressable accessibilityRole="link" accessibilityLabel={`Hole ${hole.number}, ${hole.name}`} onPressIn={() => press(0.98)} onPressOut={() => press(1)} onPress={go}>
+        <View>
+          {hole.image ? <Image source={hole.image} style={styles.image} contentFit="contain" /> : <View style={styles.image} />}
+          <Badge label={hole.status === "sold_out" ? "Sold out" : `Hole ${hole.number}`} style={styles.badge} />
+        </View>
+        <View style={styles.info}>
+          <Text variant="cardTitle" numberOfLines={1}>
+            The Rope Cap, {hole.name}
+          </Text>
+          <Text variant="cardMeta" tone="muted" numberOfLines={1}>
+            {colour ? `${colour} · ${ropeNameFor(product, colour) ?? ""} rope` : hole.promise}
+          </Text>
+          {hole.price != null ? <Text variant="priceSm">{formatMoney(hole.price)}</Text> : null}
+          <EditionBadge size={hole.editionSize} left={hole.status === "live" ? hole.left : null} />
+          {hole.status === "upcoming" ? (
+            <Text variant="badge" tone="muted">
+              Releases {holeDay(hole.releaseAt ?? hole.dateIso)}
+            </Text>
+          ) : null}
+        </View>
+      </Pressable>
+      <View style={styles.addRow}>
+        {hole.status === "live" && product && colour ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Add ${hole.name} to bag`}
+            disabled={quick.pending !== null}
+            onPress={() => void quick.addColour(product, colour, "app_quick_add")}
+            style={({ pressed }) => [styles.add, pressed && { opacity: 0.5 }]}>
+            <Ionicons name="bag-handle-outline" size={16} color={colors.black} />
+            <Text variant="cardTitle">Add</Text>
+          </Pressable>
+        ) : hole.status === "upcoming" ? (
+          <Pressable accessibilityRole="link" onPress={go} style={styles.add}>
+            <Text variant="cardTitle">Join the tee sheet</Text>
+          </Pressable>
+        ) : (
+          <Text variant="meta" tone="muted">
+            {hole.status === "sold_out" ? "Sold out" : hole.status === "ended" ? "Played" : "Announced"}
+          </Text>
+        )}
+      </View>
+    </Animated.View>
+  )
+}
+
+/** Live counts for "In stock today" etc. */
+export function coreCounts(product: Product | undefined) {
+  if (!product) return []
+  return colorCounts(product).filter((c) => (CORE_COLOURWAYS as readonly string[]).includes(c.color))
 }
 
 const styles = StyleSheet.create({
-  imageArea: {
-    backgroundColor: colors.secondary,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.lineHeader,
-  },
-  dashes: { position: "absolute", bottom: 4, left: 0, right: 0 },
-  text: { marginTop: 7 },
-  titleRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 8 },
-  title: { flex: 1, fontFamily: fonts.heading, fontSize: 16, lineHeight: 24, color: colors.text },
-  price: { fontFamily: fonts.body, fontSize: 14, lineHeight: 24, letterSpacing: 0.4, color: colors.text },
-  meta: {
-    fontFamily: fonts.body,
-    fontSize: 12,
-    lineHeight: 18,
-    letterSpacing: 0.4,
-    color: colors.textMutedCard,
-    textTransform: "capitalize",
-  },
-  quick: { position: "absolute", top: 0, right: 0, width: 48, height: 48, alignItems: "center", justifyContent: "center" },
-  quickCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.primary,
-    backgroundColor: colors.secondary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  plus: {
-    position: "absolute",
-    top: -4,
-    right: -4,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  plusText: { fontFamily: fonts.heading, fontSize: 10, lineHeight: 12, color: colors.textInverse },
-  popover: {
-    position: "absolute",
-    top: 46,
-    right: 8,
+  card: { backgroundColor: colors.white, borderRadius: radius.xxl, overflow: "hidden" },
+  image: { width: "100%", aspectRatio: 1, backgroundColor: colors.white },
+  badge: { position: "absolute", top: 10, left: 10 },
+  info: { padding: 16, paddingBottom: 8, gap: 4 },
+  swatches: { flexDirection: "row", gap: 2, marginTop: 4 },
+  addRow: {
     flexDirection: "row",
-    backgroundColor: colors.secondary,
-    borderWidth: 1,
-    borderColor: colors.line,
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    paddingTop: 4,
   },
-  popButton: { height: 39, minWidth: 56, paddingHorizontal: 10, alignItems: "center", justifyContent: "center" },
-  popOut: { backgroundColor: colors.fillDisabled },
-  popLabel: { fontFamily: fonts.heading, fontSize: 11, lineHeight: 16.5, letterSpacing: 1.3, color: colors.text },
-  popLabelOut: { color: colors.textDisabled, textDecorationLine: "line-through" },
-  error: { fontFamily: fonts.body, fontSize: 11, color: colors.error, marginTop: 4 },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: 16, paddingHorizontal: 16 },
+  add: { flexDirection: "row", alignItems: "center", gap: 4 },
 })

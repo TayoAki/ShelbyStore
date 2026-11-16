@@ -1,21 +1,23 @@
 import { Text as RNText, type TextProps } from "react-native"
 
-import { colors, type as typeScale } from "@/constants/theme"
+import { colors, golf, type as typeScale } from "@/constants/theme"
 
 export type TextVariant = keyof typeof typeScale
-export type TextTone = "default" | "muted" | "mutedCard" | "mutedSub" | "inverse" | "error" | "success"
+export type TextTone = "default" | "muted" | "charcoal" | "inverse" | "error" | "success" | "golf" | "midnight" | "tint"
 
 const toneColor: Record<TextTone, string> = {
-  default: colors.text,
-  muted: colors.textMuted,
-  mutedCard: colors.textMutedCard,
-  mutedSub: colors.textMutedSub,
-  inverse: colors.textInverse,
-  error: colors.error,
-  success: colors.inStock,
+  default: colors.black,
+  muted: colors.muted,
+  charcoal: colors.charcoal,
+  inverse: colors.white,
+  error: colors.red,
+  success: colors.green,
+  golf: golf.green,
+  midnight: golf.midnight,
+  tint: golf.tint,
 }
 
-/** Text in one of the spec's type styles (APP_SPEC §2). Families carry the weight; never set fontWeight. */
+/** Text in one of the spec's type roles (APP_SPEC v5 §2, G.2). Families carry the weight. */
 export function Text({
   variant = "body",
   tone = "default",
