@@ -21,7 +21,7 @@ export const POST = async (req: MedusaRequest<StoreAnalyticsBatchType>, res: Med
     .map((e) => normalizeEvent(e, { receivedAt, sentAt, userAgent: ua }))
     .filter((r): r is NonNullable<typeof r> => r !== null)
 
-  const service: AnalyticsModuleService = req.scope.resolve(ANALYTICS_MODULE)
+  const service: AnalyticsModuleService = req.scope.resolve<AnalyticsModuleService>(ANALYTICS_MODULE)
   // Clients deliver at-least-once; the unique `$insert_id` index drops repeats.
   const inserted = rows.length ? await service.ingestEvents(rows) : 0
   res.status(202).json({ accepted: inserted, duplicates: rows.length - inserted })

@@ -14,7 +14,7 @@ import type AnalyticsModuleService from "../../../modules/analytics/service"
 export const STORE_TIMEZONE = process.env.STORE_TIMEZONE || "America/Los_Angeles"
 const DAY = 24 * 60 * 60 * 1000
 
-export const analytics = (container: MedusaContainer): AnalyticsModuleService => container.resolve(ANALYTICS_MODULE)
+export const analytics = (container: MedusaContainer): AnalyticsModuleService => container.resolve<AnalyticsModuleService>(ANALYTICS_MODULE)
 
 /** [from, to) from ISO strings, defaulting to the last `days` days. Max one year. */
 export function parseRange(from?: string | null, to?: string | null, days = 7) {

@@ -2,7 +2,13 @@ import Image from "next/image"
 import Link from "next/link"
 import { sunwashedCap } from "@/lib/sunwashed-cap"
 
-export function SunwashedCapFeature({ comingSoon = false }: { comingSoon?: boolean }) {
+export function SunwashedCapFeature({
+  comingSoon = false,
+  birdieFirst = false,
+}: {
+  comingSoon?: boolean
+  birdieFirst?: boolean
+}) {
   return (
     <section className="wrap grid items-center gap-8 py-8 md:grid-cols-2 md:gap-14 md:py-16">
       <div className="overflow-hidden bg-[#eee4d8]">
@@ -17,8 +23,8 @@ export function SunwashedCapFeature({ comingSoon = false }: { comingSoon?: boole
         />
       </div>
       <div className="max-w-lg pb-4">
-        <p className="mb-3 text-sm font-medium uppercase tracking-widest">Birdie behavior.</p>
-        <h1 className="title-page">{sunwashedCap.title}</h1>
+        <p className="mb-3 text-sm font-medium uppercase tracking-widest">{birdieFirst ? sunwashedCap.title : "Birdie behavior."}</p>
+        <h1 className="title-page">{birdieFirst ? "Birdie behavior." : sunwashedCap.title}</h1>
         <p className="mt-4 max-w-sm text-lg">
           Washed sage, a cream rope across the brim, and a little birdie behavior stitched up front.
           For early tee times and questionable scorecards.

@@ -1,6 +1,9 @@
 import type { ExecArgs } from "@medusajs/framework/types"
 import { ContainerRegistrationKeys, Modules, ProductStatus } from "@medusajs/framework/utils"
 import { createProductsWorkflow, updateProductsWorkflow } from "@medusajs/medusa/core-flows"
+import { ANALYTICS_MODULE } from "../modules/analytics"
+import type AnalyticsModuleService from "../modules/analytics/service"
+import { createExperimentWorkflow } from "../workflows/analytics"
 import { RELEASE_MODULE } from "../modules/release"
 import type ReleaseModuleService from "../modules/release/service"
 
@@ -11,6 +14,28 @@ export default async function replaceCatalog({ container }: ExecArgs) {
   const productService = container.resolve(Modules.PRODUCT)
   const releaseService: ReleaseModuleService = container.resolve(RELEASE_MODULE)
   const [cap] = await productService.listProducts({ handle: HANDLE })
+
+  const analytics = container.resolve<AnalyticsModuleService>(ANALYTICS_MODULE)
+  const key = "sunwashed-cap-message"
+  const [experiment] = await analytics.listAnalyticsExperiments({ key })
+  if (!experiment) {
+    await createExperimentWorkflow(container).run({
+      input: {
+        data: {
+          key,
+          name: "Sunwashed Rope Cap homepage message",
+          hypothesis: "Leading with Birdie behavior produces more orders per exposed visitor than leading with the product name.",
+          audience: "ShelbyStore homepage visitors.",
+          change_description: "Control: Sunwashed Rope Cap. Treatment: Birdie behavior. Product, photo, pricing and CTA are identical.",
+          status: "draft",
+          variants: [{ key: "control", weight: 50 }, { key: "birdie", weight: 50 }],
+          funnel_steps: [{ event: "order_completed", label: "Placed an order" }],
+          minimum_sample: 1400,
+          notes: "Start after a delivered test order and purchase attribution are verified. Review at two weeks and 1,400 visitors per group. Treat lower traffic as inconclusive.",
+        },
+      },
+    })
+  }
 
   if (cap?.metadata?.sunwashed_catalog_cutover === true) {
     return
@@ -42,7 +67,7 @@ export default async function replaceCatalog({ container }: ExecArgs) {
           title: "Washed Sage / One Size",
           sku: "SUNWASHED-SAGE-OS",
           options: { Color: "Washed Sage", Size: "One Size" },
-          prices: [{ currency_code: "usd", amount: 48 }],
+          prices: [{ currency_code: "usd", amount: 42 }],
           manage_inventory: true,
           allow_backorder: false,
         }],

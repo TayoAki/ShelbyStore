@@ -20,7 +20,7 @@ export async function getSessionsByAsset(
   assets: string[],
   range: { startAt: Date; endAt: Date }
 ): Promise<Record<string, AssetSessions | null>> {
-  const service: AnalyticsModuleService = container.resolve(ANALYTICS_MODULE)
+  const service: AnalyticsModuleService = container.resolve<AnalyticsModuleService>(ANALYTICS_MODULE)
   const unique = [...new Set(assets.filter(Boolean))]
   const results = await Promise.all(
     unique.map((asset) =>
