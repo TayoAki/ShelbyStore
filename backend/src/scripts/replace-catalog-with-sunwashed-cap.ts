@@ -1,6 +1,6 @@
 import type { ExecArgs } from "@medusajs/framework/types"
 import { ContainerRegistrationKeys, Modules, ProductStatus } from "@medusajs/framework/utils"
-import { createProductsWorkflow, updateProductsWorkflow } from "@medusajs/medusa/core-flows"
+import { batchVariantImagesWorkflow, createProductsWorkflow, updateProductsWorkflow } from "@medusajs/medusa/core-flows"
 import { ANALYTICS_MODULE } from "../modules/analytics"
 import type AnalyticsModuleService from "../modules/analytics/service"
 import { createExperimentWorkflow } from "../workflows/analytics"
@@ -8,6 +8,13 @@ import { RELEASE_MODULE } from "../modules/release"
 import type ReleaseModuleService from "../modules/release/service"
 
 const HANDLE = "sunwashed-rope-cap"
+const PRINTIFY_PRODUCT_ID = "6afbd089a57e3213600a8e97"
+const VARIANTS = [
+  { color: "Espresso", id: 288210, sku: "28501630377054746155" },
+  { color: "Ivory", id: 288216, sku: "76715938844958409254" },
+]
+const mockup = (variantId: number) =>
+  `https://images-api.printify.com/mockup/${PRINTIFY_PRODUCT_ID}/${variantId}/128155/sunwashed-rope-cap-birdie-behavior.jpg?camera_label=front`
 
 export default async function replaceCatalog({ container }: ExecArgs) {
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
@@ -43,11 +50,9 @@ export default async function replaceCatalog({ container }: ExecArgs) {
 
   const [store] = await container.resolve(Modules.STORE).listStores()
   const [shippingProfile] = await container.resolve(Modules.FULFILLMENT).listShippingProfiles({ type: "default" })
-  const storefrontUrl = process.env.STOREFRONT_URL
-  if (!store?.default_sales_channel_id || !shippingProfile || !storefrontUrl) {
-    throw new Error("Catalog replacement requires a default sales channel, a shipping profile, and STOREFRONT_URL.")
+  if (!store?.default_sales_channel_id || !shippingProfile) {
+    throw new Error("Catalog replacement requires a default sales channel and a shipping profile.")
   }
-  const imageUrl = new URL("/hats/sunwashed-rope-cap.webp", storefrontUrl).href
 
   const target = cap ?? (await createProductsWorkflow(container).run({
     input: {
@@ -55,25 +60,36 @@ export default async function replaceCatalog({ container }: ExecArgs) {
         handle: HANDLE,
         title: "Sunwashed Rope Cap",
         subtitle: "Birdie behavior.",
-        description: "Washed sage, a cream rope across the brim, and a little birdie behavior stitched up front. For early tee times and questionable scorecards.",
-        thumbnail: imageUrl,
-        images: [{ url: imageUrl }],
+        description: "An adjustable five-panel Comfort Colors rope cap with birdie behavior embroidered on the front. Choose Espresso with white stitching or Ivory with green stitching.",
+        thumbnail: mockup(VARIANTS[0].id),
+        images: VARIANTS.map(({ id }) => ({ url: mockup(id) })),
         status: ProductStatus.DRAFT,
         shipping_profile_id: shippingProfile.id,
         sales_channels: [{ id: store.default_sales_channel_id }],
-        metadata: { promise: "A little birdie behavior.", rope: "Cream" },
-        options: [{ title: "Color", values: ["Washed Sage"] }, { title: "Size", values: ["One Size"] }],
-        variants: [{
-          title: "Washed Sage / One Size",
-          sku: "SUNWASHED-SAGE-OS",
-          options: { Color: "Washed Sage", Size: "One Size" },
+        metadata: { promise: "A little birdie behavior.", printify_shop_id: 29788014 },
+        options: [{ title: "Color", values: VARIANTS.map(({ color }) => color) }, { title: "Size", values: ["Adjustable"] }],
+        variants: VARIANTS.map(({ color, id, sku }) => ({
+          title: `${color} / Adjustable`,
+          sku,
+          options: { Color: color, Size: "Adjustable" },
           prices: [{ currency_code: "usd", amount: 42 }],
           manage_inventory: true,
           allow_backorder: false,
-        }],
+          metadata: { printify_product_id: PRINTIFY_PRODUCT_ID, printify_variant_id: id },
+        })),
       }],
     },
   })).result[0]
+
+  const [product] = await productService.listProducts({ id: target.id }, { relations: ["images", "variants"] })
+  for (const { id, sku } of VARIANTS) {
+    const variant = product?.variants.find((item) => item.sku === sku)
+    const image = product?.images.find((item) => item.url === mockup(id))
+    if (!variant || !image) {
+      throw new Error(`Missing Printify variant or mockup for SKU ${sku}.`)
+    }
+    await batchVariantImagesWorkflow(container).run({ input: { variant_id: variant.id, add: [image.id] } })
+  }
 
   // Archive release schedules first so their worker cannot republish retired products.
   const releaseIds: string[] = []

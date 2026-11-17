@@ -26,7 +26,7 @@ export function SunwashedCapFeature({
         <p className="mb-3 text-sm font-medium uppercase tracking-widest">{birdieFirst ? sunwashedCap.title : "Birdie behavior."}</p>
         <h1 className="title-page">{birdieFirst ? "Birdie behavior." : sunwashedCap.title}</h1>
         <p className="mt-4 max-w-sm text-lg">
-          Washed sage, a cream rope across the brim, and a little birdie behavior stitched up front.
+          Espresso or Ivory, with a braided rope across the brim and a little birdie behavior stitched up front.
           For early tee times and questionable scorecards.
         </p>
         {comingSoon ? (
