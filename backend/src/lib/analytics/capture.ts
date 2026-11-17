@@ -19,7 +19,7 @@ export type ServerEvent = {
  * was dropped or its insert id was already recorded.
  */
 export async function captureServerEvent(container: MedusaContainer, e: ServerEvent): Promise<boolean> {
-  const service: AnalyticsModuleService = container.resolve(ANALYTICS_MODULE)
+  const service: AnalyticsModuleService = container.resolve<AnalyticsModuleService>(ANALYTICS_MODULE)
   const now = new Date()
   const row = normalizeEvent(
     {

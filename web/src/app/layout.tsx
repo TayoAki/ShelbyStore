@@ -18,8 +18,8 @@ const body = Roboto({ weight: ["400", "500", "700"], style: ["normal", "italic"]
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
-  title: { default: "Shelby | The Rope Cap", template: "%s | Shelby" },
-  description: "Shelby makes one rope cap: washed cotton, a mid crown that sits right the first time, and a new numbered color when the golf season turns.",
+  title: { default: "Shelby | Sunwashed Rope Cap", template: "%s | Shelby" },
+  description: "The Shelby Sunwashed Rope Cap in Espresso and Ivory with birdie behavior embroidery.",
 }
 
 export const viewport: Viewport = {

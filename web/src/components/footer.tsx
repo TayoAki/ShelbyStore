@@ -1,10 +1,8 @@
 import Link from "next/link"
-import { listReleases } from "@/lib/data/catalog"
 import { listSeries } from "@/lib/data/content"
 import { POLICY } from "@/lib/policy"
-import { buildHoles, nextHole } from "@/lib/rope"
+import { sunwashedCap } from "@/lib/sunwashed-cap"
 import { Accordion } from "./accordion"
-import { TeeSheetForm } from "./tee-sheet-form"
 
 type Column = { heading: string; links: { label: string; href: string; track?: string }[] }
 
@@ -17,15 +15,8 @@ export function Prefooter() {
   )
 }
 
-/**
- * Eastside's footer (SITE_SPEC v8 E.6.0.9): black, four link columns and the
- * tee sheet for the next hole; on mobile the columns fold into accordions.
- */
 export async function Footer() {
-  const [releases, series] = await Promise.all([listReleases(), listSeries()])
-  const holes = buildHoles(releases)
-  const next = nextHole(holes)
-  const live = holes.filter((h) => h.status === "live" && !h.core)
+  const series = await listSeries()
   const story = series[0] ?? null
   const tiktok = process.env.NEXT_PUBLIC_TIKTOK_URL
 
@@ -33,18 +24,8 @@ export async function Footer() {
     {
       heading: "Shop",
       links: [
-        { label: "The Rope Cap", href: "/products/rope-cap" },
-        { label: "The Pair", href: "/offer/the-pair" },
-        { label: "The Foursome", href: "/offer/the-pair#foursome" },
-        { label: "Numbered editions", href: "/shop?group=limited" },
-      ],
-    },
-    {
-      heading: "The Card",
-      links: [
-        ...(live.length ? [{ label: "Now", href: live[0].productHandle ? `/products/${live[0].productHandle}` : "/card" }] : []),
-        ...(next ? [{ label: "Next", href: `/card/${next.handle}` }] : []),
-        { label: "All six holes", href: "/card" },
+        { label: sunwashedCap.title, href: sunwashedCap.href },
+        { label: "Shop all", href: "/shop" },
       ],
     },
     {
@@ -60,28 +41,16 @@ export async function Footer() {
       heading: "Shelby",
       links: [
         ...(story ? [{ label: story.title, href: `/stories/${story.handle}` }] : []),
-        { label: "Why the Rope Cap", href: "/reasons/rope-cap" },
-        { label: "The quiz", href: "/quiz" },
         ...(tiktok ? [{ label: "TikTok", href: tiktok }] : []),
       ],
     },
   ]
 
-  const tee = next?.handle ? (
-    <div id="notify" className="mx-auto flex w-full max-w-[420px] flex-col gap-2 text-center">
-      <p className="text-[12.6px] text-on-ink">One email when the next hole opens.</p>
-      <p className="font-display text-[24px] leading-[1.1] text-white uppercase">Get on the tee sheet</p>
-      <div className="mt-2 text-left">
-        <TeeSheetForm releaseHandle={next.handle} hole={next.hole} name={next.name} tone="dark" label={false} />
-      </div>
-    </div>
-  ) : null
-
   return (
     <footer className="footer on-ink bg-ink text-white">
       {/* Desktop */}
       <div className="wrap hidden pt-5 pb-[30px] md:block">
-        <div className="grid grid-cols-[repeat(4,minmax(0,242px))_minmax(0,1fr)] gap-8">
+        <div className="grid grid-cols-3 gap-8">
           {columns.map((c) => (
             <nav key={c.heading} aria-label={c.heading}>
               <p className="pt-[17px] text-[14.4px] font-bold uppercase">{c.heading}</p>
@@ -94,7 +63,6 @@ export async function Footer() {
               </ul>
             </nav>
           ))}
-          <div className="pt-[17px]">{tee}</div>
         </div>
       </div>
 
@@ -112,7 +80,6 @@ export async function Footer() {
             </ul>
           </Accordion>
         ))}
-        {tee && <div className="pt-8">{tee}</div>}
       </div>
 
       <div className="wrap flex flex-wrap items-center justify-center gap-x-4 gap-y-1 py-[30px] text-[12.6px] text-white/50">

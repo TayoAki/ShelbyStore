@@ -10,6 +10,7 @@ import { Gallery } from "@/components/pdp/gallery"
 import { SelectionProvider } from "@/components/pdp/selection"
 import { RecordView } from "@/components/recently-viewed"
 import { StoryTeaser } from "@/components/story-teaser"
+import { SunwashedCapFeature } from "@/components/sunwashed-cap-feature"
 import { Track } from "@/components/track"
 import { ViewedRail } from "@/components/viewed-rail"
 import { catalogItems } from "@/lib/catalog-items"
@@ -20,12 +21,13 @@ import { formatMoney } from "@/lib/format"
 import { colorThumbs, fitProfileOf, imagesFor, meta, offerOf, price } from "@/lib/product"
 import { CORE_COLORS, crownCm, editionOf, nextHole, pad2, ROPE_CAP, ropeName } from "@/lib/rope"
 import type { Product } from "@/lib/types"
+import { sunwashedCap } from "@/lib/sunwashed-cap"
 
 export async function generateMetadata({ params }: PageProps<"/products/[handle]">): Promise<Metadata> {
   const { handle } = await params
   const region = await getRegion()
   const product = region ? await getProduct(handle, region.id) : null
-  return product ? { title: product.title, description: meta(product, "promise") ?? product.description ?? undefined } : { title: "Not found" }
+  return product ? { title: product.title, description: meta(product, "promise") ?? product.description ?? undefined } : { title: handle === sunwashedCap.handle ? sunwashedCap.title : "Not found" }
 }
 
 export default function ProductPage(props: PageProps<"/products/[handle]">) {
@@ -38,9 +40,10 @@ export default function ProductPage(props: PageProps<"/products/[handle]">) {
 
 async function ProductContent({ params, searchParams }: { params: PageProps<"/products/[handle]">["params"]; searchParams: PageProps<"/products/[handle]">["searchParams"] }) {
   const [{ handle }, sp] = await Promise.all([params, searchParams])
+  if (handle === "rope-cap") redirect(sunwashedCap.href)
   const c = await ropeCatalog()
-  if (!c.region) notFound()
-  const product = await getProduct(handle, c.region.id)
+  const product = c.region ? await getProduct(handle, c.region.id) : null
+  if (!product && handle === sunwashedCap.handle) return <SunwashedCapFeature comingSoon />
   if (!product) {
     // An upcoming edition is unpublished until its release: send people to its hole.
     const release = c.releases.find((r) => r.products.some((p) => p.handle === handle))

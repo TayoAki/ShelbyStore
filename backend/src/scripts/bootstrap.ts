@@ -2,6 +2,7 @@ import { MedusaModule } from "@medusajs/framework/modules-sdk"
 import { ExecArgs } from "@medusajs/framework/types"
 import { ContainerRegistrationKeys, Modules, RBAC_SUPER_ADMIN_ROLE_ID } from "@medusajs/framework/utils"
 import { createUsersWorkflow, updateRegionsWorkflow } from "@medusajs/medusa/core-flows"
+import replaceCatalog from "./replace-catalog-with-sunwashed-cap"
 import seedContent from "./seed-content"
 import seedShelby from "./seed"
 
@@ -21,7 +22,9 @@ export default async function bootstrap(args: ExecArgs) {
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
   const query = container.resolve(ContainerRegistrationKeys.QUERY)
 
-  if (process.env.SEED_DEMO_DATA === "true") {
+  if (process.env.REPLACE_CATALOG_WITH_SUNWASHED_CAP === "true") {
+    await replaceCatalog(args)
+  } else if (process.env.SEED_DEMO_DATA === "true") {
     await seedShelby(args)
     await seedContent(args)
   }

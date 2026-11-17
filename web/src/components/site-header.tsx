@@ -23,7 +23,6 @@ export type StripTile = { label: string; href: string; image: string; track: str
 
 const LINKS = [
   { label: "Custom", href: "/custom", track: "nav_custom" },
-  { label: "Quiz", href: "/quiz", track: "nav_quiz" },
 ]
 
 const ICON = "flex size-11 items-center justify-center text-text transition-colors duration-250 hover:text-link-hover"

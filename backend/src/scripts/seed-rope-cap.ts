@@ -620,7 +620,7 @@ const OFFER_EXPERIMENT = {
 /** The offer page's headline test, re-pointed at The Pair (G.8 item 9): same split and minimum. */
 async function ensureOfferExperiment(container: MedusaContainer) {
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
-  const analytics: AnalyticsModuleService = container.resolve(ANALYTICS_MODULE)
+  const analytics: AnalyticsModuleService = container.resolve<AnalyticsModuleService>(ANALYTICS_MODULE)
   const key = "offer-headline"
   const [existing] = await analytics.listAnalyticsExperiments({ key })
   if (existing) {

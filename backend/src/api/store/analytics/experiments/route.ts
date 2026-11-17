@@ -4,7 +4,7 @@ import type AnalyticsModuleService from "../../../../modules/analytics/service"
 
 /** Running experiments for client-side/server-side assignment: key + variant weights only. */
 export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
-  const service: AnalyticsModuleService = req.scope.resolve(ANALYTICS_MODULE)
+  const service: AnalyticsModuleService = req.scope.resolve<AnalyticsModuleService>(ANALYTICS_MODULE)
   const running = await service.listAnalyticsExperiments({ status: "running" })
   res.json({
     experiments: running.map((e) => ({

@@ -36,6 +36,7 @@ const nextConfig: NextConfig = {
         port: site.port,
         pathname: "/hats/**",
       },
+      { protocol: "https", hostname: "images-api.printify.com", pathname: "/mockup/6afbd089a57e3213600a8e97/**" },
       // Medusa's demo images, still referenced by orders from the apparel demo.
       { protocol: "https", hostname: "medusa-public-images.s3.eu-west-1.amazonaws.com" },
     ],
